@@ -3,6 +3,7 @@
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ColorController;
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\CustomerLedgerController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductVariantController;
 use App\Http\Controllers\ProfileController;
@@ -21,6 +22,12 @@ Route::get('/dashboard', function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('sales-invoices/products/{product}/variants', [SalesInvoiceController::class, 'productVariants'])
         ->name('sales-invoices.product-variants');
+    Route::post('sales-invoices/{sales_invoice}/confirm', [SalesInvoiceController::class, 'confirm'])
+        ->name('sales-invoices.confirm');
+    Route::post('sales-invoices/{sales_invoice}/cancel', [SalesInvoiceController::class, 'cancel'])
+        ->name('sales-invoices.cancel');
+
+    Route::get('customer-ledger', [CustomerLedgerController::class, 'index'])->name('customer-ledger.index');
 
     Route::resource('customers', CustomerController::class);
     Route::resource('categories', CategoryController::class);

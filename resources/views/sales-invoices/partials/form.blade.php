@@ -41,13 +41,11 @@
 
                     @if ($salesInvoice)
                         <div class="mb-3">
-                            <label for="status" class="form-label">Status <span class="text-danger">*</span></label>
-                            <select name="status" id="status" class="form-select @error('status') is-invalid @enderror" required>
-                                @foreach (\App\Enums\SalesInvoiceStatus::cases() as $status)
-                                    <option value="{{ $status->value }}" @selected(old('status', $salesInvoice->status->value) === $status->value)>{{ $status->label() }}</option>
-                                @endforeach
-                            </select>
-                            @error('status')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            <label class="form-label">Status</label>
+                            <p class="mb-0">
+                                <span class="badge bg-{{ $salesInvoice->status->badgeClass() }}">{{ $salesInvoice->status->label() }}</span>
+                            </p>
+                            <div class="form-text">Use Confirm or Cancel actions on the invoice page to change status.</div>
                         </div>
                     @endif
 

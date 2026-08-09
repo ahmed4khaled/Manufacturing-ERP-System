@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\SalesInvoice\CancelSalesInvoiceAction;
+use App\Actions\SalesInvoice\ConfirmSalesInvoiceAction;
 use App\Actions\SalesInvoice\CreateSalesInvoiceAction;
 use App\Actions\SalesInvoice\DeleteSalesInvoiceAction;
 use App\Actions\SalesInvoice\UpdateSalesInvoiceAction;
@@ -128,11 +130,51 @@ class SalesInvoiceController extends Controller
         SalesInvoice $salesInvoice,
         DeleteSalesInvoiceAction $action,
     ): RedirectResponse {
-        $action->handle($salesInvoice);
+        try {
+            $action->handle($salesInvoice);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return redirect()
+                ->route('sales-invoices.show', $salesInvoice)
+                ->with('error', $e->validator->errors()->first());
+        }
 
         return redirect()
             ->route('sales-invoices.index')
             ->with('success', 'Sales invoice deleted successfully.');
+    }
+
+    public function confirm(
+        SalesInvoice $salesInvoice,
+        ConfirmSalesInvoiceAction $action,
+    ): RedirectResponse {
+        try {
+            $action->handle($salesInvoice);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return redirect()
+                ->route('sales-invoices.show', $salesInvoice)
+                ->with('error', $e->validator->errors()->first());
+        }
+
+        return redirect()
+            ->route('sales-invoices.show', $salesInvoice)
+            ->with('success', 'Sales invoice confirmed successfully.');
+    }
+
+    public function cancel(
+        SalesInvoice $salesInvoice,
+        CancelSalesInvoiceAction $action,
+    ): RedirectResponse {
+        try {
+            $action->handle($salesInvoice);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return redirect()
+                ->route('sales-invoices.show', $salesInvoice)
+                ->with('error', $e->validator->errors()->first());
+        }
+
+        return redirect()
+            ->route('sales-invoices.show', $salesInvoice)
+            ->with('success', 'Sales invoice cancelled successfully.');
     }
 
     public function productVariants(Product $product): JsonResponse

@@ -8,6 +8,7 @@ use App\Actions\Customer\UpdateCustomerAction;
 use App\Http\Requests\Customer\StoreCustomerRequest;
 use App\Http\Requests\Customer\UpdateCustomerRequest;
 use App\Models\Customer;
+use App\Services\CustomerLedgerService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -41,9 +42,12 @@ class CustomerController extends Controller
             ->with('success', 'Customer created successfully.');
     }
 
-    public function show(Customer $customer): View
+    public function show(Customer $customer, CustomerLedgerService $ledgerService): View
     {
-        return view('customers.show', compact('customer'));
+        $ledgerSummary = $ledgerService->getSummary($customer->id);
+        $recentLedgerEntries = $ledgerService->getRecentEntries($customer->id);
+
+        return view('customers.show', compact('customer', 'ledgerSummary', 'recentLedgerEntries'));
     }
 
     public function edit(Customer $customer): View

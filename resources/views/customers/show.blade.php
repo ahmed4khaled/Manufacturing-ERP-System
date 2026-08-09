@@ -87,7 +87,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label text-muted small mb-1">Credit Limit</label>
-                        <p class="mb-0 fw-semibold fs-5 text-primary">{{ number_format($customer->credit_limit, 2) }} SAR</p>
+                        <p class="mb-0 fw-semibold fs-5 text-primary">{{ number_format($customer->credit_limit, 2) }} EGP</p>
                     </div>
                     <div class="mb-3">
                         <label class="form-label text-muted small mb-1">Status</label>
@@ -106,8 +106,68 @@
                     </div>
                 </div>
             </div>
+
+            <div class="card mt-4">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Ledger Summary</h5>
+                    <a href="{{ route('customer-ledger.index', ['customer_id' => $customer->id]) }}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label text-muted small mb-1">Current Balance</label>
+                        <p class="mb-0 fw-semibold fs-4 {{ (float) $ledgerSummary['balance'] > 0 ? 'text-danger' : 'text-success' }}">
+                            {{ number_format($ledgerSummary['balance'], 2) }} EGP
+                        </p>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted small">Total Debit</span>
+                        <strong>{{ number_format($ledgerSummary['total_debit'], 2) }} EGP</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted small">Total Credit</span>
+                        <strong>{{ number_format($ledgerSummary['total_credit'], 2) }} EGP</strong>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
+
+    @if ($recentLedgerEntries->isNotEmpty())
+        <div class="card mt-4">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0">Recent Ledger Entries</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Reference</th>
+                                <th>Description</th>
+                                <th class="text-end">Debit</th>
+                                <th class="text-end">Credit</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($recentLedgerEntries as $entry)
+                                <tr>
+                                    <td>{{ $entry->transaction_date->format('M d, Y') }}</td>
+                                    <td>
+                                        <code>{{ $entry->reference_number ?? '—' }}</code>
+                                        <br><small class="text-muted">{{ $entry->reference_type->label() }}</small>
+                                    </td>
+                                    <td>{{ $entry->description }}</td>
+                                    <td class="text-end">{{ $entry->debit > 0 ? number_format($entry->debit, 2) : '—' }}</td>
+                                    <td class="text-end">{{ $entry->credit > 0 ? number_format($entry->credit, 2) : '—' }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    @endif
 
     <div class="mt-3">
         <a href="{{ route('customers.index') }}" class="btn btn-outline-secondary">

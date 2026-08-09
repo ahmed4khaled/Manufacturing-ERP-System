@@ -86,11 +86,11 @@
                                         <a href="{{ route('sales-invoices.show', $invoice) }}" class="btn btn-outline-secondary" title="View"><i class="bi bi-eye"></i></a>
                                         @if ($invoice->status === \App\Enums\SalesInvoiceStatus::DRAFT)
                                             <a href="{{ route('sales-invoices.edit', $invoice) }}" class="btn btn-outline-primary" title="Edit"><i class="bi bi-pencil"></i></a>
+                                            <form action="{{ route('sales-invoices.destroy', $invoice) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this draft invoice?')">
+                                                @csrf @method('DELETE')
+                                                <button type="submit" class="btn btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>
+                                            </form>
                                         @endif
-                                        <form action="{{ route('sales-invoices.destroy', $invoice) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this invoice?')">
-                                            @csrf @method('DELETE')
-                                            <button type="submit" class="btn btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>
-                                        </form>
                                     </div>
                                 </td>
                             </tr>

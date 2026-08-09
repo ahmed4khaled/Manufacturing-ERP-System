@@ -179,6 +179,10 @@
                 <i class="bi bi-receipt"></i>
                 Sales Invoices
             </a>
+            <a href="{{ route('customer-ledger.index') }}" class="nav-link {{ request()->routeIs('customer-ledger.*') ? 'active' : '' }}">
+                <i class="bi bi-journal-text"></i>
+                Customer Ledger
+            </a>
 
             <div class="nav-section">Products</div>
             <a href="{{ route('categories.index') }}" class="nav-link sub-link {{ request()->routeIs('categories.*') ? 'active' : '' }}">

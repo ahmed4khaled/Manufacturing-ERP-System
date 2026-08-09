@@ -35,6 +35,11 @@ class Customer extends Model
         return $this->hasMany(SalesInvoice::class);
     }
 
+    public function ledgerEntries(): HasMany
+    {
+        return $this->hasMany(CustomerLedgerEntry::class);
+    }
+
     public function scopeSearch(Builder $query, ?string $search): Builder
     {
         if (blank($search)) {

@@ -24,11 +24,20 @@
         <div class="d-flex gap-2">
             @if ($salesInvoice->status === \App\Enums\SalesInvoiceStatus::DRAFT)
                 <a href="{{ route('sales-invoices.edit', $salesInvoice) }}" class="btn btn-primary"><i class="bi bi-pencil me-1"></i> Edit</a>
+                <form action="{{ route('sales-invoices.confirm', $salesInvoice) }}" method="POST" onsubmit="return confirm('Confirm this invoice? This will post the amount to the customer ledger.')">
+                    @csrf
+                    <button type="submit" class="btn btn-success"><i class="bi bi-check-circle me-1"></i> Confirm</button>
+                </form>
+                <form action="{{ route('sales-invoices.destroy', $salesInvoice) }}" method="POST" onsubmit="return confirm('Delete this draft invoice?')">
+                    @csrf @method('DELETE')
+                    <button type="submit" class="btn btn-outline-danger"><i class="bi bi-trash me-1"></i> Delete</button>
+                </form>
+            @elseif ($salesInvoice->status === \App\Enums\SalesInvoiceStatus::CONFIRMED)
+                <form action="{{ route('sales-invoices.cancel', $salesInvoice) }}" method="POST" onsubmit="return confirm('Cancel this invoice?')">
+                    @csrf
+                    <button type="submit" class="btn btn-outline-danger"><i class="bi bi-x-circle me-1"></i> Cancel Invoice</button>
+                </form>
             @endif
-            <form action="{{ route('sales-invoices.destroy', $salesInvoice) }}" method="POST" onsubmit="return confirm('Delete this invoice?')">
-                @csrf @method('DELETE')
-                <button type="submit" class="btn btn-outline-danger"><i class="bi bi-trash me-1"></i> Delete</button>
-            </form>
         </div>
     </div>
 
