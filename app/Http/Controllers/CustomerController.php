@@ -46,8 +46,13 @@ class CustomerController extends Controller
     {
         $ledgerSummary = $ledgerService->getSummary($customer->id);
         $recentLedgerEntries = $ledgerService->getRecentEntries($customer->id);
+        $recentPaymentReceipts = $customer->paymentReceipts()
+            ->latest('payment_date')
+            ->latest('id')
+            ->limit(10)
+            ->get();
 
-        return view('customers.show', compact('customer', 'ledgerSummary', 'recentLedgerEntries'));
+        return view('customers.show', compact('customer', 'ledgerSummary', 'recentLedgerEntries', 'recentPaymentReceipts'));
     }
 
     public function edit(Customer $customer): View

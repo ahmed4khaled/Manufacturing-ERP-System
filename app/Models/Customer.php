@@ -35,6 +35,11 @@ class Customer extends Model
         return $this->hasMany(SalesInvoice::class);
     }
 
+    public function paymentReceipts(): HasMany
+    {
+        return $this->hasMany(PaymentReceipt::class);
+    }
+
     public function ledgerEntries(): HasMany
     {
         return $this->hasMany(CustomerLedgerEntry::class);

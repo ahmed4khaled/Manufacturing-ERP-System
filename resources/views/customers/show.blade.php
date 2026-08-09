@@ -169,6 +169,45 @@
         </div>
     @endif
 
+    @if ($recentPaymentReceipts->isNotEmpty())
+        <div class="card mt-4">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Recent Payment Receipts</h5>
+                <a href="{{ route('payment-receipts.index', ['customer_id' => $customer->id]) }}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Receipt #</th>
+                                <th>Date</th>
+                                <th class="text-end">Amount</th>
+                                <th>Method</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($recentPaymentReceipts as $receipt)
+                                <tr>
+                                    <td>
+                                        <a href="{{ route('payment-receipts.show', $receipt) }}" class="text-decoration-none fw-semibold">
+                                            {{ $receipt->receipt_number }}
+                                        </a>
+                                    </td>
+                                    <td>{{ $receipt->payment_date->format('M d, Y') }}</td>
+                                    <td class="text-end">{{ number_format($receipt->amount, 2) }} EGP</td>
+                                    <td>{{ $receipt->payment_method->label() }}</td>
+                                    <td><span class="badge bg-{{ $receipt->status->badgeClass() }}">{{ $receipt->status->label() }}</span></td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <div class="mt-3">
         <a href="{{ route('customers.index') }}" class="btn btn-outline-secondary">
             <i class="bi bi-arrow-left me-1"></i> Back to Customers

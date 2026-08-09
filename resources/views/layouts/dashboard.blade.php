@@ -179,6 +179,10 @@
                 <i class="bi bi-receipt"></i>
                 Sales Invoices
             </a>
+            <a href="{{ route('payment-receipts.index') }}" class="nav-link {{ request()->routeIs('payment-receipts.*') ? 'active' : '' }}">
+                <i class="bi bi-cash-coin"></i>
+                Payment Receipts
+            </a>
             <a href="{{ route('customer-ledger.index') }}" class="nav-link {{ request()->routeIs('customer-ledger.*') ? 'active' : '' }}">
                 <i class="bi bi-journal-text"></i>
                 Customer Ledger
@@ -207,10 +211,6 @@
             </a>
 
             <div class="nav-section">Coming Soon</div>
-            <span class="nav-link text-muted pe-none">
-                <i class="bi bi-cart-check"></i>
-                Payments
-            </span>
             <span class="nav-link text-muted pe-none">
                 <i class="bi bi-boxes"></i>
                 Inventory
