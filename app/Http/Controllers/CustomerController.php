@@ -45,14 +45,30 @@ class CustomerController extends Controller
     public function show(Customer $customer, CustomerLedgerService $ledgerService): View
     {
         $ledgerSummary = $ledgerService->getSummary($customer->id);
+        $availableCredit = $ledgerService->getAvailableCredit(
+            (string) $customer->credit_limit,
+            $ledgerSummary['balance'],
+        );
         $recentLedgerEntries = $ledgerService->getRecentEntries($customer->id);
+        $recentSalesInvoices = $customer->salesInvoices()
+            ->latest('invoice_date')
+            ->latest('id')
+            ->limit(10)
+            ->get();
         $recentPaymentReceipts = $customer->paymentReceipts()
             ->latest('payment_date')
             ->latest('id')
             ->limit(10)
             ->get();
 
-        return view('customers.show', compact('customer', 'ledgerSummary', 'recentLedgerEntries', 'recentPaymentReceipts'));
+        return view('customers.show', compact(
+            'customer',
+            'ledgerSummary',
+            'availableCredit',
+            'recentLedgerEntries',
+            'recentSalesInvoices',
+            'recentPaymentReceipts',
+        ));
     }
 
     public function edit(Customer $customer): View

@@ -30,6 +30,11 @@ class CustomerLedgerService
         return bcsub($debit, $credit, 2);
     }
 
+    public function getAvailableCredit(string $creditLimit, string $balance): string
+    {
+        return bcsub($creditLimit, $balance, 2);
+    }
+
     /**
      * @return array{balance: string, total_debit: string, total_credit: string}
      */
@@ -101,11 +106,25 @@ class CustomerLedgerService
 
     public function getRecentEntries(int $customerId, int $limit = 10): Collection
     {
-        return CustomerLedgerEntry::query()
+        $entries = CustomerLedgerEntry::query()
             ->where('customer_id', $customerId)
             ->orderByDesc('transaction_date')
             ->orderByDesc('id')
             ->limit($limit)
             ->get();
+
+        $runningBalance = $this->getBalance($customerId);
+
+        foreach ($entries as $entry) {
+            $entry->running_balance = $runningBalance;
+
+            $runningBalance = bcsub(
+                bcadd($runningBalance, (string) $entry->credit, 2),
+                (string) $entry->debit,
+                2,
+            );
+        }
+
+        return $entries;
     }
 }
