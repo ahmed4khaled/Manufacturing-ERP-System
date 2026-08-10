@@ -26,6 +26,26 @@ class StockService
     }
 
     /**
+     * @param  Collection<int, ProductVariant>  $variants
+     * @return Collection<int, int>
+     */
+    public function getCurrentStocks(Collection $variants): Collection
+    {
+        $stockByVariant = StockMovement::query()
+            ->selectRaw(
+                'product_variant_id, SUM(CASE WHEN direction = ? THEN quantity ELSE -quantity END) as current_stock',
+                [StockMovementDirection::IN->value],
+            )
+            ->whereIn('product_variant_id', $variants->pluck('id'))
+            ->groupBy('product_variant_id')
+            ->pluck('current_stock', 'product_variant_id');
+
+        return $variants->mapWithKeys(fn (ProductVariant $variant) => [
+            $variant->id => (int) ($stockByVariant[$variant->id] ?? 0),
+        ]);
+    }
+
+    /**
      * @param  LengthAwarePaginator<int, StockMovement>  $movements
      */
     public function attachRunningBalances(LengthAwarePaginator $movements): LengthAwarePaginator

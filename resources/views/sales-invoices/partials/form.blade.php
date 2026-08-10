@@ -92,6 +92,7 @@
                                         <th>Color</th>
                                         <th>Size</th>
                                         <th class="text-end">Unit Price</th>
+                                        <th class="text-end">Available Stock</th>
                                         <th style="width:120px">Quantity</th>
                                     </tr>
                                 </thead>
@@ -224,6 +225,7 @@
                 <td>${variant.color}</td>
                 <td>${variant.size}</td>
                 <td class="text-end">${formatMoney(variant.unit_price)} EGP</td>
+                <td class="text-end ${variant.available_stock > 0 ? 'text-success' : 'text-danger'} fw-semibold">${Number(variant.available_stock).toLocaleString()}</td>
                 <td>
                     <input type="number" min="0" step="1" class="form-control form-control-sm variant-qty"
                         data-index="${index}" value="${variant.quantity}">

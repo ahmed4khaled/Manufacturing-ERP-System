@@ -13,6 +13,7 @@ use App\Http\Requests\SalesInvoice\UpdateSalesInvoiceRequest;
 use App\Models\Customer;
 use App\Models\Product;
 use App\Models\SalesInvoice;
+use App\Services\StockService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -177,17 +178,21 @@ class SalesInvoiceController extends Controller
             ->with('success', 'Sales invoice cancelled successfully.');
     }
 
-    public function productVariants(Product $product): JsonResponse
+    public function productVariants(Product $product, StockService $stockService): JsonResponse
     {
         $variants = $product->variants()
             ->with(['color', 'size'])
             ->orderBy('id')
-            ->get()
-            ->map(fn ($variant) => [
+            ->get();
+
+        $currentStocks = $stockService->getCurrentStocks($variants);
+
+        $variants = $variants->map(fn ($variant) => [
                 'product_variant_id' => $variant->id,
                 'color' => $variant->color?->name ?? '—',
                 'size' => $variant->size?->name ?? '—',
                 'unit_price' => (float) $variant->default_price,
+                'available_stock' => $currentStocks->get($variant->id, 0),
                 'quantity' => 0,
             ]);
 
