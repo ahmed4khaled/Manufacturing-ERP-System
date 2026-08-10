@@ -23,6 +23,7 @@ class CreateProductVariantAction
     {
         return DB::transaction(function () use ($data) {
             $data['status'] = VariantStatus::ACTIVE;
+            unset($data['quantity']);
 
             $product = Product::query()->findOrFail($data['product_id']);
             $color = Color::query()->findOrFail($data['color_id']);

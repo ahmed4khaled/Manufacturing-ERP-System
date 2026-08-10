@@ -19,7 +19,6 @@ class StoreProductVariantRequest extends FormRequest
             'color_id' => ['required', Rule::exists('colors', 'id')],
             'size_id' => ['required', Rule::exists('sizes', 'id')],
             'default_price' => ['nullable', 'numeric', 'min:0'],
-            'quantity' => ['nullable', 'integer', 'min:0'],
         ];
     }
 

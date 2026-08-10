@@ -18,7 +18,7 @@ class UpdateProductVariantAction
     public function handle(ProductVariant $productVariant, array $data): ProductVariant
     {
         return DB::transaction(function () use ($productVariant, $data) {
-            unset($data['sku'], $data['barcode']);
+            unset($data['sku'], $data['barcode'], $data['quantity']);
 
             $combinationChanged = isset($data['product_id'], $data['color_id'], $data['size_id'])
                 && (

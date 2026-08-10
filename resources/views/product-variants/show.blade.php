@@ -27,7 +27,7 @@
                         <div class="col-md-4"><label class="text-muted small">Color</label><p class="fw-semibold mb-0">{{ $productVariant->color?->name }}</p></div>
                         <div class="col-md-4"><label class="text-muted small">Size</label><p class="fw-semibold mb-0">{{ $productVariant->size?->name }}</p></div>
                         <div class="col-md-4"><label class="text-muted small">Default Price</label><p class="fw-semibold mb-0">{{ number_format($productVariant->default_price, 2) }} SAR</p></div>
-                        <div class="col-md-4"><label class="text-muted small">Quantity</label><p class="fw-semibold mb-0">{{ $productVariant->quantity }}</p></div>
+                        <div class="col-md-4"><label class="text-muted small">Current Stock</label><p class="fw-semibold mb-0"><a href="{{ route('inventory.show', $productVariant) }}" class="text-decoration-none">View Inventory</a></p></div>
                     </div>
                 </div>
             </div>

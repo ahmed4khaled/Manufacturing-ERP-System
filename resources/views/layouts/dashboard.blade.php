@@ -210,11 +210,25 @@
                 Variants
             </a>
 
-            <div class="nav-section">Coming Soon</div>
-            <span class="nav-link text-muted pe-none">
+            <div class="nav-section">Inventory</div>
+            <a href="{{ route('inventory.index') }}" class="nav-link {{ request()->routeIs('inventory.index', 'inventory.show') ? 'active' : '' }}">
                 <i class="bi bi-boxes"></i>
-                Inventory
-            </span>
+                Stock Overview
+            </a>
+            <a href="{{ route('inventory.movements') }}" class="nav-link sub-link {{ request()->routeIs('inventory.movements') ? 'active' : '' }}">
+                <i class="bi bi-arrow-left-right"></i>
+                Stock Movements
+            </a>
+            <a href="{{ route('inventory.opening-stock.create') }}" class="nav-link sub-link {{ request()->routeIs('inventory.opening-stock.*') ? 'active' : '' }}">
+                <i class="bi bi-box-arrow-in-down"></i>
+                Opening Stock
+            </a>
+            <a href="{{ route('inventory.adjustments.create') }}" class="nav-link sub-link {{ request()->routeIs('inventory.adjustments.*') ? 'active' : '' }}">
+                <i class="bi bi-sliders"></i>
+                Adjustments
+            </a>
+
+            <div class="nav-section">Coming Soon</div>
             <span class="nav-link text-muted pe-none">
                 <i class="bi bi-gear-wide-connected"></i>
                 Manufacturing

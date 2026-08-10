@@ -60,12 +60,6 @@
         </div>
     </div>
 
-    <div class="col-md-6">
-        <label for="quantity" class="form-label">Quantity</label>
-        <input type="number" name="quantity" id="quantity" min="0" class="form-control @error('quantity') is-invalid @enderror" value="{{ old('quantity', $variant?->quantity ?? 0) }}">
-        @error('quantity')<div class="invalid-feedback">{{ $message }}</div>@enderror
-    </div>
-
     @if ($variant)
         <div class="col-md-6">
             <label for="status" class="form-label">Status <span class="text-danger">*</span></label>

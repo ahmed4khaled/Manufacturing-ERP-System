@@ -1,0 +1,173 @@
+<?php
+
+namespace App\Services;
+
+use App\Enums\StockMovementDirection;
+use App\Enums\StockMovementType;
+use App\Models\ProductVariant;
+use App\Models\SalesInvoice;
+use App\Models\StockMovement;
+use Illuminate\Support\Collection;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Validation\ValidationException;
+
+class StockService
+{
+    public function getCurrentStock(ProductVariant $variant): int
+    {
+        $stockIn = (int) $variant->stockMovements()
+            ->where('direction', StockMovementDirection::IN)
+            ->sum('quantity');
+        $stockOut = (int) $variant->stockMovements()
+            ->where('direction', StockMovementDirection::OUT)
+            ->sum('quantity');
+
+        return $stockIn - $stockOut;
+    }
+
+    /**
+     * @param  LengthAwarePaginator<int, StockMovement>  $movements
+     */
+    public function attachRunningBalances(LengthAwarePaginator $movements): LengthAwarePaginator
+    {
+        $firstMovement = $movements->first();
+
+        if (! $firstMovement) {
+            return $movements;
+        }
+
+        $stockIn = (int) StockMovement::query()
+            ->where('product_variant_id', $firstMovement->product_variant_id)
+            ->where(function ($query) use ($firstMovement) {
+                $query->where('movement_date', '<', $firstMovement->movement_date)
+                    ->orWhere(function ($query) use ($firstMovement) {
+                        $query->where('movement_date', $firstMovement->movement_date)
+                            ->where('id', '<', $firstMovement->id);
+                    });
+            })
+            ->where('direction', StockMovementDirection::IN)
+            ->sum('quantity');
+        $stockOut = (int) StockMovement::query()
+            ->where('product_variant_id', $firstMovement->product_variant_id)
+            ->where(function ($query) use ($firstMovement) {
+                $query->where('movement_date', '<', $firstMovement->movement_date)
+                    ->orWhere(function ($query) use ($firstMovement) {
+                        $query->where('movement_date', $firstMovement->movement_date)
+                            ->where('id', '<', $firstMovement->id);
+                    });
+            })
+            ->where('direction', StockMovementDirection::OUT)
+            ->sum('quantity');
+        $runningBalance = $stockIn - $stockOut;
+
+        foreach ($movements as $movement) {
+            $runningBalance += $movement->direction === StockMovementDirection::IN
+                ? $movement->quantity
+                : -$movement->quantity;
+
+            $movement->running_balance = $runningBalance;
+        }
+
+        return $movements;
+    }
+
+    public function validateAvailability(Collection $items): void
+    {
+        $requestedQuantities = $items->groupBy('product_variant_id')->map->sum('quantity');
+        $variants = ProductVariant::query()
+            ->whereIn('id', $requestedQuantities->keys())
+            ->lockForUpdate()
+            ->get()
+            ->keyBy('id');
+
+        foreach ($requestedQuantities as $variantId => $requestedQuantity) {
+            $variant = $variants->get($variantId);
+            $availableStock = $variant ? $this->getCurrentStock($variant) : 0;
+
+            if ($availableStock < $requestedQuantity) {
+                throw ValidationException::withMessages([
+                    'products' => "Insufficient stock for variant {$variant?->sku}. Available: {$availableStock}. Requested: {$requestedQuantity}.",
+                ]);
+            }
+        }
+    }
+
+    public function createOpeningStock(array $data): StockMovement
+    {
+        return $this->createMovement($data + [
+            'movement_type' => StockMovementType::OPENING,
+            'direction' => StockMovementDirection::IN,
+        ]);
+    }
+
+    public function createAdjustment(array $data): StockMovement
+    {
+        $direction = StockMovementDirection::from($data['direction']);
+
+        if ($direction === StockMovementDirection::OUT) {
+            $variant = ProductVariant::query()->lockForUpdate()->findOrFail($data['product_variant_id']);
+            $availableStock = $this->getCurrentStock($variant);
+
+            if ($availableStock < $data['quantity']) {
+                throw ValidationException::withMessages([
+                    'quantity' => "Insufficient stock. Available: {$availableStock}. Requested: {$data['quantity']}.",
+                ]);
+            }
+        }
+
+        return $this->createMovement($data + [
+            'movement_type' => $direction === StockMovementDirection::IN
+                ? StockMovementType::ADJUSTMENT_IN
+                : StockMovementType::ADJUSTMENT_OUT,
+        ]);
+    }
+
+    public function createSalesMovements(SalesInvoice $invoice): void
+    {
+        foreach ($invoice->items as $item) {
+            $this->createMovement([
+                'product_variant_id' => $item->product_variant_id,
+                'movement_type' => StockMovementType::SALE,
+                'direction' => StockMovementDirection::OUT,
+                'quantity' => $item->quantity,
+                'reference_type' => SalesInvoice::class,
+                'reference_id' => $invoice->id,
+                'reference_number' => $invoice->invoice_number,
+                'movement_date' => $invoice->invoice_date,
+                'notes' => 'Sales Invoice',
+                'user_id' => auth()->id(),
+            ]);
+        }
+    }
+
+    public function createSalesReversals(SalesInvoice $invoice): void
+    {
+        foreach ($invoice->items as $item) {
+            $this->createMovement([
+                'product_variant_id' => $item->product_variant_id,
+                'movement_type' => StockMovementType::SALE_REVERSAL,
+                'direction' => StockMovementDirection::IN,
+                'quantity' => $item->quantity,
+                'reference_type' => SalesInvoice::class,
+                'reference_id' => $invoice->id,
+                'reference_number' => $invoice->invoice_number,
+                'movement_date' => now()->toDateString(),
+                'notes' => 'Sales Invoice Cancellation',
+                'user_id' => auth()->id(),
+            ]);
+        }
+    }
+
+    private function createMovement(array $data): StockMovement
+    {
+        $movement = StockMovement::create($data);
+        $this->syncLegacyQuantity($movement->productVariant);
+
+        return $movement;
+    }
+
+    private function syncLegacyQuantity(ProductVariant $variant): void
+    {
+        $variant->update(['quantity' => $this->getCurrentStock($variant)]);
+    }
+}

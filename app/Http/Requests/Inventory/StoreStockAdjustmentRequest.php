@@ -1,0 +1,26 @@
+<?php
+
+namespace App\Http\Requests\Inventory;
+
+use App\Enums\StockMovementDirection;
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+
+class StoreStockAdjustmentRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    public function rules(): array
+    {
+        return [
+            'product_variant_id' => ['required', Rule::exists('product_variants', 'id')],
+            'direction' => ['required', Rule::enum(StockMovementDirection::class)],
+            'quantity' => ['required', 'integer', 'min:1'],
+            'movement_date' => ['required', 'date'],
+            'notes' => ['required', 'string'],
+        ];
+    }
+}

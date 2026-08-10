@@ -4,6 +4,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ColorController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\CustomerLedgerController;
+use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductVariantController;
 use App\Http\Controllers\ProfileController;
@@ -34,6 +35,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('payment-receipts.cancel');
 
     Route::get('customer-ledger', [CustomerLedgerController::class, 'index'])->name('customer-ledger.index');
+
+    Route::get('inventory', [InventoryController::class, 'index'])->name('inventory.index');
+    Route::get('inventory/movements', [InventoryController::class, 'movements'])->name('inventory.movements');
+    Route::get('inventory/variants/{productVariant}', [InventoryController::class, 'show'])->name('inventory.show');
+    Route::get('inventory/opening-stock', [InventoryController::class, 'createOpeningStock'])->name('inventory.opening-stock.create');
+    Route::post('inventory/opening-stock', [InventoryController::class, 'storeOpeningStock'])->name('inventory.opening-stock.store');
+    Route::get('inventory/adjustments', [InventoryController::class, 'createAdjustment'])->name('inventory.adjustments.create');
+    Route::post('inventory/adjustments', [InventoryController::class, 'storeAdjustment'])->name('inventory.adjustments.store');
 
     Route::resource('customers', CustomerController::class);
     Route::resource('categories', CategoryController::class);
