@@ -23,13 +23,18 @@ class CreateProductVariantAction
     {
         return DB::transaction(function () use ($data) {
             $data['status'] = VariantStatus::ACTIVE;
+
             unset($data['quantity']);
 
             $product = Product::query()->findOrFail($data['product_id']);
             $color = Color::query()->findOrFail($data['color_id']);
             $size = Size::query()->findOrFail($data['size_id']);
 
-            $sku = $this->skuGenerator->generate($product, $color, $size);
+            $sku = $this->skuGenerator->generate(
+                $product,
+                $color,
+                $size
+            );
 
             if (ProductVariant::query()->where('sku', $sku)->exists()) {
                 throw ValidationException::withMessages([
@@ -39,11 +44,9 @@ class CreateProductVariantAction
 
             $data['sku'] = $sku;
 
-            $variant = ProductVariant::create($data);
+            $data['barcode'] = $this->barcodeGenerator->generate();
 
-            $variant->update([
-                'barcode' => $this->barcodeGenerator->generate($variant->id),
-            ]);
+            $variant = ProductVariant::create($data);
 
             return $variant->fresh();
         });
