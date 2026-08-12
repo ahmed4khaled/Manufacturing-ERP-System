@@ -70,6 +70,18 @@ class PermissionSeeder extends Seeder
             'inventory.movements.view',
             'inventory.opening_stock',
             'inventory.adjustment',
+
+            // Materials
+            'materials.view',
+            'materials.create',
+            'materials.edit',
+            'materials.delete',
+
+            // Material Inventory
+            'material_inventory.view',
+            'material_inventory.movements.view',
+            'material_inventory.opening_stock',
+            'material_inventory.adjustment',
         ];
 
         foreach ($permissions as $permission) {

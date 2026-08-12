@@ -221,10 +221,32 @@
             <a href="{{ route('supplier-payments.index') }}" class="nav-link {{ request()->routeIs('supplier-payments.*') ? 'active' : '' }}"><i class="bi bi-cash-stack"></i>Supplier Payments</a>
             <a href="{{ route('purchase-returns.index') }}" class="nav-link {{ request()->routeIs('purchase-returns.*') ? 'active' : '' }}"><i class="bi bi-arrow-return-left"></i>Purchase Returns</a>
 
+            <div class="nav-section">Materials</div>
+            <a href="{{ route('materials.index') }}" class="nav-link sub-link {{ request()->routeIs('materials.*') ? 'active' : '' }}">
+                <i class="bi bi-box-seam"></i>
+                Materials
+            </a>
+            <a href="{{ route('material-inventory.index') }}" class="nav-link sub-link {{ request()->routeIs('material-inventory.index', 'material-inventory.show') ? 'active' : '' }}">
+                <i class="bi bi-archive"></i>
+                Material Inventory
+            </a>
+            <a href="{{ route('material-inventory.movements') }}" class="nav-link sub-link {{ request()->routeIs('material-inventory.movements') ? 'active' : '' }}">
+                <i class="bi bi-arrow-left-right"></i>
+                Material Movements
+            </a>
+            <a href="{{ route('material-inventory.opening-stock.create') }}" class="nav-link sub-link {{ request()->routeIs('material-inventory.opening-stock.*') ? 'active' : '' }}">
+                <i class="bi bi-box-arrow-in-down"></i>
+                Material Opening Stock
+            </a>
+            <a href="{{ route('material-inventory.adjustments.create') }}" class="nav-link sub-link {{ request()->routeIs('material-inventory.adjustments.*') ? 'active' : '' }}">
+                <i class="bi bi-sliders"></i>
+                Material Adjustments
+            </a>
+
             <div class="nav-section">Inventory</div>
             <a href="{{ route('inventory.index') }}" class="nav-link {{ request()->routeIs('inventory.index', 'inventory.show') ? 'active' : '' }}">
                 <i class="bi bi-boxes"></i>
-                Stock Overview
+                Product Stock
             </a>
             <a href="{{ route('inventory.movements') }}" class="nav-link sub-link {{ request()->routeIs('inventory.movements') ? 'active' : '' }}">
                 <i class="bi bi-arrow-left-right"></i>

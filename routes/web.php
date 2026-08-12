@@ -5,6 +5,8 @@ use App\Http\Controllers\ColorController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\CustomerLedgerController;
 use App\Http\Controllers\InventoryController;
+use App\Http\Controllers\MaterialController;
+use App\Http\Controllers\MaterialInventoryController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductVariantController;
 use App\Http\Controllers\ProfileController;
@@ -71,6 +73,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('inventory/opening-stock', [InventoryController::class, 'storeOpeningStock'])->name('inventory.opening-stock.store');
     Route::get('inventory/adjustments', [InventoryController::class, 'createAdjustment'])->name('inventory.adjustments.create');
     Route::post('inventory/adjustments', [InventoryController::class, 'storeAdjustment'])->name('inventory.adjustments.store');
+
+    Route::get('material-inventory', [MaterialInventoryController::class, 'index'])->name('material-inventory.index');
+    Route::get('material-inventory/movements', [MaterialInventoryController::class, 'movements'])->name('material-inventory.movements');
+    Route::get('material-inventory/materials/{material}', [MaterialInventoryController::class, 'show'])->name('material-inventory.show');
+    Route::get('material-inventory/opening-stock', [MaterialInventoryController::class, 'createOpeningStock'])->name('material-inventory.opening-stock.create');
+    Route::post('material-inventory/opening-stock', [MaterialInventoryController::class, 'storeOpeningStock'])->name('material-inventory.opening-stock.store');
+    Route::get('material-inventory/adjustments', [MaterialInventoryController::class, 'createAdjustment'])->name('material-inventory.adjustments.create');
+    Route::post('material-inventory/adjustments', [MaterialInventoryController::class, 'storeAdjustment'])->name('material-inventory.adjustments.store');
+
+    Route::resource('materials', MaterialController::class);
 
     Route::resource('customers', CustomerController::class);
     Route::resource('categories', CategoryController::class);
