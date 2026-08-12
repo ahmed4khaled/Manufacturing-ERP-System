@@ -1,2 +1,29 @@
-<?php namespace App\Actions\Procurement; use App\Models\PurchaseOrder; use App\Services\CodeGeneratorService; use Illuminate\Support\Facades\DB;
-class CreatePurchaseOrderAction { public function __construct(private CodeGeneratorService $codes) {} public function handle(array $data):PurchaseOrder{return DB::transaction(function()use($data){$items=$data['items'];unset($data['items']);$po=PurchaseOrder::create($data+['status'=>'draft','subtotal'=>0,'total'=>0]);$po->update(['purchase_order_number'=>$this->codes->generate('PO',$po->id)]);$subtotal=0;foreach($items as $item){$line=($item['quantity']*$item['unit_price'])-$item['discount']+$item['tax'];$po->items()->create($item+['line_total'=>$line]);$subtotal+=$line;}$po->update(['subtotal'=>$subtotal,'total'=>$subtotal-$po->discount+$po->tax]);return $po->fresh('items');});} }
+<?php
+
+namespace App\Actions\Procurement;
+
+use App\Models\PurchaseOrder;
+use App\Services\CodeGeneratorService;
+use Illuminate\Support\Facades\DB;
+
+class CreatePurchaseOrderAction
+{
+    public function __construct(private CodeGeneratorService $codes) {}
+    public function handle(array $data): PurchaseOrder
+    {
+        return DB::transaction(function () use ($data) {
+            $items = $data['items'];
+            unset($data['items']);
+            $po = PurchaseOrder::create($data + ['status' => 'draft', 'subtotal' => 0, 'total' => 0]);
+            $po->update(['purchase_order_number' => $this->codes->generate('PO', $po->id)]);
+            $subtotal = 0;
+            foreach ($items as $item) {
+                $line = ($item['quantity'] * $item['unit_price']) - $item['discount'] + $item['tax'];
+                $po->items()->create($item + ['line_total' => $line]);
+                $subtotal += $line;
+            }
+            $po->update(['subtotal' => $subtotal, 'total' => $subtotal - $po->discount + $po->tax]);
+            return $po->fresh('items');
+        });
+    }
+}

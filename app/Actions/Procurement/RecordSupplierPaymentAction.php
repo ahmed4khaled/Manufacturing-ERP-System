@@ -1,2 +1,23 @@
-<?php namespace App\Actions\Procurement; use App\Models\SupplierInvoice; use Illuminate\Support\Facades\DB; use Illuminate\Validation\ValidationException;
-class RecordSupplierPaymentAction {public function handle(array $data){return DB::transaction(function()use($data){$invoice=SupplierInvoice::query()->lockForUpdate()->findOrFail($data['supplier_invoice_id']);if((float)$data['amount']>(float)$invoice->remaining_amount)throw ValidationException::withMessages(['amount'=>'Payment cannot exceed the remaining invoice balance.']);$payment=$invoice->payments()->create($data+['supplier_id'=>$invoice->supplier_id,'created_by'=>auth()->id()]);$paid=(float)$invoice->payments()->sum('amount');$remaining=(float)$invoice->total-$paid;$invoice->update(['paid_amount'=>$paid,'remaining_amount'=>$remaining,'status'=>$remaining<=0?'paid':($paid>0?'partially_paid':'unpaid')]);return $payment;});}}
+<?php
+
+namespace App\Actions\Procurement;
+
+use App\Models\SupplierInvoice;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
+
+class RecordSupplierPaymentAction
+{
+    public function handle(array $data)
+    {
+        return DB::transaction(function () use ($data) {
+            $invoice = SupplierInvoice::query()->lockForUpdate()->findOrFail($data['supplier_invoice_id']);
+            if ((float)$data['amount'] > (float)$invoice->remaining_amount) throw ValidationException::withMessages(['amount' => 'Payment cannot exceed the remaining invoice balance.']);
+            $payment = $invoice->payments()->create($data + ['supplier_id' => $invoice->supplier_id, 'created_by' => auth()->id()]);
+            $paid = (float)$invoice->payments()->sum('amount');
+            $remaining = (float)$invoice->total - $paid;
+            $invoice->update(['paid_amount' => $paid, 'remaining_amount' => $remaining, 'status' => $remaining <= 0 ? 'paid' : ($paid > 0 ? 'partially_paid' : 'unpaid')]);
+            return $payment;
+        });
+    }
+}
