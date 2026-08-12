@@ -211,6 +211,10 @@
             </a>
 
             <div class="nav-section">Inventory</div>
+            <a href="{{ route('suppliers.index') }}" class="nav-link {{ request()->routeIs('suppliers.*') ? 'active' : '' }}">
+                <i class="bi bi-truck"></i>
+                Suppliers
+            </a>
             <a href="{{ route('inventory.index') }}" class="nav-link {{ request()->routeIs('inventory.index', 'inventory.show') ? 'active' : '' }}">
                 <i class="bi bi-boxes"></i>
                 Stock Overview

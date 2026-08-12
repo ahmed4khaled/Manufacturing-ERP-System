@@ -24,6 +24,7 @@ Route::get('/dashboard', function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('suppliers', [ProcurementController::class, 'suppliers'])->name('suppliers.index');
+    Route::get('suppliers/create', [ProcurementController::class, 'createSupplier'])->name('suppliers.create');
     Route::post('suppliers', [ProcurementController::class, 'storeSupplier'])->name('suppliers.store');
     Route::post('purchase-orders', [ProcurementController::class, 'storePurchaseOrder'])->name('purchase-orders.store');
     Route::get('purchase-orders/{purchaseOrder}', [ProcurementController::class, 'showPurchaseOrder'])->name('purchase-orders.show');
