@@ -4,8 +4,10 @@ namespace App\Services;
 
 use App\Enums\MaterialStockMovementType;
 use App\Enums\StockMovementDirection;
+use App\Models\GoodsReceipt;
 use App\Models\Material;
 use App\Models\MaterialStockMovement;
+use App\Models\PurchaseReturn;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
@@ -147,6 +149,60 @@ class MaterialStockService
             'movement_type' => MaterialStockMovementType::PURCHASE_RECEIPT,
             'direction' => StockMovementDirection::IN,
         ]);
+    }
+
+    public function createPurchaseReceiptMovements(GoodsReceipt $receipt): void
+    {
+        if (MaterialStockMovement::query()
+            ->where('reference_type', GoodsReceipt::class)
+            ->where('reference_id', $receipt->id)
+            ->exists()) {
+            throw ValidationException::withMessages([
+                'status' => 'Receipt inventory is already posted.',
+            ]);
+        }
+
+        foreach ($receipt->items as $item) {
+            if (bccomp((string) $item->accepted_quantity, '0', 3) <= 0) {
+                continue;
+            }
+
+            $this->createPurchaseReceiptMovement([
+                'material_id' => $item->material_id,
+                'quantity' => $item->accepted_quantity,
+                'reference_type' => GoodsReceipt::class,
+                'reference_id' => $receipt->id,
+                'reference_number' => $receipt->receipt_number,
+                'movement_date' => $receipt->received_at->toDateString(),
+                'notes' => 'Goods Receipt',
+                'user_id' => $receipt->received_by,
+            ]);
+        }
+    }
+
+    public function createPurchaseReturnMovements(PurchaseReturn $return): void
+    {
+        if (MaterialStockMovement::query()
+            ->where('reference_type', PurchaseReturn::class)
+            ->where('reference_id', $return->id)
+            ->exists()) {
+            throw ValidationException::withMessages([
+                'status' => 'Return inventory is already posted.',
+            ]);
+        }
+
+        foreach ($return->items as $item) {
+            $this->createPurchaseReturnMovement([
+                'material_id' => $item->material_id,
+                'quantity' => $item->quantity,
+                'reference_type' => PurchaseReturn::class,
+                'reference_id' => $return->id,
+                'reference_number' => $return->return_number,
+                'movement_date' => $return->return_date->toDateString(),
+                'notes' => 'Purchase Return',
+                'user_id' => $return->created_by,
+            ]);
+        }
     }
 
     public function createPurchaseReturnMovement(array $data): MaterialStockMovement

@@ -23,7 +23,7 @@ class StorePurchaseReturnRequest extends FormRequest
             'reason' => 'required|string|max:1000',
             'notes' => 'nullable|string|max:1000',
             'items' => 'required|array|min:1',
-            'items.*.product_variant_id' => 'required|exists:product_variants,id',
+            'items.*.material_id' => 'required|exists:materials,id',
             'items.*.quantity' => 'required|numeric|gt:0',
             'items.*.unit_cost' => 'nullable|numeric|min:0',
             'items.*.reason' => 'nullable|string|max:500',

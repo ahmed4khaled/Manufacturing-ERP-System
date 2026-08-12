@@ -14,9 +14,10 @@ use App\Http\Requests\Procurement\StorePurchaseReturnRequest;
 use App\Http\Requests\Procurement\StoreSupplierInvoiceRequest;
 use App\Http\Requests\Procurement\StoreSupplierPaymentRequest;
 use App\Models\GoodsReceipt;
-use App\Models\ProductVariant;
+use App\Models\Material;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseReturn;
+use App\Models\PurchaseReturnItem;
 use App\Models\Supplier;
 use App\Models\SupplierContact;
 use App\Models\SupplierInvoice;
@@ -119,9 +120,9 @@ class ProcurementController extends Controller
     public function createPurchaseOrder(): View
     {
         $suppliers = Supplier::query()->where('status', 'active')->orderBy('name')->get(['id', 'name', 'code']);
-        $variants = ProductVariant::query()->with('product')->orderBy('sku')->get();
+        $materials = Material::query()->where('status', 'active')->orderBy('name')->get();
 
-        return view('procurement.purchase-orders.create', compact('suppliers', 'variants'));
+        return view('procurement.purchase-orders.create', compact('suppliers', 'materials'));
     }
 
     public function goodsReceipts(): View
@@ -133,7 +134,7 @@ class ProcurementController extends Controller
 
     public function createGoodsReceipt(): View
     {
-        $orders = PurchaseOrder::query()->with(['supplier', 'items.productVariant.product'])->whereIn('status', ['approved', 'partially_received'])->orderByDesc('order_date')->get();
+        $orders = PurchaseOrder::query()->with(['supplier', 'items.material'])->whereIn('status', ['approved', 'partially_received'])->orderByDesc('order_date')->get();
 
         return view('procurement.goods-receipts.create', compact('orders'));
     }
@@ -171,7 +172,29 @@ class ProcurementController extends Controller
 
     public function createReturn(): View
     {
-        $receipts = GoodsReceipt::query()->with(['supplier', 'items.productVariant.product'])->where('status', 'confirmed')->latest('received_at')->get();
+        $receipts = GoodsReceipt::query()
+            ->with(['supplier', 'items.material'])
+            ->where('status', 'confirmed')
+            ->latest('received_at')
+            ->get();
+
+        $returnedByReceiptMaterial = PurchaseReturnItem::query()
+            ->join('purchase_returns', 'purchase_returns.id', '=', 'purchase_return_items.purchase_return_id')
+            ->whereIn('purchase_returns.goods_receipt_id', $receipts->pluck('id'))
+            ->whereIn('purchase_returns.status', ['draft', 'confirmed'])
+            ->groupBy('purchase_returns.goods_receipt_id', 'purchase_return_items.material_id')
+            ->selectRaw('purchase_returns.goods_receipt_id, purchase_return_items.material_id, SUM(purchase_return_items.quantity) as returned_quantity')
+            ->get()
+            ->groupBy('goods_receipt_id')
+            ->map(fn ($rows) => $rows->pluck('returned_quantity', 'material_id'));
+
+        foreach ($receipts as $receipt) {
+            $returnedForReceipt = $returnedByReceiptMaterial->get($receipt->id, collect());
+            foreach ($receipt->items as $item) {
+                $alreadyReturned = (string) $returnedForReceipt->get($item->material_id, '0');
+                $item->available_to_return = bcsub((string) $item->accepted_quantity, $alreadyReturned, 3);
+            }
+        }
 
         return view('procurement.returns.create', compact('receipts'));
     }
@@ -207,7 +230,7 @@ class ProcurementController extends Controller
 
     public function showPurchaseOrder(PurchaseOrder $purchaseOrder): View
     {
-        $purchaseOrder->load('supplier', 'items.productVariant.product', 'receipts.items');
+        $purchaseOrder->load('supplier', 'items.material', 'receipts.items');
 
         return view('procurement.purchase-orders.show', compact('purchaseOrder'));
     }
@@ -232,7 +255,7 @@ class ProcurementController extends Controller
 
     public function showGoodsReceipt(GoodsReceipt $goodsReceipt): View
     {
-        $goodsReceipt->load(['supplier', 'purchaseOrder', 'items.productVariant.product']);
+        $goodsReceipt->load(['supplier', 'purchaseOrder', 'items.material']);
 
         return view('procurement.goods-receipts.show', compact('goodsReceipt'));
     }
@@ -248,7 +271,7 @@ class ProcurementController extends Controller
 
     public function showReturn(PurchaseReturn $purchaseReturn): View
     {
-        $purchaseReturn->load(['supplier', 'goodsReceipt', 'items.productVariant.product']);
+        $purchaseReturn->load(['supplier', 'goodsReceipt', 'items.material']);
 
         return view('procurement.returns.show', compact('purchaseReturn'));
     }

@@ -1,7 +1,7 @@
 @extends('layouts.dashboard')
 @section('title','Create Purchase Return')
 @section('content')
-<div class="page-header"><h1 class="h3 mb-1">Create Purchase Return</h1><p class="text-muted mb-0">Select a confirmed goods receipt and return quantities that are still available for return.</p></div>
+<div class="page-header"><h1 class="h3 mb-1">Create Purchase Return</h1><p class="text-muted mb-0">Select a confirmed goods receipt and return material quantities that are still available for return.</p></div>
 <form method="POST" action="{{ route('purchase-returns.store') }}">@csrf
     <div class="card"><div class="card-body">
         <div class="row g-3">
@@ -41,7 +41,7 @@
             <table class="table">
                 <thead>
                     <tr>
-                        <th>Variant</th>
+                        <th>Material</th>
                         <th>Accepted</th>
                         <th>Available to Return</th>
                         <th>Return Qty</th>
@@ -60,9 +60,11 @@
 <script>
 const receiptData = @json($receipts->mapWithKeys(fn($receipt) => [$receipt->id => $receipt->items->map(fn($item) => [
     'id' => $item->id,
-    'product_variant_id' => $item->product_variant_id,
-    'sku' => $item->productVariant->sku,
+    'material_id' => $item->material_id,
+    'label' => $item->material->code . ' — ' . $item->material->name,
+    'unit' => $item->material->unit->label(),
     'accepted' => (string) $item->accepted_quantity,
+    'available' => (string) ($item->available_to_return ?? $item->accepted_quantity),
     'unit_cost' => (string) $item->unit_cost,
 ])]]));
 const supplierSelect = document.getElementById('supplier');
@@ -72,12 +74,13 @@ function renderReceiptItems(receiptId) {
     const rows = receiptData[receiptId] || [];
     let html = '';
     rows.forEach((item, index) => {
+        if (parseFloat(item.available) <= 0) return;
         html += `
             <tr>
-                <td>${item.sku}<input type="hidden" name="items[${index}][product_variant_id]" value="${item.product_variant_id}"></td>
+                <td>${item.label} <small class="text-muted">(${item.unit})</small><input type="hidden" name="items[${index}][material_id]" value="${item.material_id}"></td>
                 <td>${item.accepted}</td>
-                <td>${item.accepted}</td>
-                <td><input type="number" name="items[${index}][quantity]" step="0.001" min="0.001" max="${item.accepted}" class="form-control" required></td>
+                <td>${item.available}</td>
+                <td><input type="number" name="items[${index}][quantity]" step="0.001" min="0.001" max="${item.available}" class="form-control" required></td>
                 <td><input type="number" name="items[${index}][unit_cost]" step="0.01" min="0" value="${item.unit_cost}" class="form-control" required></td>
                 <td><input type="text" name="items[${index}][reason]" class="form-control"></td>
             </tr>

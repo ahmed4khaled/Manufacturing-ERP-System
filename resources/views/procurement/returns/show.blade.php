@@ -8,7 +8,7 @@
     </div>
     @if($purchaseReturn->status === 'draft')
         <form method="POST" action="{{ route('purchase-returns.confirm', $purchaseReturn) }}">@csrf
-            <button class="btn btn-success">Confirm & Post Stock</button>
+            <button class="btn btn-success">Confirm & Post Material Stock</button>
         </form>
     @endif
 </div>
@@ -20,7 +20,8 @@
             <table class="table mb-0">
                 <thead>
                     <tr>
-                        <th>Variant</th>
+                        <th>Material</th>
+                        <th>Unit</th>
                         <th>Qty</th>
                         <th>Unit Cost</th>
                         <th>Reason</th>
@@ -29,7 +30,8 @@
                 <tbody>
                     @foreach($purchaseReturn->items as $item)
                         <tr>
-                            <td>{{ $item->productVariant->sku }}</td>
+                            <td>{{ $item->material->code }} — {{ $item->material->name }}</td>
+                            <td>{{ $item->material->unit->label() }}</td>
                             <td>{{ $item->quantity }}</td>
                             <td>{{ number_format($item->unit_cost, 2) }}</td>
                             <td>{{ $item->reason ?? '—' }}</td>

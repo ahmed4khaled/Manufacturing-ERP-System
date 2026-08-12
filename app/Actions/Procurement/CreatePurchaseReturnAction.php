@@ -12,15 +12,13 @@ use Illuminate\Validation\ValidationException;
 
 class CreatePurchaseReturnAction
 {
-    public function __construct(private readonly CodeGeneratorService $codeGenerator)
-    {
-    }
+    public function __construct(private readonly CodeGeneratorService $codeGenerator) {}
 
     public function handle(array $data): PurchaseReturn
     {
         return DB::transaction(function () use ($data) {
             $receipt = GoodsReceipt::query()
-                ->with(['items.productVariant', 'purchaseOrder.items'])
+                ->with(['items.material', 'purchaseOrder.items'])
                 ->lockForUpdate()
                 ->findOrFail($data['goods_receipt_id']);
 
@@ -54,20 +52,20 @@ class CreatePurchaseReturnAction
                 'created_by' => auth()->id(),
             ]);
 
-            $existingReturnedByVariant = PurchaseReturnItem::query()
+            $existingReturnedByMaterial = PurchaseReturnItem::query()
                 ->join('purchase_returns', 'purchase_returns.id', '=', 'purchase_return_items.purchase_return_id')
                 ->where('purchase_returns.goods_receipt_id', $receipt->id)
-                ->groupBy('purchase_return_items.product_variant_id')
-                ->selectRaw('purchase_return_items.product_variant_id, SUM(purchase_return_items.quantity) as returned_quantity')
-                ->lockForUpdate()
-                ->pluck('returned_quantity', 'product_variant_id')
+                ->whereIn('purchase_returns.status', ['draft', 'confirmed'])
+                ->groupBy('purchase_return_items.material_id')
+                ->selectRaw('purchase_return_items.material_id, SUM(purchase_return_items.quantity) as returned_quantity')
+                ->pluck('returned_quantity', 'material_id')
                 ->all();
 
             foreach ($data['items'] as $line) {
-                $variantId = (int) $line['product_variant_id'];
-                $quantity = (string) ($line['quantity'] ?? 0);
+                $materialId = (int) $line['material_id'];
+                $quantity = (string) ($line['quantity'] ?? '0');
 
-                $receiptItem = $receipt->items->first(fn (GoodsReceiptItem $item) => (int) $item->product_variant_id === $variantId);
+                $receiptItem = $receipt->items->first(fn (GoodsReceiptItem $item) => (int) $item->material_id === $materialId);
                 if (! $receiptItem) {
                     throw ValidationException::withMessages([
                         'items' => 'One or more return items do not belong to the selected goods receipt.',
@@ -75,25 +73,25 @@ class CreatePurchaseReturnAction
                 }
 
                 $availableAccepted = (string) $receiptItem->accepted_quantity;
-                $alreadyReturned = (string) ($existingReturnedByVariant[$variantId] ?? '0');
+                $alreadyReturned = (string) ($existingReturnedByMaterial[$materialId] ?? '0');
                 $remaining = bcsub($availableAccepted, $alreadyReturned, 3);
 
-                if (bccomp($remaining, (string) $quantity, 3) < 0) {
+                if (bccomp($remaining, $quantity, 3) < 0) {
                     throw ValidationException::withMessages([
                         'items' => 'Return quantity exceeds the accepted quantity available from this receipt.',
                     ]);
                 }
 
                 $return->items()->create([
-                    'product_variant_id' => $variantId,
+                    'material_id' => $materialId,
                     'quantity' => $quantity,
                     'unit_cost' => $line['unit_cost'] ?? $receiptItem->unit_cost,
                     'reason' => $line['reason'] ?? null,
                 ]);
-                $existingReturnedByVariant[$variantId] = bcadd($existingReturnedByVariant[$variantId] ?? '0', $quantity, 3);
+                $existingReturnedByMaterial[$materialId] = bcadd($existingReturnedByMaterial[$materialId] ?? '0', $quantity, 3);
             }
 
-            return $return->fresh('items.productVariant');
+            return $return->fresh('items.material');
         });
     }
 }

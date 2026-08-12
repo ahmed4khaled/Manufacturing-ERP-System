@@ -53,7 +53,7 @@ class CreateGoodsReceiptAction
 
                 $receipt->items()->create([
                     'purchase_order_item_id' => $poItem->id,
-                    'product_variant_id' => $poItem->product_variant_id,
+                    'material_id' => $poItem->material_id,
                     'ordered_quantity' => $poItem->quantity,
                     'received_quantity' => $received,
                     'accepted_quantity' => $accepted,
