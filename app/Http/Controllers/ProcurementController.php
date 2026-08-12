@@ -12,6 +12,7 @@ use App\Models\PurchaseReturn;
 use App\Models\Supplier;
 use App\Models\SupplierInvoice;
 use App\Models\SupplierPayment;
+use App\Models\ProductVariant;
 use App\Services\CodeGeneratorService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -47,10 +48,53 @@ class ProcurementController extends Controller
         return view('suppliers.create');
     }
 
+    public function showSupplier(Supplier $supplier): View
+    {
+        $supplier->load(['contacts', 'purchaseOrders' => fn ($q) => $q->latest('order_date')->limit(10), 'goodsReceipts' => fn ($q) => $q->latest('received_at')->limit(10), 'invoices' => fn ($q) => $q->latest('invoice_date')->limit(10), 'payments' => fn ($q) => $q->latest('payment_date')->limit(10), 'returns' => fn ($q) => $q->latest('return_date')->limit(10)]);
+        $summary = ['purchases' => $supplier->purchaseOrders->sum('total'), 'invoiced' => $supplier->invoices->sum('total'), 'paid' => $supplier->payments->sum('amount')];
+        $summary['outstanding'] = $summary['invoiced'] - $summary['paid'];
+        return view('suppliers.show', compact('supplier', 'summary'));
+    }
+
+    public function editSupplier(Supplier $supplier): View { return view('suppliers.edit', compact('supplier')); }
+
+    public function updateSupplier(Request $request, Supplier $supplier): RedirectResponse
+    {
+        $data = $request->validate(['name'=>'required|string|max:255','code'=>['required','string','max:255', Rule::unique('suppliers','code')->ignore($supplier)],'phone'=>'nullable|string','email'=>'nullable|email','address'=>'nullable|string','tax_number'=>['nullable','string',Rule::unique('suppliers','tax_number')->ignore($supplier)],'notes'=>'nullable|string','status'=>['required',Rule::in(['active','inactive'])]]);
+        $supplier->update($data);
+        return redirect()->route('suppliers.show',$supplier)->with('success','Supplier updated successfully.');
+    }
+
+    public function destroySupplier(Supplier $supplier): RedirectResponse
+    {
+        if ($supplier->purchaseOrders()->exists() || $supplier->invoices()->exists()) return back()->with('error','A supplier with procurement documents cannot be deleted. Set it inactive instead.');
+        $supplier->delete(); return redirect()->route('suppliers.index')->with('success','Supplier deleted successfully.');
+    }
+
+    public function storeSupplierContact(Request $request, Supplier $supplier): RedirectResponse
+    {
+        $data=$request->validate(['name'=>'required|string|max:255','job_title'=>'nullable|string|max:255','phone'=>'nullable|string|max:255','email'=>'nullable|email','notes'=>'nullable|string','is_primary'=>'nullable|boolean']);
+        if ($request->boolean('is_primary')) $supplier->contacts()->update(['is_primary'=>false]);
+        $supplier->contacts()->create($data+['is_primary'=>$request->boolean('is_primary')]);
+        return back()->with('success','Supplier contact added.');
+    }
+
+    public function destroySupplierContact(Supplier $supplier, \App\Models\SupplierContact $contact): RedirectResponse
+    {
+        abort_unless($contact->supplier_id === $supplier->id, 404); $contact->delete(); return back()->with('success','Supplier contact removed.');
+    }
+
     public function purchaseOrders(): View
     {
         $orders = PurchaseOrder::query()->with('supplier')->latest('order_date')->paginate(15);
         return view('procurement.purchase-orders.index', compact('orders'));
+    }
+
+    public function createPurchaseOrder(): View
+    {
+        $suppliers = Supplier::query()->where('status', 'active')->orderBy('name')->get(['id','name','code']);
+        $variants = ProductVariant::query()->with('product')->orderBy('sku')->get();
+        return view('procurement.purchase-orders.create', compact('suppliers','variants'));
     }
 
     public function goodsReceipts(): View
@@ -59,10 +103,21 @@ class ProcurementController extends Controller
         return view('procurement.goods-receipts.index', compact('receipts'));
     }
 
+    public function createGoodsReceipt(): View
+    {
+        $orders = PurchaseOrder::query()->with(['supplier','items.productVariant.product'])->whereIn('status',['approved','partially_received'])->orderByDesc('order_date')->get();
+        return view('procurement.goods-receipts.create', compact('orders'));
+    }
+
     public function invoices(): View
     {
         $invoices = SupplierInvoice::query()->with('supplier')->latest('invoice_date')->paginate(15);
         return view('procurement.invoices.index', compact('invoices'));
+    }
+
+    public function createInvoice(): View
+    {
+        return view('procurement.invoices.create', ['suppliers'=>Supplier::where('status','active')->orderBy('name')->get(), 'orders'=>PurchaseOrder::with('supplier')->latest('order_date')->get(), 'receipts'=>GoodsReceipt::with('supplier')->where('status','confirmed')->latest('received_at')->get()]);
     }
 
     public function payments(): View
@@ -71,10 +126,20 @@ class ProcurementController extends Controller
         return view('procurement.payments.index', compact('payments'));
     }
 
+    public function createPayment(): View
+    {
+        return view('procurement.payments.create', ['invoices'=>SupplierInvoice::with('supplier')->where('remaining_amount','>',0)->latest('invoice_date')->get()]);
+    }
+
     public function returns(): View
     {
         $returns = PurchaseReturn::query()->with('supplier')->latest('return_date')->paginate(15);
         return view('procurement.returns.index', compact('returns'));
+    }
+
+    public function createReturn(): View
+    {
+        return view('procurement.returns.create', ['suppliers'=>Supplier::where('status','active')->orderBy('name')->get(), 'variants'=>ProductVariant::with('product')->orderBy('sku')->get(), 'orders'=>PurchaseOrder::with('supplier')->latest('order_date')->get(), 'receipts'=>GoodsReceipt::with('supplier')->where('status','confirmed')->latest('received_at')->get()]);
     }
 
     public function storeSupplier(Request $request): RedirectResponse
@@ -127,11 +192,10 @@ class ProcurementController extends Controller
             ->with('success', 'Purchase order created.');
     }
 
-    public function showPurchaseOrder(PurchaseOrder $purchaseOrder)
+    public function showPurchaseOrder(PurchaseOrder $purchaseOrder): View
     {
-        return response()->json(
-            $purchaseOrder->load('supplier', 'items.productVariant', 'receipts.items')
-        );
+        $purchaseOrder->load('supplier', 'items.productVariant.product', 'receipts.items');
+        return view('procurement.purchase-orders.show', compact('purchaseOrder'));
     }
 
     public function confirmReceipt(

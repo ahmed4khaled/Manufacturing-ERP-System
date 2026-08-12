@@ -53,12 +53,13 @@
                             <th>Email</th>
                             <th>Status</th>
                             <th>Tax Number</th>
+                            <th class="text-end">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse ($suppliers as $supplier)
                             <tr>
-                                <td class="fw-semibold">{{ $supplier->code }}</td>
+                                <td><a class="fw-semibold text-decoration-none" href="{{ route('suppliers.show', $supplier) }}">{{ $supplier->code }}</a></td>
                                 <td>{{ $supplier->name }}</td>
                                 <td>{{ $supplier->phone ?: '—' }}</td>
                                 <td>{{ $supplier->email ?: '—' }}</td>
@@ -68,10 +69,11 @@
                                     </span>
                                 </td>
                                 <td>{{ $supplier->tax_number ?: '—' }}</td>
+                                <td class="text-end"><div class="btn-group btn-group-sm"><a href="{{ route('suppliers.show', $supplier) }}" class="btn btn-outline-secondary"><i class="bi bi-eye"></i></a><a href="{{ route('suppliers.edit', $supplier) }}" class="btn btn-outline-primary"><i class="bi bi-pencil"></i></a></div></td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="text-center text-muted py-5">
+                                <td colspan="7" class="text-center text-muted py-5">
                                     <i class="bi bi-truck display-6 d-block mb-2"></i>
                                     No suppliers found.
                                     @if (request('search'))
