@@ -210,11 +210,18 @@
                 Variants
             </a>
 
-            <div class="nav-section">Inventory</div>
+            <div class="nav-section">Procurement</div>
             <a href="{{ route('suppliers.index') }}" class="nav-link {{ request()->routeIs('suppliers.*') ? 'active' : '' }}">
                 <i class="bi bi-truck"></i>
                 Suppliers
             </a>
+            <a href="{{ route('purchase-orders.index') }}" class="nav-link {{ request()->routeIs('purchase-orders.*') ? 'active' : '' }}"><i class="bi bi-file-earmark-text"></i>Purchase Orders</a>
+            <a href="{{ route('goods-receipts.index') }}" class="nav-link {{ request()->routeIs('goods-receipts.*') ? 'active' : '' }}"><i class="bi bi-box-arrow-in-down"></i>Goods Receipts</a>
+            <a href="{{ route('supplier-invoices.index') }}" class="nav-link {{ request()->routeIs('supplier-invoices.*') ? 'active' : '' }}"><i class="bi bi-receipt"></i>Supplier Invoices</a>
+            <a href="{{ route('supplier-payments.index') }}" class="nav-link {{ request()->routeIs('supplier-payments.*') ? 'active' : '' }}"><i class="bi bi-cash-stack"></i>Supplier Payments</a>
+            <a href="{{ route('purchase-returns.index') }}" class="nav-link {{ request()->routeIs('purchase-returns.*') ? 'active' : '' }}"><i class="bi bi-arrow-return-left"></i>Purchase Returns</a>
+
+            <div class="nav-section">Inventory</div>
             <a href="{{ route('inventory.index') }}" class="nav-link {{ request()->routeIs('inventory.index', 'inventory.show') ? 'active' : '' }}">
                 <i class="bi bi-boxes"></i>
                 Stock Overview

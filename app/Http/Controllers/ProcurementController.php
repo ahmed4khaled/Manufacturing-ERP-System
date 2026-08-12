@@ -11,6 +11,7 @@ use App\Models\PurchaseOrder;
 use App\Models\PurchaseReturn;
 use App\Models\Supplier;
 use App\Models\SupplierInvoice;
+use App\Models\SupplierPayment;
 use App\Services\CodeGeneratorService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -44,6 +45,36 @@ class ProcurementController extends Controller
     public function createSupplier(): View
     {
         return view('suppliers.create');
+    }
+
+    public function purchaseOrders(): View
+    {
+        $orders = PurchaseOrder::query()->with('supplier')->latest('order_date')->paginate(15);
+        return view('procurement.purchase-orders.index', compact('orders'));
+    }
+
+    public function goodsReceipts(): View
+    {
+        $receipts = GoodsReceipt::query()->with(['supplier', 'purchaseOrder'])->latest('received_at')->paginate(15);
+        return view('procurement.goods-receipts.index', compact('receipts'));
+    }
+
+    public function invoices(): View
+    {
+        $invoices = SupplierInvoice::query()->with('supplier')->latest('invoice_date')->paginate(15);
+        return view('procurement.invoices.index', compact('invoices'));
+    }
+
+    public function payments(): View
+    {
+        $payments = SupplierPayment::query()->with(['supplier', 'invoice'])->latest('payment_date')->paginate(15);
+        return view('procurement.payments.index', compact('payments'));
+    }
+
+    public function returns(): View
+    {
+        $returns = PurchaseReturn::query()->with('supplier')->latest('return_date')->paginate(15);
+        return view('procurement.returns.index', compact('returns'));
     }
 
     public function storeSupplier(Request $request): RedirectResponse

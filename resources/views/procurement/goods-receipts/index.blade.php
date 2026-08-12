@@ -1,0 +1,6 @@
+@extends('layouts.dashboard')
+@section('title','Goods Receipts')
+@section('content')
+<div class="page-header"><h1 class="h3 mb-1">Goods Receipts</h1><p class="text-muted mb-0">Physical stock received from suppliers</p></div>
+<div class="card"><div class="card-body"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead><tr><th>Receipt</th><th>Purchase Order</th><th>Supplier</th><th>Received At</th><th>Status</th><th></th></tr></thead><tbody>@forelse($receipts as $receipt)<tr><td class="fw-semibold">{{ $receipt->receipt_number }}</td><td>{{ $receipt->purchaseOrder->purchase_order_number }}</td><td>{{ $receipt->supplier->name }}</td><td>{{ $receipt->received_at->format('Y-m-d H:i') }}</td><td><span class="badge bg-{{ $receipt->status === 'confirmed' ? 'success' : 'secondary' }}">{{ ucfirst($receipt->status) }}</span></td><td class="text-end">@if($receipt->status === 'draft')<form method="POST" action="{{ route('goods-receipts.confirm',$receipt) }}">@csrf<button class="btn btn-sm btn-success" onclick="return confirm('Confirm receipt and add accepted quantities to stock?')">Confirm</button></form>@endif</td></tr>@empty<tr><td colspan="6" class="text-center text-muted py-5">No goods receipts yet.</td></tr>@endforelse</tbody></table></div>{{ $receipts->links('pagination::bootstrap-5') }}</div></div>
+@endsection

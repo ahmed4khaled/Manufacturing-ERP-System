@@ -1,0 +1,6 @@
+@extends('layouts.dashboard')
+@section('title','Purchase Returns')
+@section('content')
+<div class="page-header"><h1 class="h3 mb-1">Purchase Returns</h1><p class="text-muted mb-0">Goods returned to suppliers</p></div>
+<div class="card"><div class="card-body"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead><tr><th>Return</th><th>Supplier</th><th>Date</th><th>Reason</th><th>Status</th><th></th></tr></thead><tbody>@forelse($returns as $return)<tr><td class="fw-semibold">{{ $return->return_number }}</td><td>{{ $return->supplier->name }}</td><td>{{ $return->return_date->format('Y-m-d') }}</td><td>{{ $return->reason }}</td><td><span class="badge bg-{{ $return->status === 'confirmed' ? 'success' : 'secondary' }}">{{ ucfirst($return->status) }}</span></td><td class="text-end">@if($return->status === 'draft')<form method="POST" action="{{ route('purchase-returns.confirm',$return) }}">@csrf<button class="btn btn-sm btn-success" onclick="return confirm('Confirm return and deduct stock?')">Confirm</button></form>@endif</td></tr>@empty<tr><td colspan="6" class="text-center text-muted py-5">No purchase returns yet.</td></tr>@endforelse</tbody></table></div>{{ $returns->links('pagination::bootstrap-5') }}</div></div>
+@endsection
