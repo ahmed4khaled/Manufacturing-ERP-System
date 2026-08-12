@@ -12,11 +12,26 @@ class RecordSupplierPaymentAction
     {
         return DB::transaction(function () use ($data) {
             $invoice = SupplierInvoice::query()->lockForUpdate()->findOrFail($data['supplier_invoice_id']);
-            if ((float)$data['amount'] > (float)$invoice->remaining_amount) throw ValidationException::withMessages(['amount' => 'Payment cannot exceed the remaining invoice balance.']);
+            $amount = (string) $data['amount'];
+
+            if (bccomp($amount, '0', 2) <= 0) {
+                throw ValidationException::withMessages(['amount' => 'Payment amount must be greater than zero.']);
+            }
+
+            $currentPaid = (string) $invoice->payments()->sum('amount');
+            $newPaid = bcadd($currentPaid === '' ? '0' : $currentPaid, $amount, 2);
+
+            if (bccomp($newPaid, (string) $invoice->total, 2) > 0) {
+                throw ValidationException::withMessages(['amount' => 'Payment cannot exceed the remaining invoice balance.']);
+            }
+
             $payment = $invoice->payments()->create($data + ['supplier_id' => $invoice->supplier_id, 'created_by' => auth()->id()]);
-            $paid = (float)$invoice->payments()->sum('amount');
-            $remaining = (float)$invoice->total - $paid;
-            $invoice->update(['paid_amount' => $paid, 'remaining_amount' => $remaining, 'status' => $remaining <= 0 ? 'paid' : ($paid > 0 ? 'partially_paid' : 'unpaid')]);
+
+            $remaining = bcsub((string) $invoice->total, $newPaid, 2);
+            $status = bccomp($remaining, '0', 2) <= 0 ? 'paid' : (bccomp($newPaid, '0', 2) > 0 ? 'partially_paid' : 'unpaid');
+
+            $invoice->update(['paid_amount' => $newPaid, 'remaining_amount' => $remaining, 'status' => $status]);
+
             return $payment;
         });
     }
