@@ -44,7 +44,9 @@ class CreateProductVariantAction
 
             $data['sku'] = $sku;
 
-            $data['barcode'] = $this->barcodeGenerator->generate();
+            do {
+                $data['barcode'] = $this->barcodeGenerator->generate();
+            } while (ProductVariant::query()->where('barcode', $data['barcode'])->exists());
 
             $variant = ProductVariant::create($data);
 

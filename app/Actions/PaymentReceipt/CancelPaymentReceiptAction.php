@@ -1,36 +1,4 @@
 <?php
-
 namespace App\Actions\PaymentReceipt;
-
-use App\Enums\PaymentReceiptStatus;
-use App\Models\PaymentReceipt;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
-
-class CancelPaymentReceiptAction
-{
-    public function handle(PaymentReceipt $receipt): PaymentReceipt
-    {
-        return DB::transaction(function () use ($receipt) {
-            $receipt->refresh();
-
-            if ($receipt->status === PaymentReceiptStatus::CANCELLED) {
-                throw ValidationException::withMessages([
-                    'status' => 'This receipt is already cancelled.',
-                ]);
-            }
-
-            if ($receipt->status !== PaymentReceiptStatus::CONFIRMED) {
-                throw ValidationException::withMessages([
-                    'status' => 'Only confirmed receipts can be cancelled.',
-                ]);
-            }
-
-            $receipt->update(['status' => PaymentReceiptStatus::CANCELLED]);
-
-            // TODO: Future — create a reversal ledger entry (debit) to offset the original payment receipt credit.
-
-            return $receipt->fresh(['customer', 'creator']);
-        });
-    }
-}
+use App\Actions\CustomerLedger\CreateCustomerLedgerEntryAction; use App\Enums\{LedgerReferenceType,PaymentReceiptStatus}; use App\Models\{CustomerLedgerEntry,PaymentReceipt}; use Illuminate\Support\Facades\DB; use Illuminate\Validation\ValidationException;
+class CancelPaymentReceiptAction { public function __construct(private readonly CreateCustomerLedgerEntryAction $ledger) {} public function handle(PaymentReceipt $receipt):PaymentReceipt{return DB::transaction(function()use($receipt){$receipt=PaymentReceipt::query()->lockForUpdate()->findOrFail($receipt->id);if($receipt->status!==PaymentReceiptStatus::CONFIRMED)throw ValidationException::withMessages(['status'=>'Only confirmed receipts can be cancelled.']);if(CustomerLedgerEntry::where('reference_type',LedgerReferenceType::PAYMENT_RECEIPT_REVERSAL)->where('reference_id',$receipt->id)->exists())throw ValidationException::withMessages(['status'=>'Receipt reversal already exists.']);$receipt->update(['status'=>PaymentReceiptStatus::CANCELLED]);$this->ledger->handle(['customer_id'=>$receipt->customer_id,'reference_type'=>LedgerReferenceType::PAYMENT_RECEIPT_REVERSAL,'reference_id'=>$receipt->id,'reference_number'=>$receipt->receipt_number,'transaction_date'=>now()->toDateString(),'description'=>'Payment Receipt Cancellation','debit'=>$receipt->amount,'credit'=>0,'created_by'=>auth()->id()]);return $receipt->fresh(['customer','creator']);});}}

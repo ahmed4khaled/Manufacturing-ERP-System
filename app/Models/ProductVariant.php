@@ -21,12 +21,13 @@ class ProductVariant extends Model
         'sku',
         'barcode',
         'default_price',
+        'quantity',
         'status',
     ];
 
     protected $casts = [
         'default_price' => 'decimal:2',
-        'quantity' => 'integer',
+        'quantity' => 'decimal:3',
         'status' => VariantStatus::class,
     ];
 

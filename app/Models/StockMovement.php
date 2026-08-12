@@ -30,7 +30,7 @@ class StockMovement extends Model
     protected $casts = [
         'movement_type' => StockMovementType::class,
         'direction' => StockMovementDirection::class,
-        'quantity' => 'integer',
+        'quantity' => 'decimal:3',
         'movement_date' => 'date',
     ];
 

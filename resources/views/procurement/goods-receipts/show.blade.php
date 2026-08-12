@@ -1,0 +1,5 @@
+@extends('layouts.dashboard')
+@section('title',$goodsReceipt->receipt_number)
+@section('content')
+<div class="page-header d-flex justify-content-between"><div><h1 class="h3 mb-1">{{ $goodsReceipt->receipt_number }}</h1><p class="text-muted mb-0">{{ $goodsReceipt->supplier->name }} · {{ $goodsReceipt->purchaseOrder->purchase_order_number }}</p></div>@if($goodsReceipt->status==='draft')<form method="POST" action="{{ route('goods-receipts.confirm',$goodsReceipt) }}">@csrf<button class="btn btn-success">Confirm & Post Stock</button></form>@endif</div><div class="card"><div class="table-responsive"><table class="table mb-0"><thead><tr><th>Variant</th><th>Ordered</th><th>Received</th><th>Accepted</th><th>Rejected</th><th>Cost</th></tr></thead><tbody>@foreach($goodsReceipt->items as $item)<tr><td>{{ $item->productVariant->sku }}</td><td>{{ $item->ordered_quantity }}</td><td>{{ $item->received_quantity }}</td><td>{{ $item->accepted_quantity }}</td><td>{{ $item->rejected_quantity }}</td><td>{{ number_format($item->unit_cost,2) }}</td></tr>@endforeach</tbody></table></div></div>
+@endsection

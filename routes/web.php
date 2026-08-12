@@ -37,8 +37,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('purchase-orders/create', [ProcurementController::class, 'createPurchaseOrder'])->name('purchase-orders.create');
     Route::get('purchase-orders/{purchaseOrder}', [ProcurementController::class, 'showPurchaseOrder'])->name('purchase-orders.show');
     Route::post('goods-receipts/{goodsReceipt}/confirm', [ProcurementController::class, 'confirmReceipt'])->name('goods-receipts.confirm');
+    Route::post('goods-receipts', [ProcurementController::class, 'storeGoodsReceipt'])->name('goods-receipts.store');
     Route::get('goods-receipts', [ProcurementController::class, 'goodsReceipts'])->name('goods-receipts.index');
     Route::get('goods-receipts/create', [ProcurementController::class, 'createGoodsReceipt'])->name('goods-receipts.create');
+    Route::get('goods-receipts/{goodsReceipt}', [ProcurementController::class, 'showGoodsReceipt'])->name('goods-receipts.show');
     Route::post('supplier-invoices', [ProcurementController::class, 'storeInvoice'])->name('supplier-invoices.store');
     Route::get('supplier-invoices', [ProcurementController::class, 'invoices'])->name('supplier-invoices.index');
     Route::get('supplier-invoices/create', [ProcurementController::class, 'createInvoice'])->name('supplier-invoices.create');

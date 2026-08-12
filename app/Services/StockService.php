@@ -15,16 +15,16 @@ use Illuminate\Validation\ValidationException;
 
 class StockService
 {
-    public function getCurrentStock(ProductVariant $variant): int
+    public function getCurrentStock(ProductVariant $variant): string
     {
-        $stockIn = (int) $variant->stockMovements()
+        $stockIn = (string) $variant->stockMovements()
             ->where('direction', StockMovementDirection::IN)
             ->sum('quantity');
-        $stockOut = (int) $variant->stockMovements()
+        $stockOut = (string) $variant->stockMovements()
             ->where('direction', StockMovementDirection::OUT)
             ->sum('quantity');
 
-        return $stockIn - $stockOut;
+        return bcsub($stockIn, $stockOut, 3);
     }
 
     /**
@@ -43,7 +43,7 @@ class StockService
             ->pluck('current_stock', 'product_variant_id');
 
         return $variants->mapWithKeys(fn (ProductVariant $variant) => [
-            $variant->id => (int) ($stockByVariant[$variant->id] ?? 0),
+            $variant->id => number_format((float) ($stockByVariant[$variant->id] ?? 0), 3, '.', ''),
         ]);
     }
 
@@ -106,7 +106,7 @@ class StockService
             $variant = $variants->get($variantId);
             $availableStock = $variant ? $this->getCurrentStock($variant) : 0;
 
-            if ($availableStock < $requestedQuantity) {
+            if (bccomp($availableStock, (string) $requestedQuantity, 3) < 0) {
                 throw ValidationException::withMessages([
                     'products' => "Insufficient stock for variant {$variant?->sku}. Available: {$availableStock}. Requested: {$requestedQuantity}.",
                 ]);
@@ -130,7 +130,7 @@ class StockService
             $variant = ProductVariant::query()->lockForUpdate()->findOrFail($data['product_variant_id']);
             $availableStock = $this->getCurrentStock($variant);
 
-            if ($availableStock < $data['quantity']) {
+            if (bccomp($availableStock, (string) $data['quantity'], 3) < 0) {
                 throw ValidationException::withMessages([
                     'quantity' => "Insufficient stock. Available: {$availableStock}. Requested: {$data['quantity']}.",
                 ]);
@@ -184,13 +184,13 @@ class StockService
     {
         foreach ($receipt->items as $item) {
             if ((float) $item->accepted_quantity <= 0) continue;
-            $this->createMovement(['product_variant_id'=>$item->product_variant_id,'movement_type'=>StockMovementType::PURCHASE_RECEIPT,'direction'=>StockMovementDirection::IN,'quantity'=>(int)$item->accepted_quantity,'reference_type'=>GoodsReceipt::class,'reference_id'=>$receipt->id,'reference_number'=>$receipt->receipt_number,'movement_date'=>$receipt->received_at->toDateString(),'notes'=>'Goods Receipt','user_id'=>$receipt->received_by]);
+            $this->createMovement(['product_variant_id'=>$item->product_variant_id,'movement_type'=>StockMovementType::PURCHASE_RECEIPT,'direction'=>StockMovementDirection::IN,'quantity'=>$item->accepted_quantity,'reference_type'=>GoodsReceipt::class,'reference_id'=>$receipt->id,'reference_number'=>$receipt->receipt_number,'movement_date'=>$receipt->received_at->toDateString(),'notes'=>'Goods Receipt','user_id'=>$receipt->received_by]);
         }
     }
 
     public function createPurchaseReturnMovements(PurchaseReturn $return): void
     {
-        foreach ($return->items as $item) $this->createMovement(['product_variant_id'=>$item->product_variant_id,'movement_type'=>StockMovementType::PURCHASE_RETURN,'direction'=>StockMovementDirection::OUT,'quantity'=>(int)$item->quantity,'reference_type'=>PurchaseReturn::class,'reference_id'=>$return->id,'reference_number'=>$return->return_number,'movement_date'=>$return->return_date->toDateString(),'notes'=>'Purchase Return','user_id'=>$return->created_by]);
+        foreach ($return->items as $item) $this->createMovement(['product_variant_id'=>$item->product_variant_id,'movement_type'=>StockMovementType::PURCHASE_RETURN,'direction'=>StockMovementDirection::OUT,'quantity'=>$item->quantity,'reference_type'=>PurchaseReturn::class,'reference_id'=>$return->id,'reference_number'=>$return->return_number,'movement_date'=>$return->return_date->toDateString(),'notes'=>'Purchase Return','user_id'=>$return->created_by]);
     }
 
     private function createMovement(array $data): StockMovement

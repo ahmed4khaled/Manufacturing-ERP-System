@@ -21,6 +21,25 @@ use Illuminate\View\View;
 
 class ProcurementController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('permission:suppliers.view')->only(['suppliers','showSupplier']);
+        $this->middleware('permission:suppliers.create')->only(['createSupplier','storeSupplier','storeSupplierContact']);
+        $this->middleware('permission:suppliers.update')->only(['editSupplier','updateSupplier']);
+        $this->middleware('permission:suppliers.delete')->only(['destroySupplier','destroySupplierContact']);
+        $this->middleware('permission:purchase_orders.view')->only(['purchaseOrders','showPurchaseOrder']);
+        $this->middleware('permission:purchase_orders.create')->only(['createPurchaseOrder','storePurchaseOrder']);
+        $this->middleware('permission:goods_receipts.view')->only(['goodsReceipts','showGoodsReceipt']);
+        $this->middleware('permission:goods_receipts.create')->only(['createGoodsReceipt','storeGoodsReceipt']);
+        $this->middleware('permission:goods_receipts.confirm')->only('confirmReceipt');
+        $this->middleware('permission:supplier_invoices.view')->only('invoices');
+        $this->middleware('permission:supplier_invoices.create')->only(['createInvoice','storeInvoice']);
+        $this->middleware('permission:supplier_payments.view')->only('payments');
+        $this->middleware('permission:supplier_payments.create')->only(['createPayment','storePayment']);
+        $this->middleware('permission:purchase_returns.view')->only('returns');
+        $this->middleware('permission:purchase_returns.create')->only('createReturn');
+        $this->middleware('permission:purchase_returns.confirm')->only('confirmReturn');
+    }
     public function suppliers(Request $request): View|\Illuminate\Http\JsonResponse
     {
         $suppliers = Supplier::query()
@@ -207,6 +226,14 @@ class ProcurementController extends Controller
         return back()->with('success', 'Goods receipt confirmed and inventory posted.');
     }
 
+    public function storeGoodsReceipt(Request $request): RedirectResponse
+    {
+        $data=$request->validate(['purchase_order_id'=>'required|exists:purchase_orders,id','received_at'=>'required|date','notes'=>'nullable|string','items'=>'required|array|min:1','items.*.purchase_order_item_id'=>'required|exists:purchase_order_items,id','items.*.received_quantity'=>'required|numeric|gt:0','items.*.accepted_quantity'=>'required|numeric|min:0','items.*.rejected_quantity'=>'required|numeric|min:0','items.*.unit_cost'=>'required|numeric|min:0','items.*.notes'=>'nullable|string']);
+        $receipt=\Illuminate\Support\Facades\DB::transaction(function()use($data){$po=PurchaseOrder::query()->with('items')->lockForUpdate()->findOrFail($data['purchase_order_id']);abort_if($po->status==='cancelled',422,'Cancelled purchase orders cannot receive goods.');$receipt=GoodsReceipt::create(['receipt_number'=>app(CodeGeneratorService::class)->generate('GR',GoodsReceipt::max('id')+1),'purchase_order_id'=>$po->id,'supplier_id'=>$po->supplier_id,'received_at'=>$data['received_at'],'received_by'=>auth()->id(),'notes'=>$data['notes']??null]);foreach($data['items'] as $item){$poItem=$po->items->firstWhere('id',$item['purchase_order_item_id']);abort_unless($poItem && bccomp((string)$item['accepted_quantity'],bcsub((string)$item['received_quantity'],(string)$item['rejected_quantity'],3),3)===0,422);$receipt->items()->create($item+['product_variant_id'=>$poItem->product_variant_id,'ordered_quantity'=>$poItem->quantity]);}return $receipt;});return redirect()->route('goods-receipts.show',$receipt)->with('success','Goods receipt created.');
+    }
+
+    public function showGoodsReceipt(GoodsReceipt $goodsReceipt): View { $goodsReceipt->load(['supplier','purchaseOrder','items.productVariant.product']); return view('procurement.goods-receipts.show',compact('goodsReceipt')); }
+
     public function storeInvoice(Request $request): RedirectResponse
     {
         $data = $request->validate([
@@ -222,6 +249,8 @@ class ProcurementController extends Controller
         ]);
 
         $total = $data['subtotal'] - ($data['discount'] ?? 0) + ($data['tax'] ?? 0);
+        abort_if($total < 0, 422, 'Invoice total cannot be negative.');
+        foreach (['purchase_order_id'=>'purchase_orders','goods_receipt_id'=>'goods_receipts'] as $field=>$table) if (!empty($data[$field]) && (int) \Illuminate\Support\Facades\DB::table($table)->where('id',$data[$field])->value('supplier_id') !== (int)$data['supplier_id']) abort(422,'Linked document supplier must match invoice supplier.');
 
         $invoice = SupplierInvoice::create($data + [
             'invoice_number' => app(CodeGeneratorService::class)->generate('PINV', SupplierInvoice::max('id') + 1),

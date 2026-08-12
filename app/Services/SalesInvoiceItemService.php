@@ -24,7 +24,7 @@ class SalesInvoiceItemService
             $productId = (int) $productData['product_id'];
 
             foreach ($productData['variants'] as $variantData) {
-                $quantity = (int) $variantData['quantity'];
+                $quantity = (string) $variantData['quantity'];
 
                 if ($quantity <= 0) {
                     continue;
@@ -42,7 +42,7 @@ class SalesInvoiceItemService
 
                 $item = $this->createItemFromVariant($invoice, $variant, $quantity);
                 $createdItems->push($item);
-                $totalQuantity += $quantity;
+                $totalQuantity = bcadd((string) $totalQuantity, $quantity, 3);
                 $subtotal = bcadd($subtotal, (string) $item->line_total, 2);
             }
         }
@@ -76,7 +76,7 @@ class SalesInvoiceItemService
             $productId = (int) $productData['product_id'];
 
             foreach ($productData['variants'] as $variantData) {
-                $quantity = (int) $variantData['quantity'];
+                $quantity = (string) $variantData['quantity'];
 
                 if ($quantity <= 0) {
                     continue;
@@ -103,7 +103,7 @@ class SalesInvoiceItemService
 
                     $items->push($existingItem->fresh());
                     $retainedVariantIds[] = $variantId;
-                    $totalQuantity += $quantity;
+                    $totalQuantity = bcadd((string) $totalQuantity, $quantity, 3);
                     $subtotal = bcadd($subtotal, $lineTotal, 2);
 
                     continue;
@@ -122,7 +122,7 @@ class SalesInvoiceItemService
                 $item = $this->createItemFromVariant($invoice, $variant, $quantity);
                 $items->push($item);
                 $retainedVariantIds[] = $variantId;
-                $totalQuantity += $quantity;
+                $totalQuantity = bcadd((string) $totalQuantity, $quantity, 3);
                 $subtotal = bcadd($subtotal, (string) $item->line_total, 2);
             }
         }
@@ -147,7 +147,7 @@ class SalesInvoiceItemService
     private function createItemFromVariant(
         SalesInvoice $invoice,
         ProductVariant $variant,
-        int $quantity,
+        string $quantity,
     ): SalesInvoiceItem {
         $variant->loadMissing(['product', 'color', 'size']);
 

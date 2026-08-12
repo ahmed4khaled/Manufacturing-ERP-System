@@ -21,7 +21,11 @@ return new class extends Migration
                 $query->whereNull('barcode')->orWhere('barcode', '');
             })
             ->each(function (ProductVariant $variant) use ($generator) {
-                $variant->update(['barcode' => $generator->generate($variant->id)]);
+                do {
+                    $barcode = $generator->generate();
+                } while (ProductVariant::query()->where('barcode', $barcode)->exists());
+
+                $variant->update(['barcode' => $barcode]);
             });
     }
 

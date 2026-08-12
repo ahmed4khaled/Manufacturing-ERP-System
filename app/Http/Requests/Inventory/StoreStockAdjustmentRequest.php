@@ -18,7 +18,7 @@ class StoreStockAdjustmentRequest extends FormRequest
         return [
             'product_variant_id' => ['required', Rule::exists('product_variants', 'id')],
             'direction' => ['required', Rule::enum(StockMovementDirection::class)],
-            'quantity' => ['required', 'integer', 'min:1'],
+            'quantity' => ['required', 'numeric', 'gt:0'],
             'movement_date' => ['required', 'date'],
             'notes' => ['required', 'string'],
         ];

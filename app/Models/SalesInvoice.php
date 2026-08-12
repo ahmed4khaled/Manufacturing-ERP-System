@@ -30,7 +30,7 @@ class SalesInvoice extends Model
         'status' => SalesInvoiceStatus::class,
         'subtotal' => 'decimal:2',
         'total_amount' => 'decimal:2',
-        'total_quantity' => 'integer',
+        'total_quantity' => 'decimal:3',
     ];
 
     public function customer(): BelongsTo

@@ -16,7 +16,7 @@ class StoreOpeningStockRequest extends FormRequest
     {
         return [
             'product_variant_id' => ['required', Rule::exists('product_variants', 'id')],
-            'quantity' => ['required', 'integer', 'min:1'],
+            'quantity' => ['required', 'numeric', 'gt:0'],
             'movement_date' => ['required', 'date'],
             'notes' => ['nullable', 'string'],
         ];

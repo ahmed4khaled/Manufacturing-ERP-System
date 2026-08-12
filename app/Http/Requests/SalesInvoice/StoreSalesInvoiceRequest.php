@@ -22,7 +22,7 @@ class StoreSalesInvoiceRequest extends FormRequest
             'products.*.product_id' => ['required', Rule::exists('products', 'id')],
             'products.*.variants' => ['required', 'array', 'min:1'],
             'products.*.variants.*.product_variant_id' => ['required', Rule::exists('product_variants', 'id')],
-            'products.*.variants.*.quantity' => ['required', 'integer', 'min:1'],
+            'products.*.variants.*.quantity' => ['required', 'numeric', 'gt:0'],
         ];
     }
 
@@ -39,7 +39,7 @@ class StoreSalesInvoiceRequest extends FormRequest
 
             foreach ($products as $index => $product) {
                 $hasQuantity = collect($product['variants'] ?? [])
-                    ->contains(fn ($variant) => (int) ($variant['quantity'] ?? 0) > 0);
+                    ->contains(fn ($variant) => (float) ($variant['quantity'] ?? 0) > 0);
 
                 if (! $hasQuantity) {
                     $validator->errors()->add(
