@@ -11,6 +11,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PaymentReceiptController;
 use App\Http\Controllers\SalesInvoiceController;
 use App\Http\Controllers\SizeController;
+use App\Http\Controllers\ProcurementController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -22,6 +23,14 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('suppliers', [ProcurementController::class, 'suppliers'])->name('suppliers.index');
+    Route::post('suppliers', [ProcurementController::class, 'storeSupplier'])->name('suppliers.store');
+    Route::post('purchase-orders', [ProcurementController::class, 'storePurchaseOrder'])->name('purchase-orders.store');
+    Route::get('purchase-orders/{purchaseOrder}', [ProcurementController::class, 'showPurchaseOrder'])->name('purchase-orders.show');
+    Route::post('goods-receipts/{goodsReceipt}/confirm', [ProcurementController::class, 'confirmReceipt'])->name('goods-receipts.confirm');
+    Route::post('supplier-invoices', [ProcurementController::class, 'storeInvoice'])->name('supplier-invoices.store');
+    Route::post('supplier-payments', [ProcurementController::class, 'storePayment'])->name('supplier-payments.store');
+    Route::post('purchase-returns/{purchaseReturn}/confirm', [ProcurementController::class, 'confirmReturn'])->name('purchase-returns.confirm');
     Route::get('sales-invoices/products/{product}/variants', [SalesInvoiceController::class, 'productVariants'])
         ->name('sales-invoices.product-variants');
     Route::post('sales-invoices/{sales_invoice}/confirm', [SalesInvoiceController::class, 'confirm'])

@@ -7,6 +7,8 @@ use App\Enums\StockMovementType;
 use App\Models\ProductVariant;
 use App\Models\SalesInvoice;
 use App\Models\StockMovement;
+use App\Models\GoodsReceipt;
+use App\Models\PurchaseReturn;
 use Illuminate\Support\Collection;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Validation\ValidationException;
@@ -176,6 +178,19 @@ class StockService
                 'user_id' => auth()->id(),
             ]);
         }
+    }
+
+    public function createPurchaseReceiptMovements(GoodsReceipt $receipt): void
+    {
+        foreach ($receipt->items as $item) {
+            if ((float) $item->accepted_quantity <= 0) continue;
+            $this->createMovement(['product_variant_id'=>$item->product_variant_id,'movement_type'=>StockMovementType::PURCHASE_RECEIPT,'direction'=>StockMovementDirection::IN,'quantity'=>(int)$item->accepted_quantity,'reference_type'=>GoodsReceipt::class,'reference_id'=>$receipt->id,'reference_number'=>$receipt->receipt_number,'movement_date'=>$receipt->received_at->toDateString(),'notes'=>'Goods Receipt','user_id'=>$receipt->received_by]);
+        }
+    }
+
+    public function createPurchaseReturnMovements(PurchaseReturn $return): void
+    {
+        foreach ($return->items as $item) $this->createMovement(['product_variant_id'=>$item->product_variant_id,'movement_type'=>StockMovementType::PURCHASE_RETURN,'direction'=>StockMovementDirection::OUT,'quantity'=>(int)$item->quantity,'reference_type'=>PurchaseReturn::class,'reference_id'=>$return->id,'reference_number'=>$return->return_number,'movement_date'=>$return->return_date->toDateString(),'notes'=>'Purchase Return','user_id'=>$return->created_by]);
     }
 
     private function createMovement(array $data): StockMovement
