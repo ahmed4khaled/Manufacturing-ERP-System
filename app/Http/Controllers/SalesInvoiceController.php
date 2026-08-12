@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Actions\SalesInvoice\CancelSalesInvoiceAction;
 use App\Actions\SalesInvoice\ConfirmSalesInvoiceAction;
 use App\Actions\SalesInvoice\CreateSalesInvoiceAction;
+use App\Actions\SalesInvoice\ValidateCustomerCreditLimitAction;
+
 use App\Actions\SalesInvoice\DeleteSalesInvoiceAction;
 use App\Actions\SalesInvoice\UpdateSalesInvoiceAction;
 use App\Enums\SalesInvoiceStatus;
@@ -40,22 +42,22 @@ class SalesInvoiceController extends Controller
 
     public function create(): View
     {
-        $customers = Customer::query()->orderBy('name')->get(['id', 'name', 'code']);
+        $customers = Customer::query()->orderBy('name')->get(['id', 'name', 'code','credit_limit']);
         $products = Product::query()->orderBy('name')->get(['id', 'name', 'code']);
 
         return view('sales-invoices.create', compact('customers', 'products'));
     }
 
-    public function store(
-        StoreSalesInvoiceRequest $request,
-        CreateSalesInvoiceAction $action,
-    ): RedirectResponse {
-        $invoice = $action->handle($request->validated());
+   public function store(
+    StoreSalesInvoiceRequest $request,
+    CreateSalesInvoiceAction $action,
+): RedirectResponse {
+    $invoice = $action->handle($request->validated());
 
-        return redirect()
-            ->route('sales-invoices.show', $invoice)
-            ->with('success', 'Sales invoice created successfully.');
-    }
+    return redirect()
+        ->route('sales-invoices.show', $invoice)
+        ->with('success', 'Sales invoice created successfully.');
+}
 
     public function show(SalesInvoice $salesInvoice): View
     {

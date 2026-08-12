@@ -14,10 +14,28 @@ class CodeGeneratorService
     public function next(string $prefix): string
     {
         return DB::transaction(function () use ($prefix) {
-            DB::table('document_sequences')->insertOrIgnore(['key'=>$prefix,'next_value'=>1,'created_at'=>now(),'updated_at'=>now()]);
-            $row = DB::table('document_sequences')->where('key',$prefix)->lockForUpdate()->first();
-            DB::table('document_sequences')->where('id',$row->id)->update(['next_value'=>$row->next_value + 1,'updated_at'=>now()]);
-            return $this->generate($prefix, (int) $row->next_value);
+            DB::table('document_sequences')->insertOrIgnore([
+                'key' => $prefix,
+                'next_value' => 1,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            $row = DB::table('document_sequences')
+                ->where('key', $prefix)
+                ->lockForUpdate()
+                ->first();
+
+            $current = (int) ($row->next_value ?? 1);
+
+            DB::table('document_sequences')
+                ->where('id', $row->id)
+                ->update([
+                    'next_value' => $current + 1,
+                    'updated_at' => now(),
+                ]);
+
+            return $this->generate($prefix, $current);
         });
     }
 }

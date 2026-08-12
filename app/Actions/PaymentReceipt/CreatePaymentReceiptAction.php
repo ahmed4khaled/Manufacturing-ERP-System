@@ -22,7 +22,7 @@ class CreatePaymentReceiptAction
             $receipt = PaymentReceipt::create($data);
 
             $receipt->update([
-                'receipt_number' => $this->codeGenerator->generate('RCPT', $receipt->id),
+                'receipt_number' => $this->codeGenerator->next('RCPT'),
             ]);
 
             return $receipt->fresh(['customer', 'creator']);

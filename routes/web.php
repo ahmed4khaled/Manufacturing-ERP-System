@@ -49,9 +49,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('supplier-payments', [ProcurementController::class, 'storePayment'])->name('supplier-payments.store');
     Route::get('supplier-payments', [ProcurementController::class, 'payments'])->name('supplier-payments.index');
     Route::get('supplier-payments/create', [ProcurementController::class, 'createPayment'])->name('supplier-payments.create');
+    Route::post('purchase-returns', [ProcurementController::class, 'storeReturn'])->name('purchase-returns.store');
     Route::post('purchase-returns/{purchaseReturn}/confirm', [ProcurementController::class, 'confirmReturn'])->name('purchase-returns.confirm');
     Route::get('purchase-returns', [ProcurementController::class, 'returns'])->name('purchase-returns.index');
     Route::get('purchase-returns/create', [ProcurementController::class, 'createReturn'])->name('purchase-returns.create');
+    Route::get('purchase-returns/{purchaseReturn}', [ProcurementController::class, 'showReturn'])->name('purchase-returns.show');
     Route::get('sales-invoices/products/{product}/variants', [SalesInvoiceController::class, 'productVariants'])
         ->name('sales-invoices.product-variants');
     Route::post('sales-invoices/{sales_invoice}/confirm', [SalesInvoiceController::class, 'confirm'])

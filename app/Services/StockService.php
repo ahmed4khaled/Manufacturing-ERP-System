@@ -183,26 +183,41 @@ class StockService
     public function createPurchaseReceiptMovements(GoodsReceipt $receipt): void
     {
         foreach ($receipt->items as $item) {
-            if ((float) $item->accepted_quantity <= 0) continue;
+            if (bccomp((string) $item->accepted_quantity, '0', 3) <= 0) {
+                continue;
+            }
             $this->createMovement(['product_variant_id'=>$item->product_variant_id,'movement_type'=>StockMovementType::PURCHASE_RECEIPT,'direction'=>StockMovementDirection::IN,'quantity'=>$item->accepted_quantity,'reference_type'=>GoodsReceipt::class,'reference_id'=>$receipt->id,'reference_number'=>$receipt->receipt_number,'movement_date'=>$receipt->received_at->toDateString(),'notes'=>'Goods Receipt','user_id'=>$receipt->received_by]);
         }
     }
 
     public function createPurchaseReturnMovements(PurchaseReturn $return): void
     {
-        foreach ($return->items as $item) $this->createMovement(['product_variant_id'=>$item->product_variant_id,'movement_type'=>StockMovementType::PURCHASE_RETURN,'direction'=>StockMovementDirection::OUT,'quantity'=>$item->quantity,'reference_type'=>PurchaseReturn::class,'reference_id'=>$return->id,'reference_number'=>$return->return_number,'movement_date'=>$return->return_date->toDateString(),'notes'=>'Purchase Return','user_id'=>$return->created_by]);
+        foreach ($return->items as $item) {
+            $this->createMovement(['product_variant_id'=>$item->product_variant_id,'movement_type'=>StockMovementType::PURCHASE_RETURN,'direction'=>StockMovementDirection::OUT,'quantity'=>$item->quantity,'reference_type'=>PurchaseReturn::class,'reference_id'=>$return->id,'reference_number'=>$return->return_number,'movement_date'=>$return->return_date->toDateString(),'notes'=>'Purchase Return','user_id'=>$return->created_by]);
+        }
     }
 
     private function createMovement(array $data): StockMovement
     {
         $movement = StockMovement::create($data);
-        $this->syncLegacyQuantity($movement->productVariant);
+        $this->syncLegacyQuantity($movement);
 
         return $movement;
     }
 
-    private function syncLegacyQuantity(ProductVariant $variant): void
+    private function syncLegacyQuantity(\App\Models\StockMovement $movement): void
     {
-        $variant->update(['quantity' => $this->getCurrentStock($variant)]);
+        $variant = $movement->productVariant->fresh();
+
+        $current = (string) ($variant->quantity ?? '0');
+        $delta = (string) $movement->quantity;
+
+        if ($movement->direction === StockMovementDirection::IN) {
+            $new = bcadd($current, $delta, 3);
+        } else {
+            $new = bcsub($current, $delta, 3);
+        }
+
+        $variant->update(['quantity' => $new]);
     }
 }
