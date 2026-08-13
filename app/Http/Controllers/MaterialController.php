@@ -14,13 +14,13 @@ use Illuminate\View\View;
 
 class MaterialController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('permission:materials.view')->only(['index', 'show']);
-        $this->middleware('permission:materials.create')->only(['create', 'store']);
-        $this->middleware('permission:materials.edit')->only(['edit', 'update']);
-        $this->middleware('permission:materials.delete')->only('destroy');
-    }
+    // public function __construct()
+    // {
+    //     $this->middleware('permission:materials.view')->only(['index', 'show']);
+    //     $this->middleware('permission:materials.create')->only(['create', 'store']);
+    //     $this->middleware('permission:materials.edit')->only(['edit', 'update']);
+    //     $this->middleware('permission:materials.delete')->only('destroy');
+    // }
 
     public function index(Request $request): View
     {

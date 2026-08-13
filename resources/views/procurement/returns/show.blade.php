@@ -1,45 +1,140 @@
 @extends('layouts.dashboard')
 @section('title',$purchaseReturn->return_number)
 @section('content')
-<div class="page-header d-flex justify-content-between align-items-center">
+
+<div class="page-header d-flex justify-content-between align-items-start gap-3">
     <div>
         <h1 class="h3 mb-1">{{ $purchaseReturn->return_number }}</h1>
-        <p class="text-muted mb-0">{{ $purchaseReturn->supplier->name }} · {{ $purchaseReturn->return_date->format('Y-m-d') }}</p>
+        <div class="text-muted mb-2">
+            <strong>Supplier:</strong> {{ $purchaseReturn->supplier->name }}<br>
+            <strong>Return Date:</strong> {{ $purchaseReturn->return_date->format('M d, Y') }}
+        </div>
+        
+        {{-- Status Badge --}}
+        @if($purchaseReturn->status === 'draft')
+            <span class="badge bg-warning text-dark">
+                <i class="bi bi-clock-history"></i> Draft
+            </span>
+        @elseif($purchaseReturn->status === 'confirmed')
+            <span class="badge bg-success">
+                <i class="bi bi-check-circle"></i> Confirmed
+            </span>
+        @endif
     </div>
+    
+    {{-- Actions Card --}}
     @if($purchaseReturn->status === 'draft')
-        <form method="POST" action="{{ route('purchase-returns.confirm', $purchaseReturn) }}">@csrf
-            <button class="btn btn-success">Confirm & Post Material Stock</button>
-        </form>
+        <div>
+            <form method="POST" action="{{ route('purchase-returns.confirm', $purchaseReturn) }}" class="d-inline">
+                @csrf
+                <button type="submit" class="btn btn-success" onclick="return confirm('Confirm and post inventory movements?')">
+                    <i class="bi bi-check-circle"></i> Confirm & Post to Inventory
+                </button>
+            </form>
+        </div>
     @endif
 </div>
 
-<div class="card mt-3">
+{{-- Details Card --}}
+<div class="card mt-4">
     <div class="card-body">
-        <div class="mb-3"><strong>Reason:</strong> {{ $purchaseReturn->reason }}</div>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <strong class="d-block text-muted small">Reference</strong>
+                    <span>{{ $purchaseReturn->goodsReceipt?->receipt_number ?? 'N/A' }}</span>
+                    <small class="text-muted"> (Goods Receipt)</small>
+                </div>
+                <div class="mb-3">
+                    <strong class="d-block text-muted small">Status</strong>
+                    @if($purchaseReturn->status === 'draft')
+                        <span class="badge bg-warning text-dark">Draft - Not Posted</span>
+                    @elseif($purchaseReturn->status === 'confirmed')
+                        <span class="badge bg-success">Confirmed - Posted</span>
+                    @endif
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <strong class="d-block text-muted small">Reason</strong>
+                    {{ $purchaseReturn->reason }}
+                </div>
+                @if($purchaseReturn->notes)
+                    <div class="mb-3">
+                        <strong class="d-block text-muted small">Notes</strong>
+                        {{ $purchaseReturn->notes }}
+                    </div>
+                @endif
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Return Items Table --}}
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="bi bi-box-seam"></i> Return Items
+        </h5>
+    </div>
+    <div class="card-body">
         <div class="table-responsive">
-            <table class="table mb-0">
-                <thead>
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
                     <tr>
-                        <th>Material</th>
-                        <th>Unit</th>
-                        <th>Qty</th>
-                        <th>Unit Cost</th>
-                        <th>Reason</th>
+                        <th style="width: 35%;">Material</th>
+                        <th style="width: 10%;" class="text-end">Unit</th>
+                        <th style="width: 15%;" class="text-end">Return Qty</th>
+                        <th style="width: 15%;" class="text-end">Unit Cost</th>
+                        <th style="width: 15%;" class="text-end">Line Total</th>
+                        <th style="width: 10%;">Reason</th>
                     </tr>
                 </thead>
                 <tbody>
+                    @php
+                        $totalAmount = 0;
+                    @endphp
                     @foreach($purchaseReturn->items as $item)
+                        @php
+                            $lineTotal = bcmul($item->quantity, $item->unit_cost, 2);
+                            $totalAmount = bcadd($totalAmount, $lineTotal, 2);
+                        @endphp
                         <tr>
-                            <td>{{ $item->material->code }} — {{ $item->material->name }}</td>
-                            <td>{{ $item->material->unit->label() }}</td>
-                            <td>{{ $item->quantity }}</td>
-                            <td>{{ number_format($item->unit_cost, 2) }}</td>
-                            <td>{{ $item->reason ?? '—' }}</td>
+                            <td>
+                                <div class="fw-bold">{{ $item->material->code }}</div>
+                                <div class="small text-muted">{{ $item->material->name }}</div>
+                            </td>
+                            <td class="text-end">{{ $item->material->unit->label() }}</td>
+                            <td class="text-end fw-bold">{{ number_format($item->quantity, 3) }}</td>
+                            <td class="text-end">{{ number_format($item->unit_cost, 2) }}</td>
+                            <td class="text-end">{{ number_format($lineTotal, 2) }}</td>
+                            <td>
+                                @if($item->reason)
+                                    <small>{{ $item->reason }}</small>
+                                @else
+                                    <span class="text-muted">—</span>
+                                @endif
+                            </td>
                         </tr>
                     @endforeach
                 </tbody>
+                <tfoot class="table-light fw-bold">
+                    <tr>
+                        <td colspan="4" class="text-end">Return Total:</td>
+                        <td class="text-end">{{ number_format($totalAmount, 2) }}</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
     </div>
 </div>
+
+{{-- Back Button --}}
+<div class="mt-4">
+    <a href="{{ route('purchase-returns.index') }}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Back to Returns
+    </a>
+</div>
+
 @endsection

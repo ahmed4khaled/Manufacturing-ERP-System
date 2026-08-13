@@ -16,13 +16,13 @@ use Illuminate\View\View;
 
 class MaterialInventoryController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('permission:material_inventory.view')->only(['index', 'show']);
-        $this->middleware('permission:material_inventory.movements.view')->only('movements');
-        $this->middleware('permission:material_inventory.opening_stock')->only(['createOpeningStock', 'storeOpeningStock']);
-        $this->middleware('permission:material_inventory.adjustment')->only(['createAdjustment', 'storeAdjustment']);
-    }
+    // public function __construct()
+    // {
+    //     $this->middleware('permission:material_inventory.view')->only(['index', 'show']);
+    //     $this->middleware('permission:material_inventory.movements.view')->only('movements');
+    //     $this->middleware('permission:material_inventory.opening_stock')->only(['createOpeningStock', 'storeOpeningStock']);
+    //     $this->middleware('permission:material_inventory.adjustment')->only(['createAdjustment', 'storeAdjustment']);
+    // }
 
     public function index(Request $request, MaterialStockService $materialStockService): View
     {

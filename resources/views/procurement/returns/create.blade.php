@@ -1,113 +1,199 @@
 @extends('layouts.dashboard')
 @section('title','Create Purchase Return')
 @section('content')
-<div class="page-header"><h1 class="h3 mb-1">Create Purchase Return</h1><p class="text-muted mb-0">Select a confirmed goods receipt and return material quantities that are still available for return.</p></div>
-<form method="POST" action="{{ route('purchase-returns.store') }}">@csrf
-    <div class="card"><div class="card-body">
-        <div class="row g-3">
-            <div class="col-md-6">
-                <label class="form-label">Supplier *</label>
-                <select name="supplier_id" id="supplier" class="form-select" required>
-                    <option value="">Select supplier</option>
-                    @foreach($receipts->groupBy('supplier_id') as $supplierId => $supplierReceipts)
-                        <option value="{{ $supplierId }}">{{ $supplierReceipts->first()->supplier->name }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="col-md-6">
-                <label class="form-label">Goods Receipt *</label>
-                <select name="goods_receipt_id" id="receipt" class="form-select" required>
-                    <option value="">Select receipt</option>
-                    @foreach($receipts as $receipt)
-                        <option value="{{ $receipt->id }}" data-supplier="{{ $receipt->supplier_id }}">{{ $receipt->receipt_number }} — {{ $receipt->supplier->name }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="col-md-6">
-                <label class="form-label">Return Date *</label>
-                <input type="date" name="return_date" class="form-control" value="{{ now()->toDateString() }}" required>
-            </div>
-            <div class="col-md-6">
-                <label class="form-label">Reason *</label>
-                <input type="text" name="reason" class="form-control" required>
-            </div>
-            <div class="col-12">
-                <label class="form-label">Notes</label>
-                <textarea name="notes" class="form-control" rows="2"></textarea>
-            </div>
-        </div>
+<div class="page-header">
+    <div>
+        <h1 class="h3 mb-1">Create Purchase Return</h1>
+        <p class="text-muted mb-0">Select a confirmed goods receipt and return material quantities that are still available for return.</p>
+    </div>
+</div>
 
-        <div class="table-responsive mt-4">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Material</th>
-                        <th>Accepted</th>
-                        <th>Available to Return</th>
-                        <th>Return Qty</th>
-                        <th>Unit Cost</th>
-                        <th>Reason</th>
-                    </tr>
-                </thead>
-                <tbody id="items"></tbody>
-            </table>
+<form method="POST" action="{{ route('purchase-returns.store') }}" class="mt-4">
+    @csrf
+    
+    {{-- Return Header Section --}}
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Supplier *</label>
+                    <select name="supplier_id" id="supplier" class="form-select @error('supplier_id') is-invalid @enderror" required>
+                        <option value="">Select supplier</option>
+                        @foreach($receipts->groupBy('supplier_id') as $supplierId => $supplierReceipts)
+                            <option value="{{ $supplierId }}" @selected(old('supplier_id') == $supplierId)>
+                                {{ $supplierReceipts->first()->supplier->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('supplier_id')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+                
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Goods Receipt *</label>
+                    <select name="goods_receipt_id" id="receipt" class="form-select @error('goods_receipt_id') is-invalid @enderror" required>
+                        <option value="">Select receipt</option>
+                        @foreach($receipts as $receipt)
+                            <option value="{{ $receipt->id }}" data-supplier="{{ $receipt->supplier_id }}" @selected(old('goods_receipt_id') == $receipt->id)>
+                                {{ $receipt->receipt_number }} — {{ $receipt->supplier->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('goods_receipt_id')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+                
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Return Date *</label>
+                    <input type="date" name="return_date" class="form-control @error('return_date') is-invalid @enderror" value="{{ old('return_date', now()->toDateString()) }}" required>
+                    @error('return_date')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+                
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Reason *</label>
+                    <input type="text" name="reason" class="form-control @error('reason') is-invalid @enderror" value="{{ old('reason') }}" placeholder="e.g., Quality issue, Damaged in transit" required>
+                    @error('reason')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+                
+                <div class="col-12">
+                    <label class="form-label fw-bold">Notes</label>
+                    <textarea name="notes" class="form-control @error('notes') is-invalid @enderror" rows="2" placeholder="Additional notes about this return">{{ old('notes') }}</textarea>
+                    @error('notes')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+            </div>
         </div>
-    </div></div>
-    <button class="btn btn-primary mt-3">Save Return Draft</button>
+    </div>
+
+    {{-- Return Items Section --}}
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Return Items</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 25%;">Material</th>
+                            <th style="width: 12%;" class="text-end">Accepted Qty</th>
+                            <th style="width: 12%;" class="text-end">Already Returned</th>
+                            <th style="width: 12%;" class="text-end">Available to Return</th>
+                            <th style="width: 12%;" class="text-end">Return Qty *</th>
+                            <th style="width: 12%;" class="text-end">Unit Cost</th>
+                            <th style="width: 15%;">Reason</th>
+                        </tr>
+                    </thead>
+                    <tbody id="items">
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">
+                                <small>Select a goods receipt to view returnable materials</small>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            @error('items')
+                <div class="alert alert-danger small mb-0">{{ $message }}</div>
+            @enderror
+        </div>
+    </div>
+
+    <div class="d-flex gap-2 mt-4">
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-circle"></i> Save Return Draft
+        </button>
+        <a href="{{ route('purchase-returns.index') }}" class="btn btn-secondary">Cancel</a>
+    </div>
 </form>
 
 @push('scripts')
 <script>
-const receiptData = @json($receipts->mapWithKeys(fn($receipt) => [$receipt->id => $receipt->items->map(fn($item) => [
-    'id' => $item->id,
-    'material_id' => $item->material_id,
-    'label' => $item->material->code . ' — ' . $item->material->name,
-    'unit' => $item->material->unit->label(),
-    'accepted' => (string) $item->accepted_quantity,
-    'available' => (string) ($item->available_to_return ?? $item->accepted_quantity),
-    'unit_cost' => (string) $item->unit_cost,
-])]]));
+const receiptData = @json($receiptData);
+
 const supplierSelect = document.getElementById('supplier');
 const receiptSelect = document.getElementById('receipt');
+const itemsTable = document.getElementById('items');
 
 function renderReceiptItems(receiptId) {
     const rows = receiptData[receiptId] || [];
     let html = '';
+    
+    if (rows.length === 0 || rows.every(item => parseFloat(item.available) <= 0)) {
+        html = `<tr><td colspan="7" class="text-center text-muted py-4">
+            <small>No materials available for return in this receipt</small>
+        </td></tr>`;
+        itemsTable.innerHTML = html;
+        return;
+    }
+    
     rows.forEach((item, index) => {
         if (parseFloat(item.available) <= 0) return;
-        html += `
-            <tr>
-                <td>${item.label} <small class="text-muted">(${item.unit})</small><input type="hidden" name="items[${index}][material_id]" value="${item.material_id}"></td>
-                <td>${item.accepted}</td>
-                <td>${item.available}</td>
-                <td><input type="number" name="items[${index}][quantity]" step="0.001" min="0.001" max="${item.available}" class="form-control" required></td>
-                <td><input type="number" name="items[${index}][unit_cost]" step="0.01" min="0" value="${item.unit_cost}" class="form-control" required></td>
-                <td><input type="text" name="items[${index}][reason]" class="form-control"></td>
-            </tr>
-        `;
+        
+        html += `<tr>
+            <td>
+                <div class="fw-bold">${item.code}</div>
+                <div class="small text-muted">${item.label}</div>
+                <small>(${item.unit})</small>
+                <input type="hidden" name="items[${index}][material_id]" value="${item.material_id}">
+            </td>
+            <td class="text-end">${parseFloat(item.accepted).toFixed(3)}</td>
+            <td class="text-end">${parseFloat(item.already_returned).toFixed(3)}</td>
+            <td class="text-end fw-bold text-success">${parseFloat(item.available).toFixed(3)}</td>
+            <td class="text-end">
+                <input type="number" name="items[${index}][quantity]" step="0.001" min="0.001" max="${item.available}" 
+                    class="form-control text-end" value="${item.available}" required>
+            </td>
+            <td class="text-end">
+                <input type="number" name="items[${index}][unit_cost]" step="0.01" min="0" value="${item.unit_cost}" 
+                    class="form-control text-end" required>
+            </td>
+            <td>
+                <input type="text" name="items[${index}][reason]" class="form-control" placeholder="Reason">
+            </td>
+        </tr>`;
     });
-    document.getElementById('items').innerHTML = html;
+    
+    itemsTable.innerHTML = html;
 }
 
-receiptSelect.addEventListener('change', function () {
+receiptSelect.addEventListener('change', function() {
     renderReceiptItems(this.value);
     const selected = this.options[this.selectedIndex];
-    if (selected) {
-        supplierSelect.value = selected.dataset.supplier || '';
+    if (selected && selected.dataset.supplier) {
+        supplierSelect.value = selected.dataset.supplier;
     }
 });
 
-supplierSelect.addEventListener('change', function () {
+supplierSelect.addEventListener('change', function() {
     const value = this.value;
     Array.from(receiptSelect.options).forEach(option => {
+        if (option.value === '') return;
         option.hidden = value && option.dataset.supplier && option.dataset.supplier != value;
     });
     if (value) {
-        const firstMatch = Array.from(receiptSelect.options).find(option => option.dataset.supplier == value);
+        const firstMatch = Array.from(receiptSelect.options).find(
+            option => option.value !== '' && option.dataset.supplier == value
+        );
         if (firstMatch) {
             receiptSelect.value = firstMatch.value;
             renderReceiptItems(firstMatch.value);
+        } else {
+            itemsTable.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">
+                <small>No confirmed receipts for this supplier</small>
+            </td></tr>`;
         }
+    } else {
+        itemsTable.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">
+            <small>Select a goods receipt to view returnable materials</small>
+        </td></tr>`;
     }
 });
 </script>

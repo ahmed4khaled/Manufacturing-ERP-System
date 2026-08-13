@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Procurement\ApprovePurchaseOrderAction;
 use App\Actions\Procurement\ConfirmGoodsReceiptAction;
 use App\Actions\Procurement\ConfirmPurchaseReturnAction;
 use App\Actions\Procurement\CreateGoodsReceiptAction;
 use App\Actions\Procurement\CreatePurchaseOrderAction;
 use App\Actions\Procurement\CreatePurchaseReturnAction;
 use App\Actions\Procurement\RecordSupplierPaymentAction;
+use App\Http\Requests\Procurement\ApprovePurchaseOrderRequest;
 use App\Http\Requests\Procurement\StoreGoodsReceiptRequest;
 use App\Http\Requests\Procurement\StorePurchaseOrderRequest;
 use App\Http\Requests\Procurement\StorePurchaseReturnRequest;
@@ -38,7 +40,7 @@ class ProcurementController extends Controller
             ->with('contacts')
             ->when(
                 $request->input('search'),
-                fn ($query, $search) => $query->where('name', 'like', "%{$search}%")
+                fn($query, $search) => $query->where('name', 'like', "%{$search}%")
                     ->orWhere('code', 'like', "%{$search}%")
                     ->orWhere('phone', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%")
@@ -61,7 +63,7 @@ class ProcurementController extends Controller
 
     public function showSupplier(Supplier $supplier): View
     {
-        $supplier->load(['contacts', 'purchaseOrders' => fn ($q) => $q->latest('order_date')->limit(10), 'goodsReceipts' => fn ($q) => $q->latest('received_at')->limit(10), 'invoices' => fn ($q) => $q->latest('invoice_date')->limit(10), 'payments' => fn ($q) => $q->latest('payment_date')->limit(10), 'returns' => fn ($q) => $q->latest('return_date')->limit(10)]);
+        $supplier->load(['contacts', 'purchaseOrders' => fn($q) => $q->latest('order_date')->limit(10), 'goodsReceipts' => fn($q) => $q->latest('received_at')->limit(10), 'invoices' => fn($q) => $q->latest('invoice_date')->limit(10), 'payments' => fn($q) => $q->latest('payment_date')->limit(10), 'returns' => fn($q) => $q->latest('return_date')->limit(10)]);
         $summary = ['purchases' => $supplier->purchaseOrders->sum('total'), 'invoiced' => $supplier->invoices->sum('total'), 'paid' => $supplier->payments->sum('amount')];
         $summary['outstanding'] = $summary['invoiced'] - $summary['paid'];
 
@@ -186,7 +188,7 @@ class ProcurementController extends Controller
             ->selectRaw('purchase_returns.goods_receipt_id, purchase_return_items.material_id, SUM(purchase_return_items.quantity) as returned_quantity')
             ->get()
             ->groupBy('goods_receipt_id')
-            ->map(fn ($rows) => $rows->pluck('returned_quantity', 'material_id'));
+            ->map(fn($rows) => $rows->pluck('returned_quantity', 'material_id'));
 
         foreach ($receipts as $receipt) {
             $returnedForReceipt = $returnedByReceiptMaterial->get($receipt->id, collect());
@@ -195,8 +197,25 @@ class ProcurementController extends Controller
                 $item->available_to_return = bcsub((string) $item->accepted_quantity, $alreadyReturned, 3);
             }
         }
+        $receiptData = $receipts->mapWithKeys(function ($receipt) {
+            return [
+                $receipt->id => $receipt->items->map(function ($item) {
+                    return [
+                        'id' => $item->id,
+                        'material_id' => $item->material_id,
+                        'code' => $item->material->code,
+                        'label' => $item->material->name,
+                        'unit' => $item->material->unit->label(),
+                        'accepted' => (string) $item->accepted_quantity,
+                        'already_returned' => (string) ($item->already_returned_quantity ?? '0'),
+                        'available' => (string) ($item->available_to_return ?? $item->accepted_quantity),
+                        'unit_cost' => (string) $item->unit_cost,
+                    ];
+                })->values()->all(),
+            ];
+        })->all();
 
-        return view('procurement.returns.create', compact('receipts'));
+        return view('procurement.returns.create', compact('receipts', 'receiptData'));
     }
 
     public function storeSupplier(Request $request): RedirectResponse
@@ -233,6 +252,16 @@ class ProcurementController extends Controller
         $purchaseOrder->load('supplier', 'items.material', 'receipts.items');
 
         return view('procurement.purchase-orders.show', compact('purchaseOrder'));
+    }
+
+    public function approvePurchaseOrder(
+        PurchaseOrder $purchaseOrder,
+        ApprovePurchaseOrderRequest $request,
+        ApprovePurchaseOrderAction $action
+    ): RedirectResponse {
+        $action->handle($purchaseOrder);
+
+        return back()->with('success', 'Purchase order approved successfully.');
     }
 
     public function confirmReceipt(
@@ -318,4 +347,87 @@ class ProcurementController extends Controller
 
         return back()->with('success', 'Purchase return confirmed and inventory posted.');
     }
-}
+public function supplierLedger(Supplier $supplier)
+{
+    $invoices = $supplier->invoices()
+        ->orderBy('invoice_date')
+        ->orderBy('id')
+        ->get();
+
+    $payments = $supplier->payments()
+        ->orderBy('payment_date')
+        ->orderBy('id')
+        ->get();
+
+    $returns = $supplier->returns()
+        ->where('status', 'confirmed')
+        ->orderBy('return_date')
+        ->orderBy('id')
+        ->get();
+
+    $transactions = collect();
+
+    foreach ($invoices as $invoice) {
+        $transactions->push([
+            'date' => $invoice->invoice_date,
+            'reference' => $invoice->invoice_number,
+            'type' => 'Invoice',
+            'description' => 'Supplier Invoice',
+            'debit' => (float) $invoice->total,
+            'credit' => 0,
+            'model' => $invoice,
+        ]);
+    }
+
+    foreach ($payments as $payment) {
+        $transactions->push([
+            'date' => $payment->payment_date,
+            'reference' => 'PAY-' . $payment->id,
+            'type' => 'Payment',
+            'description' => $payment->payment_method ?? 'Supplier Payment',
+            'debit' => 0,
+            'credit' => (float) $payment->amount,
+            'model' => $payment,
+        ]);
+    }
+
+    foreach ($returns as $return) {
+        $amount = $return->items->sum(function ($item) {
+            return (float) $item->quantity * (float) $item->unit_cost;
+        });
+
+        $transactions->push([
+            'date' => $return->return_date,
+            'reference' => $return->return_number,
+            'type' => 'Purchase Return',
+            'description' => $return->reason ?? 'Purchase Return',
+            'debit' => 0,
+            'credit' => $amount,
+            'model' => $return,
+        ]);
+    }
+
+    $transactions = $transactions
+        ->sortBy([
+            ['date', 'asc'],
+            ['reference', 'asc'],
+        ])
+        ->values();
+
+    $balance = 0;
+
+    $transactions = $transactions->map(function ($transaction) use (&$balance) {
+        $balance += $transaction['debit'];
+        $balance -= $transaction['credit'];
+
+        $transaction['balance'] = $balance;
+
+        return $transaction;
+    });
+
+    return view('suppliers.ledger', [
+        'supplier' => $supplier,
+        'transactions' => $transactions,
+        'currentBalance' => $balance,
+    ]);
+}}

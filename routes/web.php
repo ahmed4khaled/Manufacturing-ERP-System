@@ -28,6 +28,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('suppliers', [ProcurementController::class, 'suppliers'])->name('suppliers.index');
     Route::get('suppliers/create', [ProcurementController::class, 'createSupplier'])->name('suppliers.create');
     Route::post('suppliers', [ProcurementController::class, 'storeSupplier'])->name('suppliers.store');
+    Route::get('suppliers/{supplier}/ledger', [ProcurementController::class, 'supplierLedger'])
+    ->name('suppliers.ledger');
     Route::get('suppliers/{supplier}', [ProcurementController::class, 'showSupplier'])->name('suppliers.show');
     Route::get('suppliers/{supplier}/edit', [ProcurementController::class, 'editSupplier'])->name('suppliers.edit');
     Route::put('suppliers/{supplier}', [ProcurementController::class, 'updateSupplier'])->name('suppliers.update');
@@ -38,6 +40,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('purchase-orders', [ProcurementController::class, 'purchaseOrders'])->name('purchase-orders.index');
     Route::get('purchase-orders/create', [ProcurementController::class, 'createPurchaseOrder'])->name('purchase-orders.create');
     Route::get('purchase-orders/{purchaseOrder}', [ProcurementController::class, 'showPurchaseOrder'])->name('purchase-orders.show');
+    Route::post('purchase-orders/{purchaseOrder}/approve', [ProcurementController::class, 'approvePurchaseOrder'])->name('purchase-orders.approve');
     Route::post('goods-receipts/{goodsReceipt}/confirm', [ProcurementController::class, 'confirmReceipt'])->name('goods-receipts.confirm');
     Route::post('goods-receipts', [ProcurementController::class, 'storeGoodsReceipt'])->name('goods-receipts.store');
     Route::get('goods-receipts', [ProcurementController::class, 'goodsReceipts'])->name('goods-receipts.index');
