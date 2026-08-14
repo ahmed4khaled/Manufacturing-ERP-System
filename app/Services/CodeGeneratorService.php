@@ -8,12 +8,18 @@ class CodeGeneratorService
 {
     public function generate(string $prefix, int $sequence): string
     {
-        return $prefix.str_pad((string) $sequence, 6, '0', STR_PAD_LEFT);
+        return $prefix . str_pad(
+            (string) $sequence,
+            6,
+            '0',
+            STR_PAD_LEFT
+        );
     }
 
     public function next(string $prefix): string
     {
         return DB::transaction(function () use ($prefix) {
+
             DB::table('document_sequences')->insertOrIgnore([
                 'key' => $prefix,
                 'next_value' => 1,
@@ -28,6 +34,64 @@ class CodeGeneratorService
 
             $current = (int) ($row->next_value ?? 1);
 
+            /*
+            |--------------------------------------------------------------------------
+            | Keep sequence ahead of existing records
+            |--------------------------------------------------------------------------
+            */
+
+            $sequenceConfig = [
+                'INV' => [
+                    'table' => 'sales_invoices',
+                    'column' => 'invoice_number',
+                ],
+
+                'SPAY' => [
+                    'table' => 'supplier_payments',
+                    'column' => 'payment_number',
+                ],
+
+                'PO' => [
+                    'table' => 'purchase_orders',
+                    'column' => 'purchase_order_number',
+                ],
+            ];
+
+            if (isset($sequenceConfig[$prefix])) {
+
+                $config = $sequenceConfig[$prefix];
+
+                do {
+
+                    $code = $this->generate(
+                        $prefix,
+                        $current
+                    );
+
+                    $exists = DB::table($config['table'])
+                        ->where($config['column'], $code)
+                        ->exists();
+
+                    if ($exists) {
+                        $current++;
+                    }
+
+                } while ($exists);
+
+            } else {
+
+                $code = $this->generate(
+                    $prefix,
+                    $current
+                );
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Save next sequence
+            |--------------------------------------------------------------------------
+            */
+
             DB::table('document_sequences')
                 ->where('id', $row->id)
                 ->update([
@@ -35,7 +99,7 @@ class CodeGeneratorService
                     'updated_at' => now(),
                 ]);
 
-            return $this->generate($prefix, $current);
+            return $code;
         });
     }
 }
