@@ -40,22 +40,27 @@ class CodeGeneratorService
             |--------------------------------------------------------------------------
             */
 
-            $sequenceConfig = [
-                'INV' => [
-                    'table' => 'sales_invoices',
-                    'column' => 'invoice_number',
-                ],
+          $sequenceConfig = [
+    'INV' => [
+        'table' => 'sales_invoices',
+        'column' => 'invoice_number',
+    ],
 
-                'SPAY' => [
-                    'table' => 'supplier_payments',
-                    'column' => 'payment_number',
-                ],
+    'SPAY' => [
+        'table' => 'supplier_payments',
+        'column' => 'payment_number',
+    ],
 
-                'PO' => [
-                    'table' => 'purchase_orders',
-                    'column' => 'purchase_order_number',
-                ],
-            ];
+    'PO' => [
+        'table' => 'purchase_orders',
+        'column' => 'purchase_order_number',
+    ],
+
+    'RCPT' => [
+        'table' => 'payment_receipts',
+        'column' => 'receipt_number',
+    ],
+];
 
             if (isset($sequenceConfig[$prefix])) {
 
