@@ -878,177 +878,144 @@ document.addEventListener('DOMContentLoaded', function () {
     | Calculate Totals
     |--------------------------------------------------------------------------
     */
+function calculateTotals() {
 
-    function calculateTotals() {
+    let subtotal = 0;
 
-        let subtotal = 0;
-
-
-        const rows =
-            receiptItems.querySelectorAll('tr');
+    const rows =
+        receiptItems.querySelectorAll('tr');
 
 
-        rows.forEach(function (row) {
+    rows.forEach(function (row) {
 
-            const costInput =
-                row.querySelector('.unit-cost');
+        const costInput =
+            row.querySelector('.unit-cost');
 
-            const lineTotalElement =
-                row.querySelector('.line-total');
-
-
-            if (!costInput || !lineTotalElement) {
-
-                return;
-
-            }
+        const lineTotalElement =
+            row.querySelector('.line-total');
 
 
-            const accepted =
-                parseFloat(
-                    costInput.dataset.accepted
-                ) || 0;
+        if (!costInput || !lineTotalElement) {
+            return;
+        }
 
 
-            const unitCost =
-                parseFloat(
-                    costInput.value
-                ) || 0;
-
-
-            const lineTotal =
-                accepted * unitCost;
-
-
-            subtotal +=
-                lineTotal;
-
-
-            lineTotalElement.textContent =
-                lineTotal.toFixed(2);
-
-        });
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Subtotal
-        |--------------------------------------------------------------------------
-        */
-
-        subtotalInput.value =
-            subtotal.toFixed(2);
-
-        calculatedSubtotal.textContent =
-            subtotal.toFixed(2);
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Discount & Tax
-        |--------------------------------------------------------------------------
-        */
-
-        const discount =
+        const accepted =
             parseFloat(
-                discountInput.value
+                costInput.dataset.accepted
             ) || 0;
 
 
-        const tax =
+        const unitCost =
             parseFloat(
-                taxInput.value
+                costInput.value
             ) || 0;
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Invoice Total
-        |--------------------------------------------------------------------------
-        */
-
-        const total =
-            Math.max(
-                0,
-                subtotal - discount + tax
-            );
+        const lineTotal =
+            accepted * unitCost;
 
 
-        totalInput.value =
-            total.toFixed(2);
+        subtotal +=
+            lineTotal;
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Advance
-        |--------------------------------------------------------------------------
-        */
+        // Line Total
+        lineTotalElement.textContent =
+            lineTotal.toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
 
-        const advance =
-            parseFloat(
-                advanceAmountInput.value
-            ) || 0;
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Remaining
-        |--------------------------------------------------------------------------
-        */
-
-        const remaining =
-            Math.max(
-                0,
-                total - advance
-            );
-
-
-        remainingDisplay.value =
-            remaining.toFixed(2);
-
-    }
+    });
 
 
     /*
     |--------------------------------------------------------------------------
-    | Supplier Changed
+    | Subtotal
     |--------------------------------------------------------------------------
     */
 
-    supplierSelect.addEventListener(
-        'change',
-        function () {
+    subtotalInput.value =
+        subtotal.toFixed(2);
 
-            const supplierId =
-                this.value;
-
-
-            filterPurchaseOrders(
-                supplierId
-            );
+    calculatedSubtotal.textContent =
+        subtotal.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
 
 
-            filterGoodsReceipts(
-                supplierId,
-                ''
-            );
+    /*
+    |--------------------------------------------------------------------------
+    | Discount & Tax
+    |--------------------------------------------------------------------------
+    */
+
+    const discount =
+        parseFloat(
+            discountInput.value
+        ) || 0;
 
 
-            receiptItems.innerHTML = '';
-
-            receiptItemsWrapper.style.display =
-                'none';
-
-
-            subtotalInput.value =
-                '0.00';
+    const tax =
+        parseFloat(
+            taxInput.value
+        ) || 0;
 
 
-            updateAdvancePayment();
+    /*
+    |--------------------------------------------------------------------------
+    | Invoice Total
+    |--------------------------------------------------------------------------
+    */
 
-        }
-    );
+    const total =
+        Math.max(
+            0,
+            subtotal - discount + tax
+        );
 
+
+    totalInput.value =
+        total.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Advance
+    |--------------------------------------------------------------------------
+    */
+
+    const advance =
+        parseFloat(
+            advanceAmountInput.value
+        ) || 0;
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Remaining
+    |--------------------------------------------------------------------------
+    */
+
+    const remaining =
+        Math.max(
+            0,
+            total - advance
+        );
+
+
+    remainingDisplay.value =
+        remaining.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+
+}
 
     /*
     |--------------------------------------------------------------------------
