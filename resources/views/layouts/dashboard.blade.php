@@ -187,30 +187,7 @@
                 <i class="bi bi-journal-text"></i>
                 Customer Ledger
             </a>
-
-            <div class="nav-section">Products</div>
-            <a href="{{ route('categories.index') }}" class="nav-link sub-link {{ request()->routeIs('categories.*') ? 'active' : '' }}">
-                <i class="bi bi-tags"></i>
-                Categories
-            </a>
-            <a href="{{ route('products.index') }}" class="nav-link sub-link {{ request()->routeIs('products.*') ? 'active' : '' }}">
-                <i class="bi bi-box-seam"></i>
-                Products
-            </a>
-            <a href="{{ route('colors.index') }}" class="nav-link sub-link {{ request()->routeIs('colors.*') ? 'active' : '' }}">
-                <i class="bi bi-palette"></i>
-                Colors
-            </a>
-            <a href="{{ route('sizes.index') }}" class="nav-link sub-link {{ request()->routeIs('sizes.*') ? 'active' : '' }}">
-                <i class="bi bi-rulers"></i>
-                Sizes
-            </a>
-            <a href="{{ route('product-variants.index') }}" class="nav-link sub-link {{ request()->routeIs('product-variants.*') ? 'active' : '' }}">
-                <i class="bi bi-layers"></i>
-                Variants
-            </a>
-
-            <div class="nav-section">Procurement</div>
+ <div class="nav-section">Procurement</div>
             <a href="{{ route('suppliers.index') }}" class="nav-link {{ request()->routeIs('suppliers.*') ? 'active' : '' }}">
                 <i class="bi bi-truck"></i>
                 Suppliers
@@ -260,6 +237,29 @@
                 <i class="bi bi-sliders"></i>
                 Adjustments
             </a>
+            <div class="nav-section">Products</div>
+            <a href="{{ route('categories.index') }}" class="nav-link sub-link {{ request()->routeIs('categories.*') ? 'active' : '' }}">
+                <i class="bi bi-tags"></i>
+                Categories
+            </a>
+            <a href="{{ route('products.index') }}" class="nav-link sub-link {{ request()->routeIs('products.*') ? 'active' : '' }}">
+                <i class="bi bi-box-seam"></i>
+                Products
+            </a>
+            <a href="{{ route('colors.index') }}" class="nav-link sub-link {{ request()->routeIs('colors.*') ? 'active' : '' }}">
+                <i class="bi bi-palette"></i>
+                Colors
+            </a>
+            <a href="{{ route('sizes.index') }}" class="nav-link sub-link {{ request()->routeIs('sizes.*') ? 'active' : '' }}">
+                <i class="bi bi-rulers"></i>
+                Sizes
+            </a>
+            <a href="{{ route('product-variants.index') }}" class="nav-link sub-link {{ request()->routeIs('product-variants.*') ? 'active' : '' }}">
+                <i class="bi bi-layers"></i>
+                Variants
+            </a>
+
+           
 
             <div class="nav-section">Coming Soon</div>
             <span class="nav-link text-muted pe-none">
