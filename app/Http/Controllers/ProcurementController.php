@@ -112,12 +112,20 @@ class ProcurementController extends Controller
         return back()->with('success', 'Supplier contact removed.');
     }
 
-    public function purchaseOrders(): View
-    {
-        $orders = PurchaseOrder::query()->with('supplier')->latest('order_date')->paginate(15);
+ public function purchaseOrders(Request $request): View
+{
+    $query = PurchaseOrder::query()
+        ->with('supplier')
+        ->latest('created_at');
 
-        return view('procurement.purchase-orders.index', compact('orders'));
+    if ($request->filled('status')) {
+        $query->where('status', $request->status);
     }
+
+    $orders = $query->paginate(15)->withQueryString();
+
+    return view('procurement.purchase-orders.index', compact('orders'));
+}
 
     public function createPurchaseOrder(): View
     {
@@ -147,11 +155,61 @@ class ProcurementController extends Controller
 
         return view('procurement.invoices.index', compact('invoices'));
     }
+public function createInvoice(): View
+{
+    $suppliers = Supplier::query()
+        ->where('status', 'active')
+        ->orderBy('name')
+        ->get();
 
-    public function createInvoice(): View
-    {
-        return view('procurement.invoices.create', ['suppliers' => Supplier::where('status', 'active')->orderBy('name')->get(), 'orders' => PurchaseOrder::with('supplier')->latest('order_date')->get(), 'receipts' => GoodsReceipt::with('supplier')->where('status', 'confirmed')->latest('received_at')->get()]);
-    }
+    $orders = PurchaseOrder::query()
+        ->with('supplier')
+        ->latest('created_at')
+        ->get();
+
+    $receipts = GoodsReceipt::query()
+        ->with([
+            'supplier',
+            'items.material',
+        ])
+        ->where('status', 'confirmed')
+        ->latest('received_at')
+        ->get();
+
+    /*
+    |--------------------------------------------------------------------------
+    | Advance Payments
+    |--------------------------------------------------------------------------
+    |
+    | Get total advance payments made against each Purchase Order.
+    |
+    */
+
+    $advancePayments = SupplierPayment::query()
+        ->select(
+            'purchase_order_id',
+            'supplier_id'
+        )
+        ->selectRaw('SUM(amount) as total_advance')
+        ->where('payment_type', 'advance')
+        ->whereNotNull('purchase_order_id')
+        ->groupBy(
+            'purchase_order_id',
+            'supplier_id'
+        )
+        ->get()
+        ->keyBy('purchase_order_id');
+
+    return view(
+        'procurement.invoices.create',
+        compact(
+            'suppliers',
+            'orders',
+            'receipts',
+            'advancePayments'
+        )
+    );
+}
 
     public function payments(): View
     {
@@ -160,10 +218,29 @@ class ProcurementController extends Controller
         return view('procurement.payments.index', compact('payments'));
     }
 
-    public function createPayment(): View
-    {
-        return view('procurement.payments.create', ['invoices' => SupplierInvoice::with('supplier')->where('remaining_amount', '>', 0)->latest('invoice_date')->get()]);
-    }
+  public function createPayment(): View
+{
+    $suppliers = Supplier::query()
+        ->orderBy('name')
+        ->get();
+
+    $orders = PurchaseOrder::query()
+        ->with('supplier')
+        ->latest('created_at')
+        ->get();
+
+    $invoices = SupplierInvoice::query()
+        ->where('remaining_amount', '>', 0)
+        ->with('supplier')
+        ->latest('invoice_date')
+        ->get();
+
+    return view('procurement.payments.create', compact(
+        'suppliers',
+        'orders',
+        'invoices'
+    ));
+}
 
     public function returns(): View
     {
@@ -268,8 +345,10 @@ class ProcurementController extends Controller
         GoodsReceipt $goodsReceipt,
         ConfirmGoodsReceiptAction $action
     ): RedirectResponse {
+        
         $action->handle($goodsReceipt);
 
+  
         return back()->with('success', 'Goods receipt confirmed and inventory posted.');
     }
 
@@ -305,39 +384,530 @@ class ProcurementController extends Controller
         return view('procurement.returns.show', compact('purchaseReturn'));
     }
 
-    public function storeInvoice(StoreSupplierInvoiceRequest $request): RedirectResponse
-    {
-        $data = $request->validated();
+public function storeInvoice(
+    StoreSupplierInvoiceRequest $request
+): RedirectResponse {
 
-        $total = bcadd(bcsub((string) $data['subtotal'], (string) ($data['discount'] ?? '0'), 2), (string) ($data['tax'] ?? '0'), 2);
-        abort_if(bccomp($total, '0', 2) < 0, 422, 'Invoice total cannot be negative.');
+    $data = $request->validated();
 
-        foreach (['purchase_order_id' => 'purchase_orders', 'goods_receipt_id' => 'goods_receipts'] as $field => $table) {
-            if (! empty($data[$field]) && (int) DB::table($table)->where('id', $data[$field])->value('supplier_id') !== (int) $data['supplier_id']) {
-                abort(422, 'Linked document supplier must match invoice supplier.');
-            }
+    $receipt = null;
+
+    /*
+    |--------------------------------------------------------------------------
+    | Validate Purchase Order
+    |--------------------------------------------------------------------------
+    */
+
+    $po = null;
+
+    if (!empty($data['purchase_order_id'])) {
+
+        $po = PurchaseOrder::query()
+            ->findOrFail($data['purchase_order_id']);
+
+        if ((int) $po->supplier_id !== (int) $data['supplier_id']) {
+            abort(
+                422,
+                'Purchase order supplier must match invoice supplier.'
+            );
+        }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Validate Goods Receipt
+    |--------------------------------------------------------------------------
+    */
+
+    if (!empty($data['goods_receipt_id'])) {
+
+        $receipt = GoodsReceipt::query()
+            ->with('items')
+            ->where('id', $data['goods_receipt_id'])
+            ->where('status', 'confirmed')
+            ->firstOrFail();
+
+        /*
+        | Receipt supplier must match invoice supplier
+        */
+
+        if ((int) $receipt->supplier_id !== (int) $data['supplier_id']) {
+            abort(
+                422,
+                'Goods receipt supplier must match invoice supplier.'
+            );
         }
 
-        $invoice = SupplierInvoice::create($data + [
-            'invoice_number' => app(CodeGeneratorService::class)->next('PINV'),
-            'discount' => $data['discount'] ?? 0,
-            'tax' => $data['tax'] ?? 0,
-            'total' => $total,
-            'remaining_amount' => $total,
-            'status' => 'unpaid',
+        /*
+        | If PO is selected, it must be the PO of this receipt
+        */
+
+        if (
+            !empty($data['purchase_order_id']) &&
+            (int) $receipt->purchase_order_id !==
+            (int) $data['purchase_order_id']
+        ) {
+            abort(
+                422,
+                'Purchase order must match the selected goods receipt.'
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Calculate Subtotal From ACCEPTED Quantity Only
+        |--------------------------------------------------------------------------
+        */
+
+        $subtotal = '0';
+
+        foreach ($receipt->items as $item) {
+
+            $acceptedQuantity = (string) $item->accepted_quantity;
+            $unitCost = (string) $item->unit_cost;
+
+            $lineTotal = bcmul(
+                $acceptedQuantity,
+                $unitCost,
+                2
+            );
+
+            $subtotal = bcadd(
+                $subtotal,
+                $lineTotal,
+                2
+            );
+        }
+
+        /*
+        | Never trust subtotal coming from the form
+        */
+
+        $data['subtotal'] = $subtotal;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Subtotal
+    |--------------------------------------------------------------------------
+    */
+
+    $subtotal = (string) ($data['subtotal'] ?? '0');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Discount & Tax
+    |--------------------------------------------------------------------------
+    */
+
+    $discount = (string) ($data['discount'] ?? '0');
+    $tax = (string) ($data['tax'] ?? '0');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Validate Discount
+    |--------------------------------------------------------------------------
+    */
+
+    if (bccomp($discount, '0', 2) < 0) {
+        abort(
+            422,
+            'Discount cannot be negative.'
+        );
+    }
+
+    if (bccomp($discount, $subtotal, 2) > 0) {
+        abort(
+            422,
+            'Discount cannot exceed invoice subtotal.'
+        );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Validate Tax
+    |--------------------------------------------------------------------------
+    */
+
+    if (bccomp($tax, '0', 2) < 0) {
+        abort(
+            422,
+            'Tax cannot be negative.'
+        );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Calculate Total
+    |--------------------------------------------------------------------------
+    */
+
+    $afterDiscount = bcsub(
+        $subtotal,
+        $discount,
+        2
+    );
+
+    $total = bcadd(
+        $afterDiscount,
+        $tax,
+        2
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Final Total Validation
+    |--------------------------------------------------------------------------
+    */
+
+    if (bccomp($total, '0', 2) < 0) {
+        abort(
+            422,
+            'Invoice total cannot be negative.'
+        );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Calculate Advance Payments
+    |--------------------------------------------------------------------------
+    */
+
+    $advancePaid = '0';
+
+    if ($po) {
+
+        $advancePaid = (string) SupplierPayment::query()
+            ->where('purchase_order_id', $po->id)
+            ->where('supplier_id', $po->supplier_id)
+            ->where('payment_type', 'advance')
+            ->sum('amount');
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Calculate Remaining Amount
+    |--------------------------------------------------------------------------
+    */
+
+    if (bccomp($advancePaid, $total, 2) > 0) {
+
+        abort(
+            422,
+            'Advance payments cannot exceed invoice total.'
+        );
+    }
+
+    $remainingAmount = bcsub(
+        $total,
+        $advancePaid,
+        2
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Determine Invoice Status
+    |--------------------------------------------------------------------------
+    */
+
+    $status = match (true) {
+
+        bccomp($remainingAmount, '0', 2) === 0 =>
+            'paid',
+
+        bccomp($advancePaid, '0', 2) > 0 =>
+            'partially_paid',
+
+        default =>
+            'unpaid',
+    };
+
+    /*
+    |--------------------------------------------------------------------------
+    | Create Supplier Invoice
+    |--------------------------------------------------------------------------
+    */
+
+    $invoice = SupplierInvoice::create([
+
+        ...$data,
+
+        'invoice_number' =>
+            app(CodeGeneratorService::class)
+                ->next('PINV'),
+
+        'subtotal' =>
+            $subtotal,
+
+        'discount' =>
+            $discount,
+
+        'tax' =>
+            $tax,
+
+        'total' =>
+            $total,
+
+        'remaining_amount' =>
+            $remainingAmount,
+
+        'status' =>
+            $status,
+    ]);
+
+    return back()->with(
+        'success',
+        "Invoice {$invoice->invoice_number} created."
+    );
+}
+public function storePayment(
+    StoreSupplierPaymentRequest $request
+): RedirectResponse {
+
+    $data = $request->validated();
+
+    /*
+    |--------------------------------------------------------------------------
+    | Validate Supplier
+    |--------------------------------------------------------------------------
+    */
+
+    $supplier = Supplier::findOrFail($data['supplier_id']);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Advance Payment
+    |--------------------------------------------------------------------------
+    */
+
+    if ($data['payment_type'] === 'advance') {
+
+        $po = PurchaseOrder::query()
+            ->findOrFail($data['purchase_order_id']);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Validate PO Supplier
+        |--------------------------------------------------------------------------
+        */
+
+        if ((int) $po->supplier_id !== (int) $supplier->id) {
+            abort(
+                422,
+                'Purchase order supplier must match payment supplier.'
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Create Advance Payment
+        |--------------------------------------------------------------------------
+        */
+
+        $payment = SupplierPayment::create([
+
+            'payment_number' =>
+                app(CodeGeneratorService::class)->next('SPAY'),
+
+            'supplier_id' =>
+                $supplier->id,
+
+            'purchase_order_id' =>
+                $po->id,
+
+            'supplier_invoice_id' =>
+                null,
+
+            'payment_type' =>
+                'advance',
+
+            'payment_date' =>
+                $data['payment_date'],
+
+            'amount' =>
+                $data['amount'],
+
+            'payment_method' =>
+                $data['payment_method'],
+
+            'reference' =>
+                $data['reference'] ?? null,
+
+            'notes' =>
+                $data['notes'] ?? null,
         ]);
 
-        return back()->with('success', "Invoice {$invoice->invoice_number} created.");
+        return back()->with(
+            'success',
+            "Advance payment {$payment->payment_number} recorded."
+        );
     }
 
-    public function storePayment(StoreSupplierPaymentRequest $request, RecordSupplierPaymentAction $action): RedirectResponse
-    {
-        $data = $request->validated();
+    /*
+    |--------------------------------------------------------------------------
+    | Invoice Payment
+    |--------------------------------------------------------------------------
+    |
+    | Supports:
+    | - Full payment
+    | - Partial payment
+    | - Multiple payments for the same invoice
+    |
+    */
 
-        $action->handle($data);
+    DB::transaction(function () use ($data, $supplier) {
 
-        return back()->with('success', 'Supplier payment recorded.');
-    }
+        /*
+        |--------------------------------------------------------------------------
+        | Lock Invoice
+        |--------------------------------------------------------------------------
+        */
+
+        $invoice = SupplierInvoice::query()
+            ->lockForUpdate()
+            ->findOrFail($data['supplier_invoice_id']);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Validate Invoice Supplier
+        |--------------------------------------------------------------------------
+        */
+
+        if ((int) $invoice->supplier_id !== (int) $supplier->id) {
+            abort(
+                422,
+                'Invoice supplier must match payment supplier.'
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Payment Amount
+        |--------------------------------------------------------------------------
+        */
+
+        $amount = (string) $data['amount'];
+
+        $remaining = (string) $invoice->remaining_amount;
+
+        /*
+        |--------------------------------------------------------------------------
+        | Validate Payment Amount
+        |--------------------------------------------------------------------------
+        */
+
+        if (bccomp($amount, '0', 2) <= 0) {
+            abort(
+                422,
+                'Payment amount must be greater than zero.'
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Payment Cannot Exceed Remaining Amount
+        |--------------------------------------------------------------------------
+        */
+
+        if (bccomp($amount, $remaining, 2) > 0) {
+            abort(
+                422,
+                'Payment amount cannot exceed invoice remaining amount.'
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Calculate New Remaining Amount
+        |--------------------------------------------------------------------------
+        */
+
+        $newRemaining = bcsub(
+            $remaining,
+            $amount,
+            2
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Determine Invoice Status
+        |--------------------------------------------------------------------------
+        */
+
+        $status = bccomp(
+            $newRemaining,
+            '0',
+            2
+        ) === 0
+            ? 'paid'
+            : 'partially_paid';
+
+        /*
+        |--------------------------------------------------------------------------
+        | Create Supplier Payment
+        |--------------------------------------------------------------------------
+        */
+
+        SupplierPayment::create([
+
+            'payment_number' =>
+                app(CodeGeneratorService::class)->next('SPAY'),
+
+            'supplier_id' =>
+                $invoice->supplier_id,
+
+            'purchase_order_id' =>
+                $invoice->purchase_order_id,
+
+            'supplier_invoice_id' =>
+                $invoice->id,
+
+            'payment_type' =>
+                'invoice',
+
+            'payment_date' =>
+                $data['payment_date'],
+
+            'amount' =>
+                $amount,
+
+            'payment_method' =>
+                $data['payment_method'],
+
+            'reference' =>
+                $data['reference'] ?? null,
+
+            'notes' =>
+                $data['notes'] ?? null,
+        ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Update Invoice Balance
+        |--------------------------------------------------------------------------
+        */
+
+        $invoice->update([
+
+            'remaining_amount' =>
+                $newRemaining,
+
+            'status' =>
+                $status,
+        ]);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Success
+    |--------------------------------------------------------------------------
+    */
+
+    return back()->with(
+        'success',
+        'Supplier payment recorded successfully.'
+    );
+}
 
     public function confirmReturn(
         PurchaseReturn $purchaseReturn,

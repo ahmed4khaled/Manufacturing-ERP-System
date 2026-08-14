@@ -7,17 +7,63 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class SupplierPayment extends Model
 {
-    protected $fillable = ['supplier_id', 'supplier_invoice_id', 'payment_date', 'amount', 'payment_method', 'reference', 'notes', 'created_by'];
+    protected $fillable = [
+        'payment_number',
+        'supplier_id',
+        'purchase_order_id',
+        'supplier_invoice_id',
+        'payment_type',
+        'payment_date',
+        'amount',
+        'payment_method',
+        'reference',
+        'notes',
+    ];
 
-    protected $casts = ['payment_date' => 'date', 'amount' => 'decimal:2'];
+    protected $casts = [
+        'payment_date' => 'date',
+        'amount' => 'decimal:2',
+    ];
 
-    public function invoice(): BelongsTo
-    {
-        return $this->belongsTo(SupplierInvoice::class, 'supplier_invoice_id');
-    }
+    /*
+    |--------------------------------------------------------------------------
+    | Supplier
+    |--------------------------------------------------------------------------
+    */
 
     public function supplier(): BelongsTo
     {
-        return $this->belongsTo(Supplier::class);
+        return $this->belongsTo(
+            Supplier::class,
+            'supplier_id'
+        );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Purchase Order
+    |--------------------------------------------------------------------------
+    */
+
+    public function purchaseOrder(): BelongsTo
+    {
+        return $this->belongsTo(
+            PurchaseOrder::class,
+            'purchase_order_id'
+        );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Supplier Invoice
+    |--------------------------------------------------------------------------
+    */
+
+    public function invoice(): BelongsTo
+    {
+        return $this->belongsTo(
+            SupplierInvoice::class,
+            'supplier_invoice_id'
+        );
     }
 }

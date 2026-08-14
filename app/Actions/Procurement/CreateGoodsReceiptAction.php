@@ -14,14 +14,35 @@ class CreateGoodsReceiptAction
     public function handle(array $data): GoodsReceipt
     {
         return DB::transaction(function () use ($data) {
-            $po = PurchaseOrder::query()->lockForUpdate()->with('items')->findOrFail($data['purchase_order_id']);
+
+            $po = PurchaseOrder::query()
+                ->lockForUpdate()
+                ->with('items')
+                ->findOrFail($data['purchase_order_id']);
 
             if ($po->status === 'cancelled') {
-                throw ValidationException::withMessages(['purchase_order_id' => 'Cancelled purchase orders cannot receive goods.']);
+                throw ValidationException::withMessages([
+                    'purchase_order_id' => 'Cancelled purchase orders cannot receive goods.'
+                ]);
             }
 
             $items = $data['items'];
 
+            $poItemMap = $po->items->keyBy('id');
+
+            $poItemIds = array_map(
+                fn ($it) => $it['purchase_order_item_id'],
+                $items
+            );
+
+            PurchaseOrderItem::query()
+                ->whereIn('id', $poItemIds)
+                ->lockForUpdate()
+                ->get();
+
+            /*
+             * Create receipt first
+             */
             $receipt = GoodsReceipt::create([
                 'receipt_number' => $this->codes->next('GR'),
                 'purchase_order_id' => $po->id,
@@ -32,23 +53,88 @@ class CreateGoodsReceiptAction
                 'status' => 'draft',
             ]);
 
-            $poItemMap = $po->items->keyBy('id');
-
-            $poItemIds = array_map(fn($it) => $it['purchase_order_item_id'], $items);
-            PurchaseOrderItem::query()->whereIn('id', $poItemIds)->lockForUpdate()->get();
-
             foreach ($items as $item) {
+
                 $poItem = $poItemMap->get($item['purchase_order_item_id']);
+
                 if (! $poItem) {
-                    throw ValidationException::withMessages(['items' => 'One or more receipt items do not belong to the selected purchase order.']);
+                    throw ValidationException::withMessages([
+                        'items' => 'One or more receipt items do not belong to the selected purchase order.'
+                    ]);
+                }
+
+                /*
+                 * IMPORTANT:
+                 * Remaining quantity is based on ACCEPTED quantity.
+                 *
+                 * Rejected quantity does NOT fulfill the PO.
+                 */
+                $acceptedPreviously = (string) $poItem->receiptItems()
+                    ->whereHas(
+                        'receipt',
+                        fn ($q) => $q->where('status', 'confirmed')
+                    )
+                    ->sum('accepted_quantity');
+
+                $ordered = (string) $poItem->quantity;
+
+                $remaining = bcsub(
+                    $ordered,
+                    $acceptedPreviously,
+                    3
+                );
+
+                if (bccomp($remaining, '0', 3) < 0) {
+                    $remaining = '0';
                 }
 
                 $received = (string) ($item['received_quantity'] ?? '0');
                 $accepted = (string) ($item['accepted_quantity'] ?? '0');
                 $rejected = (string) ($item['rejected_quantity'] ?? '0');
 
-                if (bccomp(bcadd($accepted, $rejected, 3), $received, 3) !== 0) {
-                    throw ValidationException::withMessages(['items' => 'Accepted and rejected quantities must equal received quantity.']);
+                /*
+                 * Accepted + Rejected must equal Received
+                 */
+                if (
+                    bccomp(
+                        bcadd($accepted, $rejected, 3),
+                        $received,
+                        3
+                    ) !== 0
+                ) {
+                    throw ValidationException::withMessages([
+                        'items' => 'Accepted and rejected quantities must equal received quantity.'
+                    ]);
+                }
+
+                /*
+                 * Accepted quantity cannot exceed remaining PO quantity.
+                 */
+                if (bccomp($accepted, $remaining, 3) > 0) {
+                    throw ValidationException::withMessages([
+                        'items' =>
+                            "Accepted quantity for {$poItem->material->name} cannot exceed the remaining quantity of {$remaining}."
+                    ]);
+                }
+
+                /*
+                 * A supplier may send more than the remaining quantity,
+                 * but only the accepted amount can fulfill the PO.
+                 *
+                 * Usually we keep it strict here:
+                 * Received quantity cannot exceed remaining + rejected.
+                 */
+                $maxReceived = bcadd(
+                    $remaining,
+                    $rejected,
+                    3
+                );
+
+                if (bccomp($received, $maxReceived, 3) > 0) {
+                    throw ValidationException::withMessages([
+                        'items' =>
+                            "Received quantity for {$poItem->material->name} exceeds the remaining quantity."
+                    ]);
                 }
 
                 $receipt->items()->create([

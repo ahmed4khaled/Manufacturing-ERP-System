@@ -23,7 +23,6 @@ class MaterialInventoryController extends Controller
     //     $this->middleware('permission:material_inventory.opening_stock')->only(['createOpeningStock', 'storeOpeningStock']);
     //     $this->middleware('permission:material_inventory.adjustment')->only(['createAdjustment', 'storeAdjustment']);
     // }
-
     public function index(Request $request, MaterialStockService $materialStockService): View
     {
         $materials = Material::query()

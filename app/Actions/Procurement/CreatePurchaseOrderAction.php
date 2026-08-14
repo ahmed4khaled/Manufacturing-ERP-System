@@ -14,7 +14,6 @@ class CreatePurchaseOrderAction
     return DB::transaction(function () use ($data) {
         $items = $data['items'];
         unset($data['items']);
-
         $purchaseOrderNumber = $this->codes->next('PO');
 
         $po = PurchaseOrder::create([

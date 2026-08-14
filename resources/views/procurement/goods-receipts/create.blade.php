@@ -61,93 +61,220 @@
 
 @push('scripts')
 <script>
-    // Prepare PO data: organize items by purchase order ID
     const poData = {!! json_encode(
         $orders->mapWithKeys(function($order) {
+
             return [
                 $order->id => $order->items->map(function($item) {
+
+                    $acceptedPreviously = $item->receiptItems
+                        ->filter(function($receiptItem) {
+                            return $receiptItem->receipt
+                                && $receiptItem->receipt->status === 'confirmed';
+                        })
+                        ->sum('accepted_quantity');
+
+                    $ordered = (float) $item->quantity;
+
+                    $remaining = max(
+                        0,
+                        $ordered - (float) $acceptedPreviously
+                    );
+
                     return [
                         'id' => $item->id,
                         'label' => $item->material->code . ' — ' . $item->material->name,
                         'unit' => $item->material->unit->label(),
-                        'qty' => $item->quantity,
-                        'cost' => $item->unit_price,
+
+                        'ordered' => $ordered,
+
+                        'acceptedPreviously' => (float) $acceptedPreviously,
+
+                        'remaining' => $remaining,
+
+                        'cost' => (float) $item->unit_price,
                     ];
-                })->all(),
+
+                })->filter(function($item) {
+
+                    // Show only items that still need accepted quantity
+                    return $item['remaining'] > 0;
+
+                })->values()->all(),
             ];
+
         })->all()
     ) !!};
 
-    // Handle PO selection and populate items table
-    document.getElementById('po').addEventListener('change', function(e) {
-        const poId = e.target.value;
+    const poSelect = document.getElementById('po');
+    const tbody = document.getElementById('items');
+
+    function renderItems(poId) {
+
         const items = poData[poId] || [];
-        const tbody = document.getElementById('items');
-        
+
+        tbody.innerHTML = '';
+
+        if (items.length === 0) {
+
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">
+                        All ordered quantities have been accepted.
+                    </td>
+                </tr>
+            `;
+
+            return;
+        }
+
         let html = '';
 
         items.forEach((item, index) => {
+
             html += `
                 <tr>
+
                     <td>
                         ${item.label}
-                        <small class="text-muted">(${item.unit})</small>
-                        <input 
-                            type="hidden" 
-                            name="items[${index}][purchase_order_item_id]" 
+                        <small class="text-muted">
+                            (${item.unit})
+                        </small>
+
+                        <input
+                            type="hidden"
+                            name="items[${index}][purchase_order_item_id]"
                             value="${item.id}"
                         >
                     </td>
-                    <td>${item.qty}</td>
+
                     <td>
-                        <input 
-                            name="items[${index}][received_quantity]" 
-                            type="number" 
-                            step=".001" 
-                            min=".001" 
-                            class="form-control" 
+                        ${item.ordered.toFixed(3)}
+                    </td>
+
+                    <td>
+                        <input
+                            name="items[${index}][received_quantity]"
+                            type="number"
+                            step=".001"
+                            min="0"
+                            max="${item.remaining}"
+                            value="${item.remaining}"
+                            class="form-control received-input"
                             required
                         >
                     </td>
+
                     <td>
-                        <input 
-                            name="items[${index}][accepted_quantity]" 
-                            type="number" 
-                            step=".001" 
-                            min="0" 
-                            value="0" 
-                            class="form-control" 
+                        <input
+                            name="items[${index}][accepted_quantity]"
+                            type="number"
+                            step=".001"
+                            min="0"
+                            max="${item.remaining}"
+                            value="${item.remaining}"
+                            class="form-control accepted-input"
                             required
                         >
                     </td>
+
                     <td>
-                        <input 
-                            name="items[${index}][rejected_quantity]" 
-                            type="number" 
-                            step=".001" 
-                            min="0" 
-                            value="0" 
-                            class="form-control" 
+                        <input
+                            name="items[${index}][rejected_quantity]"
+                            type="number"
+                            step=".001"
+                            min="0"
+                            value="0"
+                            class="form-control rejected-input"
                             required
                         >
                     </td>
+
                     <td>
-                        <input 
-                            name="items[${index}][unit_cost]" 
-                            type="number" 
-                            step=".01" 
-                            min="0" 
-                            value="${item.cost}" 
-                            class="form-control" 
+                        <input
+                            name="items[${index}][unit_cost]"
+                            type="number"
+                            step=".01"
+                            min="0"
+                            value="${item.cost}"
+                            class="form-control"
                             required
                         >
                     </td>
+
                 </tr>
             `;
         });
 
         tbody.innerHTML = html;
+
+        setupQuantityValidation();
+    }
+
+    function setupQuantityValidation() {
+
+        const rows = tbody.querySelectorAll('tr');
+
+        rows.forEach(row => {
+
+            const received = row.querySelector('.received-input');
+            const accepted = row.querySelector('.accepted-input');
+            const rejected = row.querySelector('.rejected-input');
+
+            if (!received || !accepted || !rejected) {
+                return;
+            }
+
+            function sync() {
+
+                const receivedValue = parseFloat(received.value) || 0;
+                const acceptedValue = parseFloat(accepted.value) || 0;
+                const rejectedValue = parseFloat(rejected.value) || 0;
+
+                const total = acceptedValue + rejectedValue;
+
+                if (total > receivedValue) {
+
+                    rejected.setCustomValidity(
+                        'Accepted + Rejected cannot exceed Received.'
+                    );
+
+                } else if (total < receivedValue) {
+
+                    rejected.setCustomValidity(
+                        'Accepted + Rejected must equal Received.'
+                    );
+
+                } else {
+
+                    rejected.setCustomValidity('');
+                }
+            }
+
+            received.addEventListener('input', sync);
+            accepted.addEventListener('input', sync);
+            rejected.addEventListener('input', sync);
+
+            sync();
+        });
+    }
+
+    poSelect.addEventListener('change', function () {
+
+        renderItems(this.value);
+
     });
+
+    // If coming from Purchase Order page
+    const urlParams = new URLSearchParams(window.location.search);
+    const selectedPo = urlParams.get('purchase_order_id');
+
+    if (selectedPo) {
+
+        poSelect.value = selectedPo;
+
+        renderItems(selectedPo);
+    }
 </script>
 @endpush
 

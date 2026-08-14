@@ -22,7 +22,7 @@ class StorePurchaseOrderRequest extends FormRequest
             'discount' => 'nullable|numeric|min:0',
             'tax' => 'nullable|numeric|min:0',
             'items' => 'required|array|min:1',
-            'items.*.material_id' => 'required|exists:materials,id',
+           'items.*.material_id' => 'required|exists:materials,id|distinct',
             'items.*.quantity' => 'required|numeric|min:0.001',
             'items.*.unit_price' => 'required|numeric|min:0',
             'items.*.discount' => 'nullable|numeric|min:0',
