@@ -63,41 +63,44 @@
                     </select>
                 </div>
 
-                {{-- Purchase Order --}}
-                <div class="col-md-6">
+               {{-- Purchase Order --}}
+<div
+    class="col-md-6"
+    id="purchase-order-wrapper"
+>
 
-                    <label class="form-label">
-                        Purchase Order
-                    </label>
+    <label class="form-label">
+        Purchase Order
+    </label>
 
-                    <select
-                        name="purchase_order_id"
-                        id="purchase_order"
-                        class="form-select"
-                    >
-                        <option value="">
-                            Not linked
-                        </option>
+    <select
+        name="purchase_order_id"
+        id="purchase_order"
+        class="form-select"
+    >
+        <option value="">
+            Not linked
+        </option>
 
-                        @foreach ($orders as $order)
-                            <option
-                                value="{{ $order->id }}"
-                                data-supplier="{{ $order->supplier_id }}"
-                            >
-                                {{ $order->purchase_order_number }}
-                                —
-                                {{ $order->supplier->name }}
-                                —
-                                {{ number_format($order->total, 2) }}
-                            </option>
-                        @endforeach
-                    </select>
+        @foreach ($orders as $order)
+            <option
+                value="{{ $order->id }}"
+                data-supplier="{{ $order->supplier_id }}"
+            >
+                {{ $order->purchase_order_number }}
+                —
+                {{ $order->supplier->name }}
+                —
+                {{ number_format($order->total, 2) }}
+            </option>
+        @endforeach
+    </select>
 
-                    <small class="text-muted">
-                        Required for advance payments.
-                    </small>
+    <small class="text-muted">
+        Required for advance payments.
+    </small>
 
-                </div>
+</div>
 
                 {{-- Supplier Invoice --}}
                 <div
@@ -318,7 +321,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const paymentType =
         document.getElementById('payment_type');
-
+const purchaseOrderWrapper =
+    document.getElementById('purchase-order-wrapper');
     const supplier =
         document.getElementById('supplier');
 
@@ -512,56 +516,65 @@ document.addEventListener('DOMContentLoaded', function () {
     | Payment Type
     |--------------------------------------------------------------------------
     */
+function updatePaymentType() {
 
-    function updatePaymentType() {
+    const isAdvance =
+        paymentType.value === 'advance';
 
-        const isAdvance =
-            paymentType.value === 'advance';
+    if (isAdvance) {
 
+        /*
+        |--------------------------------------------------------------------------
+        | Advance Payment
+        |--------------------------------------------------------------------------
+        */
 
-        if (isAdvance) {
+        invoiceWrapper.style.display = 'none';
 
-            /*
-            |--------------------------------------------------------------------------
-            | Advance Payment
-            |--------------------------------------------------------------------------
-            */
+        purchaseOrderWrapper.style.display = '';
 
-            invoiceWrapper.style.display = 'none';
+        invoice.value = '';
 
-            invoice.value = '';
+        invoice.removeAttribute('required');
 
-            invoice.removeAttribute('required');
+        purchaseOrder.setAttribute(
+            'required',
+            'required'
+        );
 
-            purchaseOrder.setAttribute(
-                'required',
-                'required'
-            );
+        resetInvoiceInfo();
 
-            resetInvoiceInfo();
+    } else {
 
-        } else {
+        /*
+        |--------------------------------------------------------------------------
+        | Invoice Payment
+        |--------------------------------------------------------------------------
+        */
 
-            /*
-            |--------------------------------------------------------------------------
-            | Invoice Payment
-            |--------------------------------------------------------------------------
-            */
+        invoiceWrapper.style.display = '';
 
-            invoiceWrapper.style.display = '';
+        purchaseOrderWrapper.style.display = 'none';
 
-            invoice.setAttribute(
-                'required',
-                'required'
-            );
+        invoice.setAttribute(
+            'required',
+            'required'
+        );
 
-            purchaseOrder.removeAttribute(
-                'required'
-            );
+        purchaseOrder.removeAttribute(
+            'required'
+        );
 
-        }
+        /*
+        | Do not send Purchase Order
+        | when paying an invoice.
+        */
+
+        purchaseOrder.value = '';
 
     }
+
+}
 
 
     /*

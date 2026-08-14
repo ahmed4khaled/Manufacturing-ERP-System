@@ -112,20 +112,20 @@ class ProcurementController extends Controller
         return back()->with('success', 'Supplier contact removed.');
     }
 
- public function purchaseOrders(Request $request): View
-{
-    $query = PurchaseOrder::query()
-        ->with('supplier')
-        ->latest('created_at');
+    public function purchaseOrders(Request $request): View
+    {
+        $query = PurchaseOrder::query()
+            ->with('supplier')
+            ->latest('created_at');
 
-    if ($request->filled('status')) {
-        $query->where('status', $request->status);
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $orders = $query->paginate(15)->withQueryString();
+
+        return view('procurement.purchase-orders.index', compact('orders'));
     }
-
-    $orders = $query->paginate(15)->withQueryString();
-
-    return view('procurement.purchase-orders.index', compact('orders'));
-}
 
     public function createPurchaseOrder(): View
     {
@@ -155,28 +155,28 @@ class ProcurementController extends Controller
 
         return view('procurement.invoices.index', compact('invoices'));
     }
-public function createInvoice(): View
-{
-    $suppliers = Supplier::query()
-        ->where('status', 'active')
-        ->orderBy('name')
-        ->get();
+    public function createInvoice(): View
+    {
+        $suppliers = Supplier::query()
+            ->where('status', 'active')
+            ->orderBy('name')
+            ->get();
 
-    $orders = PurchaseOrder::query()
-        ->with('supplier')
-        ->latest('created_at')
-        ->get();
+        $orders = PurchaseOrder::query()
+            ->with('supplier')
+            ->latest('created_at')
+            ->get();
 
-    $receipts = GoodsReceipt::query()
-        ->with([
-            'supplier',
-            'items.material',
-        ])
-        ->where('status', 'confirmed')
-        ->latest('received_at')
-        ->get();
+        $receipts = GoodsReceipt::query()
+            ->with([
+                'supplier',
+                'items.material',
+            ])
+            ->where('status', 'confirmed')
+            ->latest('received_at')
+            ->get();
 
-    /*
+        /*
     |--------------------------------------------------------------------------
     | Advance Payments
     |--------------------------------------------------------------------------
@@ -185,31 +185,31 @@ public function createInvoice(): View
     |
     */
 
-    $advancePayments = SupplierPayment::query()
-        ->select(
-            'purchase_order_id',
-            'supplier_id'
-        )
-        ->selectRaw('SUM(amount) as total_advance')
-        ->where('payment_type', 'advance')
-        ->whereNotNull('purchase_order_id')
-        ->groupBy(
-            'purchase_order_id',
-            'supplier_id'
-        )
-        ->get()
-        ->keyBy('purchase_order_id');
+        $advancePayments = SupplierPayment::query()
+            ->select(
+                'purchase_order_id',
+                'supplier_id'
+            )
+            ->selectRaw('SUM(amount) as total_advance')
+            ->where('payment_type', 'advance')
+            ->whereNotNull('purchase_order_id')
+            ->groupBy(
+                'purchase_order_id',
+                'supplier_id'
+            )
+            ->get()
+            ->keyBy('purchase_order_id');
 
-    return view(
-        'procurement.invoices.create',
-        compact(
-            'suppliers',
-            'orders',
-            'receipts',
-            'advancePayments'
-        )
-    );
-}
+        return view(
+            'procurement.invoices.create',
+            compact(
+                'suppliers',
+                'orders',
+                'receipts',
+                'advancePayments'
+            )
+        );
+    }
 
     public function payments(): View
     {
@@ -218,29 +218,29 @@ public function createInvoice(): View
         return view('procurement.payments.index', compact('payments'));
     }
 
-  public function createPayment(): View
-{
-    $suppliers = Supplier::query()
-        ->orderBy('name')
-        ->get();
+    public function createPayment(): View
+    {
+        $suppliers = Supplier::query()
+            ->orderBy('name')
+            ->get();
 
-    $orders = PurchaseOrder::query()
-        ->with('supplier')
-        ->latest('created_at')
-        ->get();
+        $orders = PurchaseOrder::query()
+            ->with('supplier')
+            ->latest('created_at')
+            ->get();
 
-    $invoices = SupplierInvoice::query()
-        ->where('remaining_amount', '>', 0)
-        ->with('supplier')
-        ->latest('invoice_date')
-        ->get();
+        $invoices = SupplierInvoice::query()
+            ->where('remaining_amount', '>', 0)
+            ->with('supplier')
+            ->latest('invoice_date')
+            ->get();
 
-    return view('procurement.payments.create', compact(
-        'suppliers',
-        'orders',
-        'invoices'
-    ));
-}
+        return view('procurement.payments.create', compact(
+            'suppliers',
+            'orders',
+            'invoices'
+        ));
+    }
 
     public function returns(): View
     {
@@ -345,10 +345,10 @@ public function createInvoice(): View
         GoodsReceipt $goodsReceipt,
         ConfirmGoodsReceiptAction $action
     ): RedirectResponse {
-        
+
         $action->handle($goodsReceipt);
 
-  
+
         return back()->with('success', 'Goods receipt confirmed and inventory posted.');
     }
 
@@ -384,366 +384,366 @@ public function createInvoice(): View
         return view('procurement.returns.show', compact('purchaseReturn'));
     }
 
-public function storeInvoice(
-    StoreSupplierInvoiceRequest $request
-): RedirectResponse {
+    public function storeInvoice(
+        StoreSupplierInvoiceRequest $request
+    ): RedirectResponse {
 
-    $data = $request->validated();
+        $data = $request->validated();
 
-    $receipt = null;
+        $receipt = null;
 
-    /*
+        /*
     |--------------------------------------------------------------------------
     | Validate Purchase Order
     |--------------------------------------------------------------------------
     */
 
-    $po = null;
+        $po = null;
 
-    if (!empty($data['purchase_order_id'])) {
+        if (!empty($data['purchase_order_id'])) {
 
-        $po = PurchaseOrder::query()
-            ->findOrFail($data['purchase_order_id']);
+            $po = PurchaseOrder::query()
+                ->findOrFail($data['purchase_order_id']);
 
-        if ((int) $po->supplier_id !== (int) $data['supplier_id']) {
-            abort(
-                422,
-                'Purchase order supplier must match invoice supplier.'
-            );
+            if ((int) $po->supplier_id !== (int) $data['supplier_id']) {
+                abort(
+                    422,
+                    'Purchase order supplier must match invoice supplier.'
+                );
+            }
         }
-    }
 
-    /*
+        /*
     |--------------------------------------------------------------------------
     | Validate Goods Receipt
     |--------------------------------------------------------------------------
     */
 
-    if (!empty($data['goods_receipt_id'])) {
+        if (!empty($data['goods_receipt_id'])) {
 
-        $receipt = GoodsReceipt::query()
-            ->with('items')
-            ->where('id', $data['goods_receipt_id'])
-            ->where('status', 'confirmed')
-            ->firstOrFail();
+            $receipt = GoodsReceipt::query()
+                ->with('items')
+                ->where('id', $data['goods_receipt_id'])
+                ->where('status', 'confirmed')
+                ->firstOrFail();
 
-        /*
+            /*
         | Receipt supplier must match invoice supplier
         */
 
-        if ((int) $receipt->supplier_id !== (int) $data['supplier_id']) {
-            abort(
-                422,
-                'Goods receipt supplier must match invoice supplier.'
-            );
-        }
+            if ((int) $receipt->supplier_id !== (int) $data['supplier_id']) {
+                abort(
+                    422,
+                    'Goods receipt supplier must match invoice supplier.'
+                );
+            }
 
-        /*
+            /*
         | If PO is selected, it must be the PO of this receipt
         */
 
-        if (
-            !empty($data['purchase_order_id']) &&
-            (int) $receipt->purchase_order_id !==
-            (int) $data['purchase_order_id']
-        ) {
-            abort(
-                422,
-                'Purchase order must match the selected goods receipt.'
-            );
-        }
+            if (
+                !empty($data['purchase_order_id']) &&
+                (int) $receipt->purchase_order_id !==
+                (int) $data['purchase_order_id']
+            ) {
+                abort(
+                    422,
+                    'Purchase order must match the selected goods receipt.'
+                );
+            }
 
-        /*
+            /*
         |--------------------------------------------------------------------------
         | Calculate Subtotal From ACCEPTED Quantity Only
         |--------------------------------------------------------------------------
         */
 
-        $subtotal = '0';
+            $subtotal = '0';
 
-        foreach ($receipt->items as $item) {
+            foreach ($receipt->items as $item) {
 
-            $acceptedQuantity = (string) $item->accepted_quantity;
-            $unitCost = (string) $item->unit_cost;
+                $acceptedQuantity = (string) $item->accepted_quantity;
+                $unitCost = (string) $item->unit_cost;
 
-            $lineTotal = bcmul(
-                $acceptedQuantity,
-                $unitCost,
-                2
-            );
+                $lineTotal = bcmul(
+                    $acceptedQuantity,
+                    $unitCost,
+                    2
+                );
 
-            $subtotal = bcadd(
-                $subtotal,
-                $lineTotal,
-                2
-            );
-        }
+                $subtotal = bcadd(
+                    $subtotal,
+                    $lineTotal,
+                    2
+                );
+            }
 
-        /*
+            /*
         | Never trust subtotal coming from the form
         */
 
-        $data['subtotal'] = $subtotal;
-    }
+            $data['subtotal'] = $subtotal;
+        }
 
-    /*
+        /*
     |--------------------------------------------------------------------------
     | Subtotal
     |--------------------------------------------------------------------------
     */
 
-    $subtotal = (string) ($data['subtotal'] ?? '0');
+        $subtotal = (string) ($data['subtotal'] ?? '0');
 
-    /*
+        /*
     |--------------------------------------------------------------------------
     | Discount & Tax
     |--------------------------------------------------------------------------
     */
 
-    $discount = (string) ($data['discount'] ?? '0');
-    $tax = (string) ($data['tax'] ?? '0');
+        $discount = (string) ($data['discount'] ?? '0');
+        $tax = (string) ($data['tax'] ?? '0');
 
-    /*
+        /*
     |--------------------------------------------------------------------------
     | Validate Discount
     |--------------------------------------------------------------------------
     */
 
-    if (bccomp($discount, '0', 2) < 0) {
-        abort(
-            422,
-            'Discount cannot be negative.'
-        );
-    }
+        if (bccomp($discount, '0', 2) < 0) {
+            abort(
+                422,
+                'Discount cannot be negative.'
+            );
+        }
 
-    if (bccomp($discount, $subtotal, 2) > 0) {
-        abort(
-            422,
-            'Discount cannot exceed invoice subtotal.'
-        );
-    }
+        if (bccomp($discount, $subtotal, 2) > 0) {
+            abort(
+                422,
+                'Discount cannot exceed invoice subtotal.'
+            );
+        }
 
-    /*
+        /*
     |--------------------------------------------------------------------------
     | Validate Tax
     |--------------------------------------------------------------------------
     */
 
-    if (bccomp($tax, '0', 2) < 0) {
-        abort(
-            422,
-            'Tax cannot be negative.'
-        );
-    }
+        if (bccomp($tax, '0', 2) < 0) {
+            abort(
+                422,
+                'Tax cannot be negative.'
+            );
+        }
 
-    /*
+        /*
     |--------------------------------------------------------------------------
     | Calculate Total
     |--------------------------------------------------------------------------
     */
 
-    $afterDiscount = bcsub(
-        $subtotal,
-        $discount,
-        2
-    );
+        $afterDiscount = bcsub(
+            $subtotal,
+            $discount,
+            2
+        );
 
-    $total = bcadd(
-        $afterDiscount,
-        $tax,
-        2
-    );
+        $total = bcadd(
+            $afterDiscount,
+            $tax,
+            2
+        );
 
-    /*
+        /*
     |--------------------------------------------------------------------------
     | Final Total Validation
     |--------------------------------------------------------------------------
     */
 
-    if (bccomp($total, '0', 2) < 0) {
-        abort(
-            422,
-            'Invoice total cannot be negative.'
-        );
-    }
+        if (bccomp($total, '0', 2) < 0) {
+            abort(
+                422,
+                'Invoice total cannot be negative.'
+            );
+        }
 
-    /*
+        /*
     |--------------------------------------------------------------------------
     | Calculate Advance Payments
     |--------------------------------------------------------------------------
     */
 
-    $advancePaid = '0';
+        $advancePaid = '0';
 
-    if ($po) {
+        if ($po) {
 
-        $advancePaid = (string) SupplierPayment::query()
-            ->where('purchase_order_id', $po->id)
-            ->where('supplier_id', $po->supplier_id)
-            ->where('payment_type', 'advance')
-            ->sum('amount');
-    }
+            $advancePaid = (string) SupplierPayment::query()
+                ->where('purchase_order_id', $po->id)
+                ->where('supplier_id', $po->supplier_id)
+                ->where('payment_type', 'advance')
+                ->sum('amount');
+        }
 
-    /*
+        /*
     |--------------------------------------------------------------------------
     | Calculate Remaining Amount
     |--------------------------------------------------------------------------
     */
 
-    if (bccomp($advancePaid, $total, 2) > 0) {
+        if (bccomp($advancePaid, $total, 2) > 0) {
 
-        abort(
-            422,
-            'Advance payments cannot exceed invoice total.'
+            abort(
+                422,
+                'Advance payments cannot exceed invoice total.'
+            );
+        }
+
+        $remainingAmount = bcsub(
+            $total,
+            $advancePaid,
+            2
         );
-    }
 
-    $remainingAmount = bcsub(
-        $total,
-        $advancePaid,
-        2
-    );
-
-    /*
+        /*
     |--------------------------------------------------------------------------
     | Determine Invoice Status
     |--------------------------------------------------------------------------
     */
 
-    $status = match (true) {
+        $status = match (true) {
 
-        bccomp($remainingAmount, '0', 2) === 0 =>
+            bccomp($remainingAmount, '0', 2) === 0 =>
             'paid',
 
-        bccomp($advancePaid, '0', 2) > 0 =>
+            bccomp($advancePaid, '0', 2) > 0 =>
             'partially_paid',
 
-        default =>
+            default =>
             'unpaid',
-    };
+        };
 
-    /*
+        /*
     |--------------------------------------------------------------------------
     | Create Supplier Invoice
     |--------------------------------------------------------------------------
     */
 
-    $invoice = SupplierInvoice::create([
+        $invoice = SupplierInvoice::create([
 
-        ...$data,
+            ...$data,
 
-        'invoice_number' =>
+            'invoice_number' =>
             app(CodeGeneratorService::class)
                 ->next('PINV'),
 
-        'subtotal' =>
+            'subtotal' =>
             $subtotal,
 
-        'discount' =>
+            'discount' =>
             $discount,
 
-        'tax' =>
+            'tax' =>
             $tax,
 
-        'total' =>
+            'total' =>
             $total,
 
-        'remaining_amount' =>
+            'remaining_amount' =>
             $remainingAmount,
 
-        'status' =>
+            'status' =>
             $status,
-    ]);
+        ]);
 
-    return back()->with(
-        'success',
-        "Invoice {$invoice->invoice_number} created."
-    );
-}
-public function storePayment(
-    StoreSupplierPaymentRequest $request
-): RedirectResponse {
+        return back()->with(
+            'success',
+            "Invoice {$invoice->invoice_number} created."
+        );
+    }
+    public function storePayment(
+        StoreSupplierPaymentRequest $request
+    ): RedirectResponse {
 
-    $data = $request->validated();
+        $data = $request->validated();
 
-    /*
+        /*
     |--------------------------------------------------------------------------
     | Validate Supplier
     |--------------------------------------------------------------------------
     */
 
-    $supplier = Supplier::findOrFail($data['supplier_id']);
+        $supplier = Supplier::findOrFail($data['supplier_id']);
 
-    /*
+        /*
     |--------------------------------------------------------------------------
     | Advance Payment
     |--------------------------------------------------------------------------
     */
 
-    if ($data['payment_type'] === 'advance') {
+        if ($data['payment_type'] === 'advance') {
 
-        $po = PurchaseOrder::query()
-            ->findOrFail($data['purchase_order_id']);
+            $po = PurchaseOrder::query()
+                ->findOrFail($data['purchase_order_id']);
 
-        /*
+            /*
         |--------------------------------------------------------------------------
         | Validate PO Supplier
         |--------------------------------------------------------------------------
         */
 
-        if ((int) $po->supplier_id !== (int) $supplier->id) {
-            abort(
-                422,
-                'Purchase order supplier must match payment supplier.'
-            );
-        }
+            if ((int) $po->supplier_id !== (int) $supplier->id) {
+                abort(
+                    422,
+                    'Purchase order supplier must match payment supplier.'
+                );
+            }
 
-        /*
+            /*
         |--------------------------------------------------------------------------
         | Create Advance Payment
         |--------------------------------------------------------------------------
         */
 
-        $payment = SupplierPayment::create([
+            $payment = SupplierPayment::create([
 
-            'payment_number' =>
+                'payment_number' =>
                 app(CodeGeneratorService::class)->next('SPAY'),
 
-            'supplier_id' =>
+                'supplier_id' =>
                 $supplier->id,
 
-            'purchase_order_id' =>
+                'purchase_order_id' =>
                 $po->id,
 
-            'supplier_invoice_id' =>
+                'supplier_invoice_id' =>
                 null,
 
-            'payment_type' =>
+                'payment_type' =>
                 'advance',
 
-            'payment_date' =>
+                'payment_date' =>
                 $data['payment_date'],
 
-            'amount' =>
+                'amount' =>
                 $data['amount'],
 
-            'payment_method' =>
+                'payment_method' =>
                 $data['payment_method'],
 
-            'reference' =>
+                'reference' =>
                 $data['reference'] ?? null,
 
-            'notes' =>
+                'notes' =>
                 $data['notes'] ?? null,
-        ]);
+            ]);
 
-        return back()->with(
-            'success',
-            "Advance payment {$payment->payment_number} recorded."
-        );
-    }
+            return back()->with(
+                'success',
+                "Advance payment {$payment->payment_number} recorded."
+            );
+        }
 
-    /*
+        /*
     |--------------------------------------------------------------------------
     | Invoice Payment
     |--------------------------------------------------------------------------
@@ -755,159 +755,159 @@ public function storePayment(
     |
     */
 
-    DB::transaction(function () use ($data, $supplier) {
+        DB::transaction(function () use ($data, $supplier) {
 
-        /*
+            /*
         |--------------------------------------------------------------------------
         | Lock Invoice
         |--------------------------------------------------------------------------
         */
 
-        $invoice = SupplierInvoice::query()
-            ->lockForUpdate()
-            ->findOrFail($data['supplier_invoice_id']);
+            $invoice = SupplierInvoice::query()
+                ->lockForUpdate()
+                ->findOrFail($data['supplier_invoice_id']);
 
-        /*
+            /*
         |--------------------------------------------------------------------------
         | Validate Invoice Supplier
         |--------------------------------------------------------------------------
         */
 
-        if ((int) $invoice->supplier_id !== (int) $supplier->id) {
-            abort(
-                422,
-                'Invoice supplier must match payment supplier.'
-            );
-        }
+            if ((int) $invoice->supplier_id !== (int) $supplier->id) {
+                abort(
+                    422,
+                    'Invoice supplier must match payment supplier.'
+                );
+            }
 
-        /*
+            /*
         |--------------------------------------------------------------------------
         | Payment Amount
         |--------------------------------------------------------------------------
         */
 
-        $amount = (string) $data['amount'];
+            $amount = (string) $data['amount'];
 
-        $remaining = (string) $invoice->remaining_amount;
+            $remaining = (string) $invoice->remaining_amount;
 
-        /*
+            /*
         |--------------------------------------------------------------------------
         | Validate Payment Amount
         |--------------------------------------------------------------------------
         */
 
-        if (bccomp($amount, '0', 2) <= 0) {
-            abort(
-                422,
-                'Payment amount must be greater than zero.'
-            );
-        }
+            if (bccomp($amount, '0', 2) <= 0) {
+                abort(
+                    422,
+                    'Payment amount must be greater than zero.'
+                );
+            }
 
-        /*
+            /*
         |--------------------------------------------------------------------------
         | Payment Cannot Exceed Remaining Amount
         |--------------------------------------------------------------------------
         */
 
-        if (bccomp($amount, $remaining, 2) > 0) {
-            abort(
-                422,
-                'Payment amount cannot exceed invoice remaining amount.'
-            );
-        }
+            if (bccomp($amount, $remaining, 2) > 0) {
+                abort(
+                    422,
+                    'Payment amount cannot exceed invoice remaining amount.'
+                );
+            }
 
-        /*
+            /*
         |--------------------------------------------------------------------------
         | Calculate New Remaining Amount
         |--------------------------------------------------------------------------
         */
 
-        $newRemaining = bcsub(
-            $remaining,
-            $amount,
-            2
-        );
+            $newRemaining = bcsub(
+                $remaining,
+                $amount,
+                2
+            );
 
-        /*
+            /*
         |--------------------------------------------------------------------------
         | Determine Invoice Status
         |--------------------------------------------------------------------------
         */
 
-        $status = bccomp(
-            $newRemaining,
-            '0',
-            2
-        ) === 0
-            ? 'paid'
-            : 'partially_paid';
+            $status = bccomp(
+                $newRemaining,
+                '0',
+                2
+            ) === 0
+                ? 'paid'
+                : 'partially_paid';
 
-        /*
+            /*
         |--------------------------------------------------------------------------
         | Create Supplier Payment
         |--------------------------------------------------------------------------
         */
 
-        SupplierPayment::create([
+            SupplierPayment::create([
 
-            'payment_number' =>
+                'payment_number' =>
                 app(CodeGeneratorService::class)->next('SPAY'),
 
-            'supplier_id' =>
+                'supplier_id' =>
                 $invoice->supplier_id,
 
-            'purchase_order_id' =>
+                'purchase_order_id' =>
                 $invoice->purchase_order_id,
 
-            'supplier_invoice_id' =>
+                'supplier_invoice_id' =>
                 $invoice->id,
 
-            'payment_type' =>
+                'payment_type' =>
                 'invoice',
 
-            'payment_date' =>
+                'payment_date' =>
                 $data['payment_date'],
 
-            'amount' =>
+                'amount' =>
                 $amount,
 
-            'payment_method' =>
+                'payment_method' =>
                 $data['payment_method'],
 
-            'reference' =>
+                'reference' =>
                 $data['reference'] ?? null,
 
-            'notes' =>
+                'notes' =>
                 $data['notes'] ?? null,
-        ]);
+            ]);
 
-        /*
+            /*
         |--------------------------------------------------------------------------
         | Update Invoice Balance
         |--------------------------------------------------------------------------
         */
 
-        $invoice->update([
+            $invoice->update([
 
-            'remaining_amount' =>
+                'remaining_amount' =>
                 $newRemaining,
 
-            'status' =>
+                'status' =>
                 $status,
-        ]);
-    });
+            ]);
+        });
 
-    /*
+        /*
     |--------------------------------------------------------------------------
     | Success
     |--------------------------------------------------------------------------
     */
 
-    return back()->with(
-        'success',
-        'Supplier payment recorded successfully.'
-    );
-}
+        return back()->with(
+            'success',
+            'Supplier payment recorded successfully.'
+        );
+    }
 
     public function confirmReturn(
         PurchaseReturn $purchaseReturn,
@@ -917,87 +917,88 @@ public function storePayment(
 
         return back()->with('success', 'Purchase return confirmed and inventory posted.');
     }
-public function supplierLedger(Supplier $supplier)
-{
-    $invoices = $supplier->invoices()
-        ->orderBy('invoice_date')
-        ->orderBy('id')
-        ->get();
+    public function supplierLedger(Supplier $supplier)
+    {
+        $invoices = $supplier->invoices()
+            ->orderBy('invoice_date')
+            ->orderBy('id')
+            ->get();
 
-    $payments = $supplier->payments()
-        ->orderBy('payment_date')
-        ->orderBy('id')
-        ->get();
+        $payments = $supplier->payments()
+            ->orderBy('payment_date')
+            ->orderBy('id')
+            ->get();
 
-    $returns = $supplier->returns()
-        ->where('status', 'confirmed')
-        ->orderBy('return_date')
-        ->orderBy('id')
-        ->get();
+        $returns = $supplier->returns()
+            ->where('status', 'confirmed')
+            ->orderBy('return_date')
+            ->orderBy('id')
+            ->get();
 
-    $transactions = collect();
+        $transactions = collect();
 
-    foreach ($invoices as $invoice) {
-        $transactions->push([
-            'date' => $invoice->invoice_date,
-            'reference' => $invoice->invoice_number,
-            'type' => 'Invoice',
-            'description' => 'Supplier Invoice',
-            'debit' => (float) $invoice->total,
-            'credit' => 0,
-            'model' => $invoice,
-        ]);
-    }
+        foreach ($invoices as $invoice) {
+            $transactions->push([
+                'date' => $invoice->invoice_date,
+                'reference' => $invoice->invoice_number,
+                'type' => 'Invoice',
+                'description' => 'Supplier Invoice',
+                'debit' => (float) $invoice->total,
+                'credit' => 0,
+                'model' => $invoice,
+            ]);
+        }
 
-    foreach ($payments as $payment) {
-        $transactions->push([
-            'date' => $payment->payment_date,
-            'reference' => 'PAY-' . $payment->id,
-            'type' => 'Payment',
-            'description' => $payment->payment_method ?? 'Supplier Payment',
-            'debit' => 0,
-            'credit' => (float) $payment->amount,
-            'model' => $payment,
-        ]);
-    }
+        foreach ($payments as $payment) {
+            $transactions->push([
+                'date' => $payment->payment_date,
+                'reference' => 'PAY-' . $payment->id,
+                'type' => 'Payment',
+                'description' => $payment->payment_method ?? 'Supplier Payment',
+                'debit' => 0,
+                'credit' => (float) $payment->amount,
+                'model' => $payment,
+            ]);
+        }
 
-    foreach ($returns as $return) {
-        $amount = $return->items->sum(function ($item) {
-            return (float) $item->quantity * (float) $item->unit_cost;
+        foreach ($returns as $return) {
+            $amount = $return->items->sum(function ($item) {
+                return (float) $item->quantity * (float) $item->unit_cost;
+            });
+
+            $transactions->push([
+                'date' => $return->return_date,
+                'reference' => $return->return_number,
+                'type' => 'Purchase Return',
+                'description' => $return->reason ?? 'Purchase Return',
+                'debit' => 0,
+                'credit' => $amount,
+                'model' => $return,
+            ]);
+        }
+
+        $transactions = $transactions
+            ->sortBy([
+                ['date', 'asc'],
+                ['reference', 'asc'],
+            ])
+            ->values();
+
+        $balance = 0;
+
+        $transactions = $transactions->map(function ($transaction) use (&$balance) {
+            $balance += $transaction['debit'];
+            $balance -= $transaction['credit'];
+
+            $transaction['balance'] = $balance;
+
+            return $transaction;
         });
 
-        $transactions->push([
-            'date' => $return->return_date,
-            'reference' => $return->return_number,
-            'type' => 'Purchase Return',
-            'description' => $return->reason ?? 'Purchase Return',
-            'debit' => 0,
-            'credit' => $amount,
-            'model' => $return,
+        return view('suppliers.ledger', [
+            'supplier' => $supplier,
+            'transactions' => $transactions,
+            'currentBalance' => $balance,
         ]);
     }
-
-    $transactions = $transactions
-        ->sortBy([
-            ['date', 'asc'],
-            ['reference', 'asc'],
-        ])
-        ->values();
-
-    $balance = 0;
-
-    $transactions = $transactions->map(function ($transaction) use (&$balance) {
-        $balance += $transaction['debit'];
-        $balance -= $transaction['credit'];
-
-        $transaction['balance'] = $balance;
-
-        return $transaction;
-    });
-
-    return view('suppliers.ledger', [
-        'supplier' => $supplier,
-        'transactions' => $transactions,
-        'currentBalance' => $balance,
-    ]);
-}}
+}
