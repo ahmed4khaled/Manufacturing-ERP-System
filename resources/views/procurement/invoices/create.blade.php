@@ -878,7 +878,7 @@ document.addEventListener('DOMContentLoaded', function () {
     | Calculate Totals
     |--------------------------------------------------------------------------
     */
-function calculateTotals() {
+  function calculateTotals() {
 
     let subtotal = 0;
 
@@ -1016,46 +1016,6 @@ function calculateTotals() {
         });
 
 }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Purchase Order Changed
-    |--------------------------------------------------------------------------
-    */
-
-    purchaseOrderSelect.addEventListener(
-        'change',
-        function () {
-
-            const purchaseOrderId =
-                this.value;
-
-
-            const supplierId =
-                supplierSelect.value;
-
-
-            filterGoodsReceipts(
-                supplierId,
-                purchaseOrderId
-            );
-
-
-            receiptItems.innerHTML = '';
-
-            receiptItemsWrapper.style.display =
-                'none';
-
-
-            subtotalInput.value =
-                '0.00';
-
-
-            updateAdvancePayment();
-
-        }
-    );
-
 
     /*
     |--------------------------------------------------------------------------
