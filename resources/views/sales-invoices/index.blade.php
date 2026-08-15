@@ -83,6 +83,17 @@
                                 <td class="text-end">{{ number_format($invoice->total_amount, 2) }} EGP</td>
                                 <td class="text-end">
                                     <div class="btn-group btn-group-sm">
+                                         <a
+                                            href="{{ route(
+                                                'sales-invoices.print',
+                                                $invoice
+                                            ) }}"
+                                            target="_blank"
+                                            class="btn btn-sm btn-outline-dark"
+                                            title="Print Invoice"
+                                        >
+                                            <i class="bi bi-printer"></i>
+                                        </a>
                                         <a href="{{ route('sales-invoices.show', $invoice) }}" class="btn btn-outline-secondary" title="View"><i class="bi bi-eye"></i></a>
                                         @if ($invoice->status === \App\Enums\SalesInvoiceStatus::DRAFT)
                                             <a href="{{ route('sales-invoices.edit', $invoice) }}" class="btn btn-outline-primary" title="Edit"><i class="bi bi-pencil"></i></a>

@@ -77,7 +77,9 @@
                     <tbody>
                         @forelse ($receipts as $receipt)
                             <tr>
+                                
                                 <td>
+
                                     <a href="{{ route('payment-receipts.show', $receipt) }}" class="text-decoration-none fw-semibold">
                                         {{ $receipt->receipt_number }}
                                     </a>
@@ -89,6 +91,16 @@
                                 <td><span class="badge bg-{{ $receipt->status->badgeClass() }}">{{ $receipt->status->label() }}</span></td>
                                 <td class="text-end">
                                     <div class="btn-group btn-group-sm">
+                                         <a
+                                            href="{{ route(
+                                               'payment-receipts.print', $receipt
+                                            ) }}"
+                                            target="_blank"
+                                            class="btn btn-sm btn-outline-dark"
+                                            title="Print Invoice"
+                                        >
+                                            <i class="bi bi-printer"></i>
+                                        </a>
                                         <a href="{{ route('payment-receipts.show', $receipt) }}" class="btn btn-outline-secondary" title="View"><i class="bi bi-eye"></i></a>
                                         @if ($receipt->status === \App\Enums\PaymentReceiptStatus::DRAFT)
                                             <a href="{{ route('payment-receipts.edit', $receipt) }}" class="btn btn-outline-primary" title="Edit"><i class="bi bi-pencil"></i></a>

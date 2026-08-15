@@ -13,6 +13,60 @@
 
 @section('print-content')
 
+<style>
+    /* =========================
+   Signatures
+========================== */
+
+.invoice-signatures {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+
+    gap: 80px;
+
+    margin-top: 35px;
+    padding-top: 12px;
+
+    border-top: 1px solid #eee;
+}
+
+.signature-box {
+    text-align: center;
+
+    padding: 8px 20px;
+}
+
+.signature-title {
+    margin-bottom: 28px;
+
+    color: #444;
+
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.signature-line {
+    width: 75%;
+
+    height: 1px;
+
+    margin: 0 auto;
+
+    background: #888;
+}
+
+.signature-hint {
+    margin-top: 6px;
+
+    color: #999;
+
+    font-size: 8px;
+}
+</style>
+    {{-- =========================
+         Customer / Invoice Info
+    ========================== --}}
+
     <div class="info-grid">
 
         <div class="info-box">
@@ -67,6 +121,10 @@
     </div>
 
 
+    {{-- =========================
+         Items
+    ========================== --}}
+
     <table class="items-table">
 
         <thead>
@@ -108,6 +166,7 @@
             </tr>
 
         </thead>
+
 
         <tbody>
 
@@ -155,6 +214,10 @@
 
     </table>
 
+
+    {{-- =========================
+         Summary
+    ========================== --}}
 
     <div class="summary-wrapper">
 
@@ -205,6 +268,10 @@
     </div>
 
 
+    {{-- =========================
+         Notes
+    ========================== --}}
+
     @if ($document->notes)
 
         <div class="notes">
@@ -220,5 +287,44 @@
         </div>
 
     @endif
+
+
+    {{-- =========================
+         Signatures
+    ========================== --}}
+
+    <div class="invoice-signatures">
+
+        <div class="signature-box">
+
+            <div class="signature-title">
+                توقيع العميل / المستلم
+            </div>
+
+            <div class="signature-line"></div>
+
+            <div class="signature-hint">
+                الاسم والتوقيع
+            </div>
+
+        </div>
+
+
+        <div class="signature-box">
+
+            <div class="signature-title">
+                مسؤول KONOZ
+            </div>
+
+            <div class="signature-line"></div>
+
+            <div class="signature-hint">
+                الاسم والتوقيع
+            </div>
+
+        </div>
+
+    </div>
+
 
 @endsection
