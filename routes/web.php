@@ -75,7 +75,10 @@ Route::get(
     '/supplier-invoices/{supplierInvoice}/print',
     [ProcurementController::class, 'printSupplierInvoice']
 )->name('supplier-invoices.print');
-
+Route::get(
+    '/payment-receipts/customer/{customer}/invoices',
+    [PaymentReceiptController::class, 'customerInvoices']
+)->name('payment-receipts.customer-invoices');
 Route::get(
     '/supplier-invoices/{supplierInvoice}',
     [ProcurementController::class, 'showSupplierInvoice']

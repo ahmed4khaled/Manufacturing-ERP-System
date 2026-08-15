@@ -6,6 +6,7 @@ use App\Actions\SalesInvoice\CancelSalesInvoiceAction;
 use App\Actions\SalesInvoice\ConfirmSalesInvoiceAction;
 use App\Actions\SalesInvoice\CreateSalesInvoiceAction;
 use App\Actions\SalesInvoice\ValidateCustomerCreditLimitAction;
+use App\Enums\PaymentReceiptStatus;
 
 use App\Actions\SalesInvoice\DeleteSalesInvoiceAction;
 use App\Actions\SalesInvoice\UpdateSalesInvoiceAction;
@@ -21,6 +22,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use App\Services\Printing\DocumentPrinter;
+
 class SalesInvoiceController extends Controller
 {
     public function print(
@@ -39,15 +41,23 @@ class SalesInvoiceController extends Controller
 }
     public function index(Request $request): View
     {
-        $invoices = SalesInvoice::query()
-            ->with('customer')
-            ->search($request->input('search'))
-            ->filterStatus($request->input('status'))
-            ->filterCustomer($request->input('customer_id'))
-            ->latest('invoice_date')
-            ->latest('id')
-            ->paginate(15)
-            ->withQueryString();
+      $invoices = SalesInvoice::query()
+    ->with('customer')
+    ->withSum([
+        'paymentReceipts as paid_amount' => function ($query) {
+            $query->where(
+                'status',
+                PaymentReceiptStatus::CONFIRMED
+            );
+        },
+    ], 'amount')
+    ->search($request->input('search'))
+    ->filterStatus($request->input('status'))
+    ->filterCustomer($request->input('customer_id'))
+    ->latest('invoice_date')
+    ->latest('id')
+    ->paginate(15)
+    ->withQueryString();
 
         $customers = Customer::query()->orderBy('name')->get(['id', 'name', 'code']);
 
@@ -75,7 +85,19 @@ class SalesInvoiceController extends Controller
 
     public function show(SalesInvoice $salesInvoice): View
     {
-        $salesInvoice->load(['customer', 'items']);
+  $salesInvoice->load([
+        'customer',
+        'items',
+    ]);
+
+    $salesInvoice->loadSum([
+        'paymentReceipts as paid_amount' => function ($query) {
+            $query->where(
+                'status',
+                PaymentReceiptStatus::CONFIRMED
+            );
+        },
+    ], 'amount');
 
         $groupedItems = $salesInvoice->items
             ->groupBy('product_name')

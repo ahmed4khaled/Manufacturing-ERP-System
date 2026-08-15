@@ -65,6 +65,8 @@
                             <th>Status</th>
                             <th class="text-end">Qty</th>
                             <th class="text-end">Total</th>
+                            <th>Payment</th>
+
                             <th class="text-end">Actions</th>
                         </tr>
                     </thead>
@@ -81,6 +83,21 @@
                                 <td><span class="badge bg-{{ $invoice->status->badgeClass() }}">{{ $invoice->status->label() }}</span></td>
                                 <td class="text-end">{{ number_format($invoice->total_quantity) }}</td>
                                 <td class="text-end">{{ number_format($invoice->total_amount, 2) }} EGP</td>
+                             
+
+<td>
+    <span class="badge bg-{{ $invoice->payment_status_badge_class }}">
+        {{ $invoice->payment_status_label }}
+    </span>
+
+    @if ($invoice->payment_status === 'partially_paid')
+        <div class="small text-muted mt-1">
+            Remaining:
+            {{ number_format($invoice->remaining_amount, 2) }}
+            EGP
+        </div>
+    @endif
+</td>
                                 <td class="text-end">
                                     <div class="btn-group btn-group-sm">
                                          <a

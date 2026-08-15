@@ -14,317 +14,636 @@
 @section('print-content')
 
 <style>
-    /* =========================
-   Signatures
-========================== */
 
-.invoice-signatures {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+/* =========================================================
+   Invoice Payment Status
+========================================================= */
 
-    gap: 80px;
+.invoice-payment-box {
+    margin-top: 10px;
+    padding: 8px 10px;
 
-    margin-top: 35px;
-    padding-top: 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
 
-    border-top: 1px solid #eee;
+    background: #fafafa;
 }
 
-.signature-box {
+.invoice-payment-title {
+    margin-bottom: 6px;
+
+    color: #777;
+
+    font-size: 9px;
+    font-weight: 700;
+}
+
+.invoice-payment-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+
+    gap: 8px;
+}
+
+.invoice-payment-item {
     text-align: center;
 
-    padding: 8px 20px;
+    padding: 5px;
+
+    border-left: 1px solid #e5e5e5;
 }
 
-.signature-title {
-    margin-bottom: 28px;
+.invoice-payment-item:last-child {
+    border-left: 0;
+}
 
-    color: #444;
+.invoice-payment-label {
+    color: #777;
+    font-size: 8px;
+}
+
+.invoice-payment-value {
+    margin-top: 2px;
 
     font-size: 10px;
     font-weight: 700;
 }
 
+
+/* =========================================================
+   Signatures
+========================================================= */
+
+.invoice-signatures {
+
+    display: grid;
+
+    grid-template-columns: 1fr 1fr;
+
+    gap: 55px;
+
+    margin-top: 32px;
+
+    padding-top: 12px;
+
+    border-top: 1px solid #ddd;
+
+}
+
+.signature-box {
+
+    text-align: center;
+
+    padding: 5px 15px;
+
+}
+
+.signature-title {
+
+    margin-bottom: 25px;
+
+    color: #444;
+
+    font-size: 10px;
+
+    font-weight: 700;
+
+}
+
 .signature-line {
-    width: 75%;
+
+    width: 70%;
 
     height: 1px;
 
     margin: 0 auto;
 
-    background: #888;
+    background: #777;
+
 }
 
 .signature-hint {
-    margin-top: 6px;
+
+    margin-top: 5px;
 
     color: #999;
 
     font-size: 8px;
+
 }
+
+
+/* =========================================================
+   Footer Note
+========================================================= */
+
+.invoice-thanks {
+
+    margin-top: 18px;
+
+    padding-top: 8px;
+
+    border-top: 1px dashed #ddd;
+
+    text-align: center;
+
+    color: #777;
+
+    font-size: 9px;
+
+    line-height: 1.7;
+
+}
+
+.invoice-thanks strong {
+
+    color: #444;
+
+    letter-spacing: 1px;
+
+}
+
+
+/* =========================================================
+   Print
+========================================================= */
+
+@media print {
+
+    .invoice-signatures {
+
+        page-break-inside: avoid;
+
+    }
+
+    .invoice-payment-box {
+
+        page-break-inside: avoid;
+
+    }
+
+}
+
 </style>
-    {{-- =========================
-         Customer / Invoice Info
-    ========================== --}}
 
-    <div class="info-grid">
 
-        <div class="info-box">
+{{-- =========================================================
+     Customer / Invoice Info
+========================================================== --}}
 
-            <div class="info-label">
-                بيانات العميل
-            </div>
+<div class="info-grid">
 
-            <div class="info-name">
-                {{ $document->customer?->name ?? '—' }}
-            </div>
 
-            @if ($document->customer?->code)
+    {{-- Customer --}}
 
-                <div class="info-line">
-                    كود العميل:
-                    {{ $document->customer->code }}
-                </div>
+    <div class="info-box">
 
-            @endif
+        <div class="info-label">
+            بيانات العميل
+        </div>
 
-            @if ($document->customer?->phone)
 
-                <div class="info-line">
-                    الهاتف:
-                    {{ $document->customer->phone }}
-                </div>
+        <div class="info-name">
 
-            @endif
+            {{ $document->customer?->name ?? '—' }}
 
         </div>
 
 
-        <div class="info-box">
-
-            <div class="info-label">
-                بيانات الفاتورة
-            </div>
+        @if ($document->customer?->code)
 
             <div class="info-line">
-                الحالة:
-                {{ $document->status->label() }}
+
+                كود العميل:
+
+                {{ $document->customer->code }}
+
             </div>
 
+        @endif
+
+
+        @if ($document->customer?->phone)
+
             <div class="info-line">
-                عدد القطع:
-                {{ number_format($document->total_quantity, 0) }}
+
+                الهاتف:
+
+                {{ $document->customer->phone }}
+
             </div>
+
+        @endif
+
+    </div>
+
+
+    {{-- Invoice --}}
+
+    <div class="info-box">
+
+        <div class="info-label">
+            بيانات الفاتورة
+        </div>
+
+
+        <div class="info-line">
+
+            الحالة:
+
+            {{ $document->status->label() }}
+
+        </div>
+
+
+        <div class="info-line">
+
+            عدد القطع:
+
+            {{ number_format($document->total_quantity, 0) }}
 
         </div>
 
     </div>
 
+</div>
 
-    {{-- =========================
-         Items
-    ========================== --}}
 
-    <table class="items-table">
 
-        <thead>
+{{-- =========================================================
+     Payment Status
+========================================================== --}}
+
+@if (
+    $document->status === \App\Enums\SalesInvoiceStatus::CONFIRMED
+)
+
+    <div class="invoice-payment-box">
+
+        <div class="invoice-payment-title">
+            حالة السداد
+        </div>
+
+
+        <div class="invoice-payment-grid">
+
+
+            {{-- Payment Status --}}
+
+            <div class="invoice-payment-item">
+
+                <div class="invoice-payment-label">
+                    حالة الدفع
+                </div>
+
+                <div class="invoice-payment-value">
+
+                    {{ $document->payment_status_label }}
+
+                </div>
+
+            </div>
+
+
+            {{-- Paid --}}
+
+            <div class="invoice-payment-item">
+
+                <div class="invoice-payment-label">
+                    المدفوع
+                </div>
+
+                <div class="invoice-payment-value">
+
+                    {{ number_format(
+                        $document->paid_amount,
+                        2
+                    ) }}
+
+                    جنيه
+
+                </div>
+
+            </div>
+
+
+            {{-- Remaining --}}
+
+            <div class="invoice-payment-item">
+
+                <div class="invoice-payment-label">
+                    المتبقي
+                </div>
+
+                <div class="invoice-payment-value">
+
+                    {{ number_format(
+                        $document->remaining_amount,
+                        2
+                    ) }}
+
+                    جنيه
+
+                </div>
+
+            </div>
+
+
+        </div>
+
+    </div>
+
+@endif
+
+
+
+{{-- =========================================================
+     Items
+========================================================== --}}
+
+<table class="items-table">
+
+    <thead>
+
+        <tr>
+
+            <th>
+                #
+            </th>
+
+            <th>
+                الصنف
+            </th>
+
+            <th>
+                اللون
+            </th>
+
+            <th>
+                المقاس
+            </th>
+
+            <th>
+                الكود
+            </th>
+
+            <th>
+                السعر
+            </th>
+
+            <th>
+                الكمية
+            </th>
+
+            <th>
+                الإجمالي
+            </th>
+
+        </tr>
+
+    </thead>
+
+
+    <tbody>
+
+        @foreach ($document->items as $index => $item)
 
             <tr>
 
-                <th>
-                    #
-                </th>
+                <td>
+                    {{ $index + 1 }}
+                </td>
 
-                <th>
-                    الصنف
-                </th>
 
-                <th>
-                    اللون
-                </th>
+                <td>
+                    {{ $item->product_name }}
+                </td>
 
-                <th>
-                    المقاس
-                </th>
 
-                <th>
-                    الكود
-                </th>
+                <td>
+                    {{ $item->color_name ?? '—' }}
+                </td>
 
-                <th>
-                    السعر
-                </th>
 
-                <th>
-                    الكمية
-                </th>
+                <td>
+                    {{ $item->size_name ?? '—' }}
+                </td>
 
-                <th>
-                    الإجمالي
-                </th>
+
+                <td>
+                    {{ $item->sku ?? '—' }}
+                </td>
+
+
+                <td>
+
+                    {{ number_format(
+                        $item->unit_price,
+                        2
+                    ) }}
+
+                </td>
+
+
+                <td>
+
+                    {{ number_format(
+                        $item->quantity,
+                        0
+                    ) }}
+
+                </td>
+
+
+                <td>
+
+                    {{ number_format(
+                        $item->line_total,
+                        2
+                    ) }}
+
+                </td>
 
             </tr>
 
-        </thead>
+        @endforeach
+
+    </tbody>
+
+</table>
 
 
-        <tbody>
 
-            @foreach ($document->items as $index => $item)
+{{-- =========================================================
+     Summary
+========================================================== --}}
 
-                <tr>
+<div class="summary-wrapper">
 
-                    <td>
-                        {{ $index + 1 }}
-                    </td>
-
-                    <td>
-                        {{ $item->product_name }}
-                    </td>
-
-                    <td>
-                        {{ $item->color_name ?? '—' }}
-                    </td>
-
-                    <td>
-                        {{ $item->size_name ?? '—' }}
-                    </td>
-
-                    <td>
-                        {{ $item->sku ?? '—' }}
-                    </td>
-
-                    <td>
-                        {{ number_format($item->unit_price, 2) }}
-                    </td>
-
-                    <td>
-                        {{ number_format($item->quantity, 0) }}
-                    </td>
-
-                    <td>
-                        {{ number_format($item->line_total, 2) }}
-                    </td>
-
-                </tr>
-
-            @endforeach
-
-        </tbody>
-
-    </table>
+    <div class="summary">
 
 
-    {{-- =========================
-         Summary
-    ========================== --}}
+        <div class="summary-row">
 
-    <div class="summary-wrapper">
+            <span>
+                إجمالي القطع
+            </span>
 
-        <div class="summary">
+            <strong>
 
-            <div class="summary-row">
+                {{ number_format(
+                    $document->total_quantity,
+                    0
+                ) }}
 
-                <span>
-                    إجمالي القطع
-                </span>
+            </strong>
 
-                <strong>
-                    {{ number_format($document->total_quantity, 0) }}
-                </strong>
-
-            </div>
+        </div>
 
 
-            <div class="summary-row">
+        <div class="summary-row">
 
-                <span>
-                    المجموع الفرعي
-                </span>
+            <span>
+                المجموع الفرعي
+            </span>
 
-                <strong>
-                    {{ number_format($document->subtotal, 2) }}
-                    جنيه
-                </strong>
+            <strong>
 
-            </div>
+                {{ number_format(
+                    $document->subtotal,
+                    2
+                ) }}
+
+                جنيه
+
+            </strong>
+
+        </div>
 
 
-            <div class="summary-row total">
+        <div class="summary-row total">
 
-                <span>
-                    الإجمالي
-                </span>
+            <span>
+                الإجمالي
+            </span>
 
-                <span>
-                    {{ number_format($document->total_amount, 2) }}
-                    جنيه
-                </span>
+            <span>
 
-            </div>
+                {{ number_format(
+                    $document->total_amount,
+                    2
+                ) }}
+
+                جنيه
+
+            </span>
+
+        </div>
+
+
+    </div>
+
+</div>
+
+
+
+{{-- =========================================================
+     Notes
+========================================================== --}}
+
+@if ($document->notes)
+
+    <div class="notes">
+
+        <div class="notes-title">
+            ملاحظات
+        </div>
+
+
+        <div class="notes-content">
+
+            {{ $document->notes }}
+
+        </div>
+
+    </div>
+
+@endif
+
+
+
+{{-- =========================================================
+     Signatures
+========================================================== --}}
+
+<div class="invoice-signatures">
+
+
+    {{-- Customer --}}
+
+    <div class="signature-box">
+
+        <div class="signature-title">
+
+            توقيع العميل / المستلم
+
+        </div>
+
+
+        <div class="signature-line"></div>
+
+
+        <div class="signature-hint">
+
+            الاسم والتوقيع
 
         </div>
 
     </div>
 
 
-    {{-- =========================
-         Notes
-    ========================== --}}
+    {{-- KONOZ --}}
 
-    @if ($document->notes)
+    <div class="signature-box">
 
-        <div class="notes">
+        <div class="signature-title">
 
-            <div class="notes-title">
-                ملاحظات
-            </div>
-
-            <div class="notes-content">
-                {{ $document->notes }}
-            </div>
-
-        </div>
-
-    @endif
-
-
-    {{-- =========================
-         Signatures
-    ========================== --}}
-
-    <div class="invoice-signatures">
-
-        <div class="signature-box">
-
-            <div class="signature-title">
-                توقيع العميل / المستلم
-            </div>
-
-            <div class="signature-line"></div>
-
-            <div class="signature-hint">
-                الاسم والتوقيع
-            </div>
+            مسؤول KONOZ
 
         </div>
 
 
-        <div class="signature-box">
+        <div class="signature-line"></div>
 
-            <div class="signature-title">
-                مسؤول KONOZ
-            </div>
 
-            <div class="signature-line"></div>
+        <div class="signature-hint">
 
-            <div class="signature-hint">
-                الاسم والتوقيع
-            </div>
+            الاسم والتوقيع
 
         </div>
 
     </div>
+
+
+</div>
+
+
+
+{{-- =========================================================
+     Thanks
+========================================================== --}}
+
+<div class="invoice-thanks">
+
+    شكرًا لتعاملكم معنا، ونسعد دائمًا بخدمتكم.
+
+    <br>
+
+    <strong>
+        KONOZ
+    </strong>
+
+</div>
 
 
 @endsection

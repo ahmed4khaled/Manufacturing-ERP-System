@@ -9,7 +9,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-
+use App\Models\PaymentReceipt;
+use App\Enums\PaymentReceiptStatus;
 class SalesInvoice extends Model
 {
     use HasFactory, SoftDeletes;
@@ -32,6 +33,66 @@ class SalesInvoice extends Model
         'total_amount' => 'decimal:2',
         'total_quantity' => 'decimal:3',
     ];
+    public function paymentReceipts(): HasMany
+{
+    return $this->hasMany(
+        PaymentReceipt::class,
+        'sales_invoice_id'
+    );
+}
+
+public function getPaidAmountAttribute(): float
+{
+    if (array_key_exists('paid_amount', $this->attributes)) {
+        return (float) ($this->attributes['paid_amount'] ?? 0);
+    }
+
+    return (float) $this->paymentReceipts()
+        ->where(
+            'status',
+            PaymentReceiptStatus::CONFIRMED
+        )
+        ->sum('amount');
+}
+
+public function getRemainingAmountAttribute(): float
+{
+    return max(
+        0,
+        (float) $this->total_amount - $this->paid_amount
+    );
+}
+
+public function getPaymentStatusAttribute(): string
+{
+    if ($this->paid_amount <= 0) {
+        return 'unpaid';
+    }
+
+    if ($this->remaining_amount <= 0) {
+        return 'paid';
+    }
+
+    return 'partially_paid';
+}
+
+public function getPaymentStatusLabelAttribute(): string
+{
+    return match ($this->payment_status) {
+        'paid' => 'Paid',
+        'partially_paid' => 'Partially Paid',
+        default => 'Unpaid',
+    };
+}
+
+public function getPaymentStatusBadgeClassAttribute(): string
+{
+    return match ($this->payment_status) {
+        'paid' => 'success',
+        'partially_paid' => 'warning',
+        default => 'danger',
+    };
+}
 
     public function customer(): BelongsTo
     {

@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
-
+use App\Models\SalesInvoice;
 class PaymentReceipt extends Model
 {
     use HasFactory, SoftDeletes;
@@ -24,6 +24,8 @@ class PaymentReceipt extends Model
         'notes',
         'status',
         'created_by',
+        'sales_invoice_id',
+'payment_type',
     ];
 
     protected $casts = [
@@ -56,7 +58,13 @@ class PaymentReceipt extends Model
                     ->orWhere('code', 'like', "%{$search}%"));
         });
     }
-
+public function invoice(): BelongsTo
+{
+    return $this->belongsTo(
+        SalesInvoice::class,
+        'sales_invoice_id'
+    );
+}
     public function scopeFilterStatus(Builder $query, ?string $status): Builder
     {
         if (blank($status)) {

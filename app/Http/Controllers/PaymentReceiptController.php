@@ -9,36 +9,28 @@ use App\Actions\PaymentReceipt\DeletePaymentReceiptAction;
 use App\Actions\PaymentReceipt\UpdatePaymentReceiptAction;
 use App\Enums\LedgerReferenceType;
 use App\Enums\PaymentReceiptStatus;
+use App\Enums\SalesInvoiceStatus;
 use App\Http\Requests\PaymentReceipt\StorePaymentReceiptRequest;
 use App\Http\Requests\PaymentReceipt\UpdatePaymentReceiptRequest;
 use App\Models\Customer;
 use App\Models\CustomerLedgerEntry;
 use App\Models\PaymentReceipt;
+use App\Models\SalesInvoice;
+use App\Services\Printing\DocumentPrinter;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
-use App\Services\Printing\DocumentPrinter;
 
 class PaymentReceiptController extends Controller
 {
-    public function print(
-        PaymentReceipt $paymentReceipt,
-        DocumentPrinter $printer
-    ): View {
-        $paymentReceipt->load([
-            'customer',
-            'creator',
-        ]);
-
-        return $printer->render(
-            $paymentReceipt,
-            'payment_receipt'
-        );
-    }
     public function index(Request $request): View
     {
         $receipts = PaymentReceipt::query()
-            ->with('customer')
+            ->with([
+                'customer',
+                'invoice',
+            ])
             ->search($request->input('search'))
             ->filterStatus($request->input('status'))
             ->filterCustomer($request->input('customer_id'))
@@ -49,114 +41,366 @@ class PaymentReceiptController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        $customers = Customer::query()->orderBy('name')->get(['id', 'name', 'code']);
+        $customers = Customer::query()
+            ->orderBy('name')
+            ->get([
+                'id',
+                'name',
+                'code',
+            ]);
 
-        return view('payment-receipts.index', compact('receipts', 'customers'));
+        return view(
+            'payment-receipts.index',
+            compact(
+                'receipts',
+                'customers'
+            )
+        );
     }
 
+
+    /**
+     * Create payment receipt.
+     */
     public function create(): View
     {
-        $customers = Customer::query()->orderBy('name')->get(['id', 'name', 'code']);
+        $customers = Customer::query()
+            ->orderBy('name')
+            ->get([
+                'id',
+                'name',
+                'code',
+            ]);
 
-        return view('payment-receipts.create', compact('customers'));
+        return view(
+            'payment-receipts.create',
+            compact('customers')
+        );
     }
 
+
+    /**
+     * Get unpaid sales invoices for customer.
+     */
+    public function customerInvoices(
+        Customer $customer
+    ): JsonResponse {
+        $invoices = SalesInvoice::query()
+            ->where('customer_id', $customer->id)
+            ->where(
+                'status',
+                SalesInvoiceStatus::CONFIRMED
+            )
+            ->withSum([
+                'paymentReceipts as paid_amount' => function ($query) {
+                    $query->where(
+                        'status',
+                        PaymentReceiptStatus::CONFIRMED
+                    );
+                },
+            ], 'amount')
+            ->orderByDesc('invoice_date')
+            ->orderByDesc('id')
+            ->get();
+
+        $invoices = $invoices
+            ->map(function (SalesInvoice $invoice) {
+
+                $total = (float) $invoice->total_amount;
+
+                $paid = (float) ($invoice->paid_amount ?? 0);
+
+                $remaining = max(
+                    0,
+                    $total - $paid
+                );
+
+                return [
+                    'id' => $invoice->id,
+
+                    'invoice_number' =>
+                        $invoice->invoice_number,
+
+                    'invoice_date' =>
+                        $invoice->invoice_date?->format('Y-m-d'),
+
+                    'total_amount' =>
+                        round($total, 2),
+
+                    'paid_amount' =>
+                        round($paid, 2),
+
+                    'remaining_amount' =>
+                        round($remaining, 2),
+                ];
+            })
+            ->filter(
+                fn (array $invoice) =>
+                    $invoice['remaining_amount'] > 0
+            )
+            ->values();
+
+        return response()->json([
+            'invoices' => $invoices,
+        ]);
+    }
+
+
+    /**
+     * Store payment receipt.
+     */
     public function store(
         StorePaymentReceiptRequest $request,
         CreatePaymentReceiptAction $action,
     ): RedirectResponse {
-        $receipt = $action->handle($request->validated());
+        $receipt = $action->handle(
+            $request->validated()
+        );
 
         return redirect()
-            ->route('payment-receipts.show', $receipt)
-            ->with('success', 'Payment receipt created successfully.');
+            ->route(
+                'payment-receipts.show',
+                $receipt
+            )
+            ->with(
+                'success',
+                'Payment receipt created successfully.'
+            );
     }
 
-    public function show(PaymentReceipt $paymentReceipt): View
-    {
-        $paymentReceipt->load(['customer', 'creator']);
+
+    /**
+     * Show payment receipt.
+     */
+    public function show(
+        PaymentReceipt $paymentReceipt
+    ): View {
+        $paymentReceipt->load([
+            'customer',
+            'invoice',
+            'creator',
+        ]);
 
         $ledgerEntry = CustomerLedgerEntry::query()
-            ->where('reference_type', LedgerReferenceType::PAYMENT_RECEIPT)
-            ->where('reference_id', $paymentReceipt->id)
+            ->where(
+                'reference_type',
+                LedgerReferenceType::PAYMENT_RECEIPT
+            )
+            ->where(
+                'reference_id',
+                $paymentReceipt->id
+            )
             ->first();
 
-        return view('payment-receipts.show', compact('paymentReceipt', 'ledgerEntry'));
+        return view(
+            'payment-receipts.show',
+            compact(
+                'paymentReceipt',
+                'ledgerEntry'
+            )
+        );
     }
 
-    public function edit(PaymentReceipt $paymentReceipt): View|RedirectResponse
-    {
-        if ($paymentReceipt->status !== PaymentReceiptStatus::DRAFT) {
+
+    /**
+     * Print payment receipt.
+     */
+    public function print(
+        PaymentReceipt $paymentReceipt,
+        DocumentPrinter $printer
+    ): View {
+        $paymentReceipt->load([
+            'customer',
+            'invoice',
+            'creator',
+        ]);
+
+        return $printer->render(
+            $paymentReceipt,
+            'payment_receipt'
+        );
+    }
+
+
+    /**
+     * Edit payment receipt.
+     */
+    public function edit(
+        PaymentReceipt $paymentReceipt
+    ): View|RedirectResponse {
+        if (
+            $paymentReceipt->status !==
+            PaymentReceiptStatus::DRAFT
+        ) {
             return redirect()
-                ->route('payment-receipts.show', $paymentReceipt)
-                ->with('error', 'Only draft receipts can be edited.');
+                ->route(
+                    'payment-receipts.show',
+                    $paymentReceipt
+                )
+                ->with(
+                    'error',
+                    'Only draft receipts can be edited.'
+                );
         }
 
-        $customers = Customer::query()->orderBy('name')->get(['id', 'name', 'code']);
+        $customers = Customer::query()
+            ->orderBy('name')
+            ->get([
+                'id',
+                'name',
+                'code',
+            ]);
 
-        return view('payment-receipts.edit', compact('paymentReceipt', 'customers'));
+        return view(
+            'payment-receipts.edit',
+            compact(
+                'paymentReceipt',
+                'customers'
+            )
+        );
     }
 
+
+    /**
+     * Update payment receipt.
+     */
     public function update(
         UpdatePaymentReceiptRequest $request,
         PaymentReceipt $paymentReceipt,
         UpdatePaymentReceiptAction $action,
     ): RedirectResponse {
-        $action->handle($paymentReceipt, $request->validated());
+        $action->handle(
+            $paymentReceipt,
+            $request->validated()
+        );
 
         return redirect()
-            ->route('payment-receipts.show', $paymentReceipt)
-            ->with('success', 'Payment receipt updated successfully.');
+            ->route(
+                'payment-receipts.show',
+                $paymentReceipt
+            )
+            ->with(
+                'success',
+                'Payment receipt updated successfully.'
+            );
     }
 
+
+    /**
+     * Delete payment receipt.
+     */
     public function destroy(
         PaymentReceipt $paymentReceipt,
         DeletePaymentReceiptAction $action,
     ): RedirectResponse {
         try {
-            $action->handle($paymentReceipt);
+
+            $action->handle(
+                $paymentReceipt
+            );
+
         } catch (\Illuminate\Validation\ValidationException $e) {
+
             return redirect()
-                ->route('payment-receipts.show', $paymentReceipt)
-                ->with('error', $e->validator->errors()->first());
+                ->route(
+                    'payment-receipts.show',
+                    $paymentReceipt
+                )
+                ->with(
+                    'error',
+                    $e->validator
+                        ->errors()
+                        ->first()
+                );
         }
 
         return redirect()
-            ->route('payment-receipts.index')
-            ->with('success', 'Payment receipt deleted successfully.');
+            ->route(
+                'payment-receipts.index'
+            )
+            ->with(
+                'success',
+                'Payment receipt deleted successfully.'
+            );
     }
 
+
+    /**
+     * Confirm payment receipt.
+     */
     public function confirm(
         PaymentReceipt $paymentReceipt,
         ConfirmPaymentReceiptAction $action,
     ): RedirectResponse {
         try {
-            $action->handle($paymentReceipt);
+
+            $action->handle(
+                $paymentReceipt
+            );
+
         } catch (\Illuminate\Validation\ValidationException $e) {
+
             return redirect()
-                ->route('payment-receipts.show', $paymentReceipt)
-                ->with('error', $e->validator->errors()->first());
+                ->route(
+                    'payment-receipts.show',
+                    $paymentReceipt
+                )
+                ->with(
+                    'error',
+                    $e->validator
+                        ->errors()
+                        ->first()
+                );
         }
 
         return redirect()
-            ->route('payment-receipts.show', $paymentReceipt)
-            ->with('success', 'Payment receipt confirmed successfully.');
+            ->route(
+                'payment-receipts.show',
+                $paymentReceipt
+            )
+            ->with(
+                'success',
+                'Payment receipt confirmed successfully.'
+            );
     }
 
+
+    /**
+     * Cancel payment receipt.
+     */
     public function cancel(
         PaymentReceipt $paymentReceipt,
         CancelPaymentReceiptAction $action,
     ): RedirectResponse {
         try {
-            $action->handle($paymentReceipt);
+
+            $action->handle(
+                $paymentReceipt
+            );
+
         } catch (\Illuminate\Validation\ValidationException $e) {
+
             return redirect()
-                ->route('payment-receipts.show', $paymentReceipt)
-                ->with('error', $e->validator->errors()->first());
+                ->route(
+                    'payment-receipts.show',
+                    $paymentReceipt
+                )
+                ->with(
+                    'error',
+                    $e->validator
+                        ->errors()
+                        ->first()
+                );
         }
 
         return redirect()
-            ->route('payment-receipts.show', $paymentReceipt)
-            ->with('success', 'Payment receipt cancelled successfully.');
+            ->route(
+                'payment-receipts.show',
+                $paymentReceipt
+            )
+            ->with(
+                'success',
+                'Payment receipt cancelled successfully.'
+            );
     }
 }
