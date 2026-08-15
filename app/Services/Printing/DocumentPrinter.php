@@ -48,7 +48,8 @@ class DocumentPrinter
 
             'goods_receipt' =>
                 'printing.goods-receipt',
-
+'customer_statement' =>
+    'printing.customer_statement',
             default =>
                 throw new InvalidArgumentException(
                     "Unsupported printable document type: {$type}"

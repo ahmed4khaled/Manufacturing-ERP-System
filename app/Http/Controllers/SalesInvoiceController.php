@@ -15,6 +15,8 @@ use App\Http\Requests\SalesInvoice\StoreSalesInvoiceRequest;
 use App\Http\Requests\SalesInvoice\UpdateSalesInvoiceRequest;
 use App\Models\Customer;
 use App\Models\Product;
+use App\Models\PaymentReceipt;
+use App\Models\CustomerLedgerEntry;
 use App\Models\SalesInvoice;
 use App\Services\StockService;
 use Illuminate\Http\JsonResponse;
@@ -25,18 +27,61 @@ use App\Services\Printing\DocumentPrinter;
 
 class SalesInvoiceController extends Controller
 {
-    public function print(
-    SalesInvoice $salesInvoice,
+public function print(
+    PaymentReceipt $paymentReceipt,
     DocumentPrinter $printer
 ): View {
-    $salesInvoice->load([
+    $paymentReceipt->load([
         'customer',
-        'items',
+        'creator',
+        'salesInvoice',
     ]);
 
+    $invoice = $paymentReceipt->salesInvoice;
+
+    $previousPaid = 0;
+
+    $invoiceRemaining = null;
+
+    if ($invoice) {
+        $previousPaid = PaymentReceipt::query()
+            ->where('sales_invoice_id', $invoice->id)
+            ->where('id', '!=', $paymentReceipt->id)
+            ->where('status', PaymentReceiptStatus::CONFIRMED)
+            ->sum('amount');
+
+        $invoiceTotal = (float) $invoice->total_amount;
+
+        $currentPayment = (float) $paymentReceipt->amount;
+
+        $invoiceRemaining = max(
+            0,
+            $invoiceTotal
+            - (float) $previousPaid
+            - $currentPayment
+        );
+    }
+
+    /*
+     * Customer balance after this payment.
+     *
+     * Debit - Credit from the customer ledger.
+     */
+    $customerBalance = CustomerLedgerEntry::query()
+        ->where('customer_id', $paymentReceipt->customer_id)
+        ->selectRaw(
+            'COALESCE(SUM(debit), 0) - COALESCE(SUM(credit), 0) as balance'
+        )
+        ->value('balance');
+
     return $printer->render(
-        $salesInvoice,
-        'sales_invoice'
+        $paymentReceipt,
+        'payment_receipt',
+        [
+            'previousPaid' => (float) $previousPaid,
+            'invoiceRemaining' => $invoiceRemaining,
+            'customerBalance' => max(0, (float) $customerBalance),
+        ]
     );
 }
     public function index(Request $request): View

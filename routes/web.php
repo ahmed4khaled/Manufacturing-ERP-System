@@ -25,6 +25,10 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get(
+    '/customer-ledger/{customer}/print',
+    [CustomerLedgerController::class, 'print']
+)->name('customer-ledger.print');
     Route::get('suppliers', [ProcurementController::class, 'suppliers'])->name('suppliers.index');
     Route::get('suppliers/create', [ProcurementController::class, 'createSupplier'])->name('suppliers.create');
     Route::post('suppliers', [ProcurementController::class, 'storeSupplier'])->name('suppliers.store');

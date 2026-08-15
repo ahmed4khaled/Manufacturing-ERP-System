@@ -34,6 +34,14 @@
             <a href="{{ route('customers.edit', $customer) }}" class="btn btn-outline-secondary">
                 <i class="bi bi-pencil me-1"></i> Edit Customer
             </a>
+            <a
+    href="{{ route('customer-ledger.print', $customer) }}"
+    target="_blank"
+    class="btn btn-outline-dark"
+>
+    <i class="bi bi-printer me-1"></i>
+    طباعة كشف الحساب
+</a>
         </div>
     </div>
 
