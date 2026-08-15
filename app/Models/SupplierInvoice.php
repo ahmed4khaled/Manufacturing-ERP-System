@@ -21,4 +21,13 @@ class SupplierInvoice extends Model
     {
         return $this->hasMany(SupplierPayment::class);
     }
+    public function purchaseOrder(): BelongsTo
+{
+    return $this->belongsTo(PurchaseOrder::class);
+}
+
+public function goodsReceipt(): BelongsTo
+{
+    return $this->belongsTo(GoodsReceipt::class);
+}
 }

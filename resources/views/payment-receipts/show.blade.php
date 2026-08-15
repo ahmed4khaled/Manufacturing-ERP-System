@@ -22,6 +22,14 @@
             <p class="text-muted mb-0">{{ $paymentReceipt->customer?->name }} · {{ $paymentReceipt->payment_date->format('M d, Y') }}</p>
         </div>
         <div class="d-flex gap-2">
+            <a
+    href="{{ route('payment-receipts.print', $paymentReceipt) }}"
+    target="_blank"
+    class="btn btn-outline-dark"
+>
+    <i class="bi bi-printer me-1"></i>
+    طباعة
+</a>
             @if ($paymentReceipt->status === \App\Enums\PaymentReceiptStatus::DRAFT)
                 <a href="{{ route('payment-receipts.edit', $paymentReceipt) }}" class="btn btn-primary"><i class="bi bi-pencil me-1"></i> Edit</a>
                 <form action="{{ route('payment-receipts.confirm', $paymentReceipt) }}" method="POST" onsubmit="return confirm('Confirm this receipt? This will post a credit to the customer ledger.')">

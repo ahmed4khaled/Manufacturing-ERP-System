@@ -63,7 +63,32 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('sales-invoices.confirm');
     Route::post('sales-invoices/{sales_invoice}/cancel', [SalesInvoiceController::class, 'cancel'])
         ->name('sales-invoices.cancel');
+Route::get(
+    '/sales-invoices/{salesInvoice}/print',
+    [SalesInvoiceController::class, 'print']
+)->name('sales-invoices.print');
+Route::get(
+    '/payment-receipts/{paymentReceipt}/print',
+    [PaymentReceiptController::class, 'print']
+)->name('payment-receipts.print');
+Route::get(
+    '/supplier-invoices/{supplierInvoice}/print',
+    [ProcurementController::class, 'printSupplierInvoice']
+)->name('supplier-invoices.print');
 
+Route::get(
+    '/supplier-invoices/{supplierInvoice}',
+    [ProcurementController::class, 'showSupplierInvoice']
+)->name('supplier-invoices.show');
+Route::get(
+    '/supplier-payments/{supplierPayment}',
+    [ProcurementController::class, 'showSupplierPayment']
+)->name('supplier-payments.show-payment');
+
+Route::get(
+    '/supplier-payments/{supplierPayment}/print',
+    [ProcurementController::class, 'printSupplierPayment']
+)->name('supplier-payments.print-payment');
     Route::post('payment-receipts/{payment_receipt}/confirm', [PaymentReceiptController::class, 'confirm'])
         ->name('payment-receipts.confirm');
     Route::post('payment-receipts/{payment_receipt}/cancel', [PaymentReceiptController::class, 'cancel'])

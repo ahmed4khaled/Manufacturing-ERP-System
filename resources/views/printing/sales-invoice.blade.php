@@ -1,0 +1,224 @@
+@extends('printing.layout')
+
+@php
+
+    $printTitle = 'فاتورة مبيعات';
+
+    $printNumber = $document->invoice_number;
+
+    $printDate = $document->invoice_date->format('Y-m-d');
+
+@endphp
+
+
+@section('print-content')
+
+    <div class="info-grid">
+
+        <div class="info-box">
+
+            <div class="info-label">
+                بيانات العميل
+            </div>
+
+            <div class="info-name">
+                {{ $document->customer?->name ?? '—' }}
+            </div>
+
+            @if ($document->customer?->code)
+
+                <div class="info-line">
+                    كود العميل:
+                    {{ $document->customer->code }}
+                </div>
+
+            @endif
+
+            @if ($document->customer?->phone)
+
+                <div class="info-line">
+                    الهاتف:
+                    {{ $document->customer->phone }}
+                </div>
+
+            @endif
+
+        </div>
+
+
+        <div class="info-box">
+
+            <div class="info-label">
+                بيانات الفاتورة
+            </div>
+
+            <div class="info-line">
+                الحالة:
+                {{ $document->status->label() }}
+            </div>
+
+            <div class="info-line">
+                عدد القطع:
+                {{ number_format($document->total_quantity, 0) }}
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <table class="items-table">
+
+        <thead>
+
+            <tr>
+
+                <th>
+                    #
+                </th>
+
+                <th>
+                    الصنف
+                </th>
+
+                <th>
+                    اللون
+                </th>
+
+                <th>
+                    المقاس
+                </th>
+
+                <th>
+                    الكود
+                </th>
+
+                <th>
+                    السعر
+                </th>
+
+                <th>
+                    الكمية
+                </th>
+
+                <th>
+                    الإجمالي
+                </th>
+
+            </tr>
+
+        </thead>
+
+        <tbody>
+
+            @foreach ($document->items as $index => $item)
+
+                <tr>
+
+                    <td>
+                        {{ $index + 1 }}
+                    </td>
+
+                    <td>
+                        {{ $item->product_name }}
+                    </td>
+
+                    <td>
+                        {{ $item->color_name ?? '—' }}
+                    </td>
+
+                    <td>
+                        {{ $item->size_name ?? '—' }}
+                    </td>
+
+                    <td>
+                        {{ $item->sku ?? '—' }}
+                    </td>
+
+                    <td>
+                        {{ number_format($item->unit_price, 2) }}
+                    </td>
+
+                    <td>
+                        {{ number_format($item->quantity, 0) }}
+                    </td>
+
+                    <td>
+                        {{ number_format($item->line_total, 2) }}
+                    </td>
+
+                </tr>
+
+            @endforeach
+
+        </tbody>
+
+    </table>
+
+
+    <div class="summary-wrapper">
+
+        <div class="summary">
+
+            <div class="summary-row">
+
+                <span>
+                    إجمالي القطع
+                </span>
+
+                <strong>
+                    {{ number_format($document->total_quantity, 0) }}
+                </strong>
+
+            </div>
+
+
+            <div class="summary-row">
+
+                <span>
+                    المجموع الفرعي
+                </span>
+
+                <strong>
+                    {{ number_format($document->subtotal, 2) }}
+                    جنيه
+                </strong>
+
+            </div>
+
+
+            <div class="summary-row total">
+
+                <span>
+                    الإجمالي
+                </span>
+
+                <span>
+                    {{ number_format($document->total_amount, 2) }}
+                    جنيه
+                </span>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    @if ($document->notes)
+
+        <div class="notes">
+
+            <div class="notes-title">
+                ملاحظات
+            </div>
+
+            <div class="notes-content">
+                {{ $document->notes }}
+            </div>
+
+        </div>
+
+    @endif
+
+@endsection

@@ -31,9 +31,74 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use App\Services\Printing\DocumentPrinter;
 
 class ProcurementController extends Controller
 {
+public function showSupplierPayment(
+    SupplierPayment $supplierPayment
+): View {
+    $supplierPayment->load([
+        'supplier',
+        'purchaseOrder',
+        'invoice',
+    ]);
+
+    return view(
+        'procurement.payments.show',
+        compact('supplierPayment')
+    );
+}
+
+public function printSupplierPayment(
+    SupplierPayment $supplierPayment
+): View {
+    $supplierPayment->load([
+        'supplier',
+        'purchaseOrder',
+        'invoice',
+    ]);
+
+    return view(
+        'printing.supplier-payment',
+        [
+            'document' => $supplierPayment,
+        ]
+    );
+}
+    public function printSupplierInvoice(
+    SupplierInvoice $supplierInvoice,
+    DocumentPrinter $printer
+): View {
+    $supplierInvoice->load([
+    'supplier',
+    'purchaseOrder',
+    'goodsReceipt',
+    'payments',
+]);
+    return $printer->render(
+        $supplierInvoice,
+        'supplier_invoice'
+    );
+}
+public function showSupplierInvoice(
+    SupplierInvoice $supplierInvoice
+): View {
+    $supplierInvoice->load([
+        'supplier',
+        'payments',
+    ]);
+
+    return view(
+        'procurement.invoices.show',
+        compact('supplierInvoice')
+    );
+}
+
+
+
+
+
     public function suppliers(Request $request): View|JsonResponse
     {
         $suppliers = Supplier::query()

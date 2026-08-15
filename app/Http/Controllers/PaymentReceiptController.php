@@ -17,9 +17,24 @@ use App\Models\PaymentReceipt;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use App\Services\Printing\DocumentPrinter;
 
 class PaymentReceiptController extends Controller
 {
+    public function print(
+        PaymentReceipt $paymentReceipt,
+        DocumentPrinter $printer
+    ): View {
+        $paymentReceipt->load([
+            'customer',
+            'creator',
+        ]);
+
+        return $printer->render(
+            $paymentReceipt,
+            'payment_receipt'
+        );
+    }
     public function index(Request $request): View
     {
         $receipts = PaymentReceipt::query()

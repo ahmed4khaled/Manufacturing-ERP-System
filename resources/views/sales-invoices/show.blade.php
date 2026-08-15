@@ -8,6 +8,8 @@
             <li class="breadcrumb-item"><a href="{{ route('dashboard') }}" class="text-decoration-none">Dashboard</a></li>
             <li class="breadcrumb-item"><a href="{{ route('sales-invoices.index') }}" class="text-decoration-none">Sales Invoices</a></li>
             <li class="breadcrumb-item active">{{ $salesInvoice->invoice_number }}</li>
+       
+
         </ol>
     </nav>
 @endsection
@@ -21,24 +23,78 @@
             </div>
             <p class="text-muted mb-0">{{ $salesInvoice->customer?->name }} · {{ $salesInvoice->invoice_date->format('M d, Y') }}</p>
         </div>
-        <div class="d-flex gap-2">
-            @if ($salesInvoice->status === \App\Enums\SalesInvoiceStatus::DRAFT)
-                <a href="{{ route('sales-invoices.edit', $salesInvoice) }}" class="btn btn-primary"><i class="bi bi-pencil me-1"></i> Edit</a>
-                <form action="{{ route('sales-invoices.confirm', $salesInvoice) }}" method="POST" onsubmit="return confirm('Confirm this invoice? This will post the amount to the customer ledger.')">
-                    @csrf
-                    <button type="submit" class="btn btn-success"><i class="bi bi-check-circle me-1"></i> Confirm</button>
-                </form>
-                <form action="{{ route('sales-invoices.destroy', $salesInvoice) }}" method="POST" onsubmit="return confirm('Delete this draft invoice?')">
-                    @csrf @method('DELETE')
-                    <button type="submit" class="btn btn-outline-danger"><i class="bi bi-trash me-1"></i> Delete</button>
-                </form>
-            @elseif ($salesInvoice->status === \App\Enums\SalesInvoiceStatus::CONFIRMED)
-                <form action="{{ route('sales-invoices.cancel', $salesInvoice) }}" method="POST" onsubmit="return confirm('Cancel this invoice?')">
-                    @csrf
-                    <button type="submit" class="btn btn-outline-danger"><i class="bi bi-x-circle me-1"></i> Cancel Invoice</button>
-                </form>
-            @endif
-        </div>
+     <div class="d-flex gap-2">
+
+    {{-- Print Invoice --}}
+    <a
+        href="{{ route('sales-invoices.print', $salesInvoice) }}"
+        target="_blank"
+        class="btn btn-outline-dark"
+    >
+        <i class="bi bi-printer me-1"></i>
+        Print
+    </a>
+
+    @if ($salesInvoice->status === \App\Enums\SalesInvoiceStatus::DRAFT)
+        <a
+            href="{{ route('sales-invoices.edit', $salesInvoice) }}"
+            class="btn btn-primary"
+        >
+            <i class="bi bi-pencil me-1"></i>
+            Edit
+        </a>
+
+        <form
+            action="{{ route('sales-invoices.confirm', $salesInvoice) }}"
+            method="POST"
+            onsubmit="return confirm('Confirm this invoice? This will post the amount to the customer ledger.')"
+        >
+            @csrf
+
+            <button type="submit" class="btn btn-success">
+                <i class="bi bi-check-circle me-1"></i>
+                Confirm
+            </button>
+        </form>
+
+        <form
+            action="{{ route('sales-invoices.destroy', $salesInvoice) }}"
+            method="POST"
+            onsubmit="return confirm('Delete this draft invoice?')"
+        >
+            @csrf
+            @method('DELETE')
+
+            <button
+                type="submit"
+                class="btn btn-outline-danger"
+            >
+                <i class="bi bi-trash me-1"></i>
+                Delete
+            </button>
+        </form>
+
+    @elseif ($salesInvoice->status === \App\Enums\SalesInvoiceStatus::CONFIRMED)
+
+        <form
+            action="{{ route('sales-invoices.cancel', $salesInvoice) }}"
+            method="POST"
+            onsubmit="return confirm('Cancel this invoice?')"
+        >
+            @csrf
+
+            <button
+                type="submit"
+                class="btn btn-outline-danger"
+            >
+                <i class="bi bi-x-circle me-1"></i>
+                Cancel Invoice
+            </button>
+        </form>
+
+    @endif
+
+</div>
     </div>
 
     <div class="row g-4">
@@ -125,6 +181,8 @@
     </div>
 
     <div class="mt-3">
+       
         <a href="{{ route('sales-invoices.index') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i> Back to Invoices</a>
     </div>
+    
 @endsection
