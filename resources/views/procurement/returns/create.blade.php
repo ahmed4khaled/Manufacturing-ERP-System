@@ -1,10 +1,10 @@
 @extends('layouts.dashboard')
-@section('title','Create Purchase Return')
+@section('title','إنشاء مرتجع مشتريات')
 @section('content')
 <div class="page-header">
     <div>
-        <h1 class="h3 mb-1">Create Purchase Return</h1>
-        <p class="text-muted mb-0">Select a confirmed goods receipt and return material quantities that are still available for return.</p>
+        <h1 class="h3 mb-1">إنشاء مرتجع مشتريات</h1>
+        <p class="text-muted mb-0">اختر إذن استلام مؤكدًا وحدد كميات الخامات المتاحة للمرتجع.</p>
     </div>
 </div>
 
@@ -16,9 +16,9 @@
         <div class="card-body">
             <div class="row g-3">
                 <div class="col-md-6">
-                    <label class="form-label fw-bold">Supplier *</label>
+                    <label class="form-label fw-bold">المورد *</label>
                     <select name="supplier_id" id="supplier" class="form-select @error('supplier_id') is-invalid @enderror" required>
-                        <option value="">Select supplier</option>
+                        <option value="">اختر المورد</option>
                         @foreach($receipts->groupBy('supplier_id') as $supplierId => $supplierReceipts)
                             <option value="{{ $supplierId }}" @selected(old('supplier_id') == $supplierId)>
                                 {{ $supplierReceipts->first()->supplier->name }}
@@ -31,9 +31,9 @@
                 </div>
                 
                 <div class="col-md-6">
-                    <label class="form-label fw-bold">Goods Receipt *</label>
+                    <label class="form-label fw-bold">إذن الاستلام *</label>
                     <select name="goods_receipt_id" id="receipt" class="form-select @error('goods_receipt_id') is-invalid @enderror" required>
-                        <option value="">Select receipt</option>
+                        <option value="">اختر إذن الاستلام</option>
                         @foreach($receipts as $receipt)
                             <option value="{{ $receipt->id }}" data-supplier="{{ $receipt->supplier_id }}" @selected(old('goods_receipt_id') == $receipt->id)>
                                 {{ $receipt->receipt_number }} — {{ $receipt->supplier->name }}
@@ -46,7 +46,7 @@
                 </div>
                 
                 <div class="col-md-6">
-                    <label class="form-label fw-bold">Return Date *</label>
+                    <label class="form-label fw-bold">تاريخ المرتجع *</label>
                     <input type="date" name="return_date" class="form-control @error('return_date') is-invalid @enderror" value="{{ old('return_date', now()->toDateString()) }}" required>
                     @error('return_date')
                         <div class="invalid-feedback">{{ $message }}</div>
@@ -54,16 +54,16 @@
                 </div>
                 
                 <div class="col-md-6">
-                    <label class="form-label fw-bold">Reason *</label>
-                    <input type="text" name="reason" class="form-control @error('reason') is-invalid @enderror" value="{{ old('reason') }}" placeholder="e.g., Quality issue, Damaged in transit" required>
+                    <label class="form-label fw-bold">السبب *</label>
+                    <input type="text" name="reason" class="form-control @error('reason') is-invalid @enderror" value="{{ old('reason') }}" placeholder="مثال: مشكلة جودة أو تلف أثناء النقل" required>
                     @error('reason')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
                 
                 <div class="col-12">
-                    <label class="form-label fw-bold">Notes</label>
-                    <textarea name="notes" class="form-control @error('notes') is-invalid @enderror" rows="2" placeholder="Additional notes about this return">{{ old('notes') }}</textarea>
+                    <label class="form-label fw-bold">ملاحظات</label>
+                    <textarea name="notes" class="form-control @error('notes') is-invalid @enderror" rows="2" placeholder="ملاحظات إضافية عن هذا المرتجع">{{ old('notes') }}</textarea>
                     @error('notes')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
@@ -75,26 +75,26 @@
     {{-- Return Items Section --}}
     <div class="card">
         <div class="card-header">
-            <h5 class="mb-0">Return Items</h5>
+            <h5 class="mb-0">بنود المرتجع</h5>
         </div>
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-hover">
                     <thead class="table-light">
                         <tr>
-                            <th style="width: 25%;">Material</th>
-                            <th style="width: 12%;" class="text-end">Accepted Qty</th>
-                            <th style="width: 12%;" class="text-end">Already Returned</th>
-                            <th style="width: 12%;" class="text-end">Available to Return</th>
-                            <th style="width: 12%;" class="text-end">Return Qty *</th>
-                            <th style="width: 12%;" class="text-end">Unit Cost</th>
-                            <th style="width: 15%;">Reason</th>
+                            <th style="width: 25%;">الخامة</th>
+                            <th style="width: 12%;" class="text-end">الكمية المقبولة</th>
+                            <th style="width: 12%;" class="text-end">المرتجع سابقًا</th>
+                            <th style="width: 12%;" class="text-end">المتاح للمرتجع</th>
+                            <th style="width: 12%;" class="text-end">كمية المرتجع *</th>
+                            <th style="width: 12%;" class="text-end">تكلفة الوحدة</th>
+                            <th style="width: 15%;">السبب</th>
                         </tr>
                     </thead>
                     <tbody id="items">
                         <tr>
                             <td colspan="7" class="text-center text-muted py-4">
-                                <small>Select a goods receipt to view returnable materials</small>
+                                <small>اختر إذن استلام لعرض الخامات القابلة للمرتجع</small>
                             </td>
                         </tr>
                     </tbody>
@@ -108,9 +108,9 @@
 
     <div class="d-flex gap-2 mt-4">
         <button type="submit" class="btn btn-primary">
-            <i class="bi bi-check-circle"></i> Save Return Draft
+            <i class="bi bi-check-circle"></i> حفظ المرتجع كمسودة
         </button>
-        <a href="{{ route('purchase-returns.index') }}" class="btn btn-secondary">Cancel</a>
+        <a href="{{ route('purchase-returns.index') }}" class="btn btn-secondary">إلغاء</a>
     </div>
 </form>
 
@@ -128,7 +128,7 @@ function renderReceiptItems(receiptId) {
     
     if (rows.length === 0 || rows.every(item => parseFloat(item.available) <= 0)) {
         html = `<tr><td colspan="7" class="text-center text-muted py-4">
-            <small>No materials available for return in this receipt</small>
+            <small>لا توجد خامات متاحة للمرتجع في إذن الاستلام هذا</small>
         </td></tr>`;
         itemsTable.innerHTML = html;
         return;
@@ -156,7 +156,7 @@ function renderReceiptItems(receiptId) {
                     class="form-control text-end" required>
             </td>
             <td>
-                <input type="text" name="items[${index}][reason]" class="form-control" placeholder="Reason">
+                <input type="text" name="items[${index}][reason]" class="form-control" placeholder="السبب">
             </td>
         </tr>`;
     });
@@ -187,12 +187,12 @@ supplierSelect.addEventListener('change', function() {
             renderReceiptItems(firstMatch.value);
         } else {
             itemsTable.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">
-                <small>No confirmed receipts for this supplier</small>
+                <small>لا توجد أذون استلام مؤكدة لهذا المورد</small>
             </td></tr>`;
         }
     } else {
         itemsTable.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">
-            <small>Select a goods receipt to view returnable materials</small>
+            <small>اختر إذن استلام لعرض الخامات القابلة للمرتجع</small>
         </td></tr>`;
     }
 });

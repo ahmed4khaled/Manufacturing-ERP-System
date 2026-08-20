@@ -3,10 +3,10 @@
 @section('title', $product->name . ' - ' . config('app.name'))
 
 @section('breadcrumb')
-    <nav aria-label="breadcrumb">
+    <nav aria-label="مسار التنقل">
         <ol class="breadcrumb mb-0">
-            <li class="breadcrumb-item"><a href="{{ route('dashboard') }}" class="text-decoration-none">Dashboard</a></li>
-            <li class="breadcrumb-item"><a href="{{ route('products.index') }}" class="text-decoration-none">Products</a></li>
+            <li class="breadcrumb-item"><a href="{{ route('dashboard') }}" class="text-decoration-none">لوحة التحكم</a></li>
+            <li class="breadcrumb-item"><a href="{{ route('products.index') }}" class="text-decoration-none">الموديلات</a></li>
             <li class="breadcrumb-item active">{{ $product->code }}</li>
         </ol>
     </nav>
@@ -22,11 +22,11 @@
             <p class="text-muted mb-0">{{ $product->code }} · {{ $product->category?->name }}</p>
         </div>
         <div class="d-flex gap-2">
-            <a href="{{ route('product-variants.create', ['product_id' => $product->id]) }}" class="btn btn-outline-primary"><i class="bi bi-plus-lg me-1"></i> Add Variant</a>
-            <a href="{{ route('products.edit', $product) }}" class="btn btn-primary"><i class="bi bi-pencil me-1"></i> Edit</a>
-            <form action="{{ route('products.destroy', $product) }}" method="POST" onsubmit="return confirm('Delete this product?')">
+            <a href="{{ route('product-variants.create', ['product_id' => $product->id]) }}" class="btn btn-outline-primary"><i class="bi bi-plus-lg me-1"></i> إضافة متغير</a>
+            <a href="{{ route('products.edit', $product) }}" class="btn btn-primary"><i class="bi bi-pencil me-1"></i> تعديل</a>
+            <form action="{{ route('products.destroy', $product) }}" method="POST" onsubmit="return confirm('هل تريد حذف هذا الموديل؟')">
                 @csrf @method('DELETE')
-                <button type="submit" class="btn btn-outline-danger"><i class="bi bi-trash me-1"></i> Delete</button>
+                <button type="submit" class="btn btn-outline-danger"><i class="bi bi-trash me-1"></i> حذف</button>
             </form>
         </div>
     </div>
@@ -34,16 +34,16 @@
     <div class="row g-4">
         <div class="col-lg-8">
             <div class="card">
-                <div class="card-header bg-white"><h5 class="card-title mb-0">Details</h5></div>
+                <div class="card-header bg-white"><h5 class="card-title mb-0">التفاصيل</h5></div>
                 <div class="card-body">
                     <div class="row g-3">
                         <div class="col-12">
-                            <label class="form-label text-muted small mb-1">Description</label>
+                            <label class="form-label text-muted small mb-1">الوصف</label>
                             <p class="mb-0">{{ $product->description ?? '—' }}</p>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label text-muted small mb-1">Cost Price</label>
-                            <p class="mb-0 fw-semibold">{{ number_format($product->cost_price, 2) }} SAR</p>
+                            <label class="form-label text-muted small mb-1">سعر التكلفة</label>
+                            <p class="mb-0 fw-semibold">{{ number_format($product->cost_price, 2) }} ج.م</p>
                         </div>
                     </div>
                 </div>
@@ -51,23 +51,23 @@
 
             <div class="card mt-4">
                 <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">Variants</h5>
+                    <h5 class="card-title mb-0">المتغيرات</h5>
                     <span class="badge bg-secondary">{{ $product->variants->count() }}</span>
                 </div>
                 <div class="card-body p-0">
                     @if ($product->variants->isEmpty())
-                        <p class="text-muted text-center py-4 mb-0">No variants yet. <a href="{{ route('product-variants.create') }}">Create one</a>.</p>
+                        <p class="text-muted text-center py-4 mb-0">لا توجد متغيرات حتى الآن. <a href="{{ route('product-variants.create') }}">إنشاء سجل جديد</a>.</p>
                     @else
                         <div class="table-responsive">
                             <table class="table table-hover mb-0">
                                 <thead>
                                     <tr>
-                                        <th>SKU</th>
-                                        <th>Color</th>
-                                        <th>Size</th>
-                                        <th>Status</th>
-                                        <th class="text-end">Price</th>
-                                        <th class="text-end">Qty</th>
+                                        <th>رمز المخزون</th>
+                                        <th>اللون</th>
+                                        <th>المقاس</th>
+                                        <th>الحالة</th>
+                                        <th class="text-end">السعر</th>
+                                        <th class="text-end">الكمية</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -96,19 +96,19 @@
 
         <div class="col-lg-4">
             <div class="card">
-                <div class="card-header bg-white"><h5 class="card-title mb-0">Summary</h5></div>
+                <div class="card-header bg-white"><h5 class="card-title mb-0">الملخص</h5></div>
                 <div class="card-body">
                     <div class="mb-3">
-                        <label class="form-label text-muted small mb-1">Category</label>
+                        <label class="form-label text-muted small mb-1">التصنيف</label>
                         <p class="mb-0 fw-semibold">{{ $product->category?->name ?? '—' }}</p>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label text-muted small mb-1">Created</label>
-                        <p class="mb-0 small">{{ $product->created_at->format('M d, Y H:i') }}</p>
+                        <label class="form-label text-muted small mb-1">تاريخ الإنشاء</label>
+                        <p class="mb-0 small">{{ $product->created_at->format('Y-m-d H:i') }}</p>
                     </div>
                     <div>
-                        <label class="form-label text-muted small mb-1">Last Updated</label>
-                        <p class="mb-0 small">{{ $product->updated_at->format('M d, Y H:i') }}</p>
+                        <label class="form-label text-muted small mb-1">آخر تحديث</label>
+                        <p class="mb-0 small">{{ $product->updated_at->format('Y-m-d H:i') }}</p>
                     </div>
                 </div>
             </div>
@@ -116,6 +116,6 @@
     </div>
 
     <div class="mt-3">
-        <a href="{{ route('products.index') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i> Back to Products</a>
+        <a href="{{ route('products.index') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i> العودة إلى المنتجات</a>
     </div>
 @endsection

@@ -13,7 +13,7 @@ class UpdatePaymentReceiptAction
     {
         if ($receipt->status !== PaymentReceiptStatus::DRAFT) {
             throw ValidationException::withMessages([
-                'status' => 'Only draft receipts can be edited.',
+                'status' => 'لا يمكن تعديل إلا السندات المسودة.',
             ]);
         }
 

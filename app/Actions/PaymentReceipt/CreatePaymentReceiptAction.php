@@ -51,7 +51,7 @@ class CreatePaymentReceiptAction
                 ) {
                     throw ValidationException::withMessages([
                         'sales_invoice_id' =>
-                            'The selected invoice does not belong to the selected customer.',
+                            'الفاتورة المحددة لا تخص العميل المحدد.',
                     ]);
                 }
 
@@ -90,12 +90,12 @@ class CreatePaymentReceiptAction
                 ) {
                     throw ValidationException::withMessages([
                         'amount' =>
-                            'Payment amount cannot exceed the remaining invoice balance. Remaining: '
+                            'لا يمكن أن يتجاوز مبلغ الدفعة رصيد الفاتورة المتبقي. المتبقي: '
                             . number_format(
                                 $remainingAmount,
                                 2
                             )
-                            . ' EGP.',
+                            . ' ج.م.',
                     ]);
                 }
             }

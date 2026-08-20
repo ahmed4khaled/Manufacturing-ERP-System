@@ -1,6 +1,6 @@
 @extends('layouts.dashboard')
 
-@section('title', $supplierInvoice->invoice_number . ' - Supplier Invoice')
+@section('title', $supplierInvoice->invoice_number . ' - فاتورة مورد')
 
 @section('content')
 
@@ -24,15 +24,15 @@
                 @endphp
 
                 <span class="badge bg-{{ $statusClass }}">
-                    {{ str_replace('_', ' ', ucfirst($supplierInvoice->status)) }}
+                    {{ \App\Support\ArabicLabels::status($supplierInvoice->status) }}
                 </span>
 
             </div>
 
             <p class="text-muted mb-0">
-                Supplier Invoice
+                فاتورة مورد
                 ·
-                {{ $supplierInvoice->invoice_date?->format('M d, Y') }}
+                {{ $supplierInvoice->invoice_date?->format('Y-m-d') }}
             </p>
         </div>
 
@@ -46,7 +46,7 @@
                 class="btn btn-outline-dark"
             >
                 <i class="bi bi-printer me-1"></i>
-                Print
+                طباعة
             </a> --}}
 
 
@@ -66,7 +66,7 @@
                     class="btn btn-primary"
                 >
                     <i class="bi bi-cash-stack me-1"></i>
-                    Record Payment
+                    تسجيل دفعة
                 </a>
 
             @endif
@@ -82,13 +82,13 @@
         <div class="col-lg-4">
 
 
-            {{-- Supplier --}}
+            {{-- المورد --}}
             <div class="card">
 
                 <div class="card-header bg-white">
 
                     <h5 class="card-title mb-0">
-                        Supplier
+                        المورد
                     </h5>
 
                 </div>
@@ -102,7 +102,7 @@
                     @if ($supplierInvoice->supplier?->code)
 
                         <p class="text-muted small mb-1">
-                            Code:
+                            الكود:
                             {{ $supplierInvoice->supplier->code }}
                         </p>
 
@@ -111,7 +111,7 @@
                     @if ($supplierInvoice->supplier?->phone)
 
                         <p class="text-muted small mb-0">
-                            Phone:
+                            الهاتف:
                             {{ $supplierInvoice->supplier->phone }}
                         </p>
 
@@ -128,7 +128,7 @@
                 <div class="card-header bg-white">
 
                     <h5 class="card-title mb-0">
-                        Invoice Information
+                        بيانات الفاتورة
                     </h5>
 
                 </div>
@@ -140,7 +140,7 @@
                     <div class="d-flex justify-content-between mb-3">
 
                         <span class="text-muted">
-                            Invoice Number
+                            رقم الفاتورة
                         </span>
 
                         <strong>
@@ -154,7 +154,7 @@
                     <div class="d-flex justify-content-between mb-3">
 
                         <span class="text-muted">
-                            Invoice Date
+                            تاريخ الفاتورة
                         </span>
 
                         <strong>
@@ -168,7 +168,7 @@
                     <div class="d-flex justify-content-between mb-3">
 
                         <span class="text-muted">
-                            Due Date
+                            تاريخ الاستحقاق
                         </span>
 
                         <strong>
@@ -182,7 +182,7 @@
                     <div class="d-flex justify-content-between mb-3">
 
                         <span class="text-muted">
-                            Purchase Order
+                            أمر الشراء
                         </span>
 
                         <strong>
@@ -194,7 +194,7 @@
                             @else
 
                                 <span class="text-muted">
-                                    Not linked
+                                    غير مرتبط
                                 </span>
 
                             @endif
@@ -208,7 +208,7 @@
                     <div class="d-flex justify-content-between">
 
                         <span class="text-muted">
-                            Goods Receipt
+                            إذن الاستلام
                         </span>
 
                         <strong>
@@ -220,7 +220,7 @@
                             @else
 
                                 <span class="text-muted">
-                                    Not linked
+                                    غير مرتبط
                                 </span>
 
                             @endif
@@ -242,7 +242,7 @@
                     <div class="card-header bg-white">
 
                         <h5 class="card-title mb-0">
-                            Notes
+                            ملاحظات
                         </h5>
 
                     </div>
@@ -272,7 +272,7 @@
                 <div class="card-header bg-white">
 
                     <h5 class="card-title mb-0">
-                        Invoice Summary
+                        ملخص الفاتورة
                     </h5>
 
                 </div>
@@ -284,12 +284,12 @@
                     <div class="d-flex justify-content-between mb-3">
 
                         <span class="text-muted">
-                            Subtotal
+                            الإجمالي الفرعي
                         </span>
 
                         <strong>
                             {{ number_format($supplierInvoice->subtotal, 2) }}
-                            EGP
+                            ج.م
                         </strong>
 
                     </div>
@@ -299,12 +299,12 @@
                     <div class="d-flex justify-content-between mb-3">
 
                         <span class="text-muted">
-                            Discount
+                            الخصم
                         </span>
 
                         <strong>
                             {{ number_format($supplierInvoice->discount, 2) }}
-                            EGP
+                            ج.م
                         </strong>
 
                     </div>
@@ -314,12 +314,12 @@
                     <div class="d-flex justify-content-between mb-3">
 
                         <span class="text-muted">
-                            Tax
+                            الضريبة
                         </span>
 
                         <strong>
                             {{ number_format($supplierInvoice->tax, 2) }}
-                            EGP
+                            ج.م
                         </strong>
 
                     </div>
@@ -332,13 +332,13 @@
                     <div class="d-flex justify-content-between mb-3">
 
                         <span class="fw-semibold">
-                            Invoice Total
+                            إجمالي الفاتورة
                         </span>
 
                         <strong class="fs-5 text-primary">
 
                             {{ number_format($supplierInvoice->total, 2) }}
-                            EGP
+                            ج.م
 
                         </strong>
 
@@ -349,13 +349,13 @@
                     <div class="d-flex justify-content-between mb-3">
 
                         <span class="text-muted">
-                            Paid Amount
+                            المبلغ المدفوع
                         </span>
 
                         <strong class="text-success">
 
                             {{ number_format($supplierInvoice->paid_amount, 2) }}
-                            EGP
+                            ج.م
 
                         </strong>
 
@@ -366,7 +366,7 @@
                     <div class="d-flex justify-content-between">
 
                         <span class="fw-semibold">
-                            Remaining
+                            المتبقي
                         </span>
 
                         <strong
@@ -385,7 +385,7 @@
                         >
 
                             {{ number_format($supplierInvoice->remaining_amount, 2) }}
-                            EGP
+                            ج.م
 
                         </strong>
 
@@ -402,7 +402,7 @@
                 <div class="card-header bg-white">
 
                     <h5 class="card-title mb-0">
-                        Payment History
+                        سجل المدفوعات
                     </h5>
 
                 </div>
@@ -420,23 +420,23 @@
                                     <tr>
 
                                         <th>
-                                            Payment
+                                            السداد
                                         </th>
 
                                         <th>
-                                            Date
+                                            التاريخ
                                         </th>
 
                                         <th>
-                                            Method
+                                            الطريقة
                                         </th>
 
                                         <th>
-                                            Reference
+                                            المرجع
                                         </th>
 
                                         <th class="text-end">
-                                            Amount
+                                            المبلغ
                                         </th>
 
                                     </tr>
@@ -458,13 +458,7 @@
                                             </td>
 
                                             <td>
-                                                {{ ucfirst(
-                                                    str_replace(
-                                                        '_',
-                                                        ' ',
-                                                        $payment->payment_method
-                                                    )
-                                                ) }}
+                                                {{ \App\Support\ArabicLabels::paymentMethod($payment->payment_method) }}
                                             </td>
 
                                             <td>
@@ -480,7 +474,7 @@
                                                         2
                                                     ) }}
 
-                                                    EGP
+                                                    ج.م
 
                                                 </strong>
 
@@ -500,7 +494,7 @@
 
                         <div class="text-center text-muted py-5">
 
-                            No payments recorded for this invoice yet.
+                            لم تُسجل مدفوعات لهذه الفاتورة بعد.
 
                         </div>
 
@@ -523,7 +517,7 @@
             class="btn btn-outline-secondary"
         >
             <i class="bi bi-arrow-left me-1"></i>
-            Back to Supplier Invoices
+            العودة إلى فواتير الموردين
         </a>
 
     </div>

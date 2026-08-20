@@ -15,7 +15,7 @@
         </div>
 
         <span class="badge bg-secondary fs-6">
-            {{ str_replace('_', ' ', ucfirst($purchaseOrder->status)) }}
+            {{ \App\Support\ArabicLabels::status($purchaseOrder->status) }}
         </span>
     </div>
 
@@ -27,23 +27,23 @@
             {{-- ORDER ITEMS --}}
             <div class="card">
                 <div class="card-header bg-white">
-                    <h5 class="mb-0">Order Items & Receiving Status</h5>
+                    <h5 class="mb-0">بنود الطلب وحالة الاستلام</h5>
                 </div>
 
                 <div class="table-responsive">
                     <table class="table table-hover mb-0">
                         <thead>
                             <tr>
-                                <th>Material</th>
-                                <th>Category</th>
-                                <th>Unit</th>
-                                <th class="text-end">Ordered</th>
-                                <th class="text-end">Received</th>
-                                <th class="text-end">Accepted</th>
-                                <th class="text-end">Rejected</th>
-                                <th class="text-end">Remaining</th>
-                                <th class="text-end">Price</th>
-                                <th class="text-end">Total</th>
+                                <th>الخامة</th>
+                                <th>التصنيف</th>
+                                <th>الوحدة</th>
+                                <th class="text-end">المطلوب</th>
+                                <th class="text-end">المستلم</th>
+                                <th class="text-end">المقبول</th>
+                                <th class="text-end">المرفوض</th>
+                                <th class="text-end">المتبقي</th>
+                                <th class="text-end">السعر</th>
+                                <th class="text-end">الإجمالي</th>
                             </tr>
                         </thead>
 
@@ -143,7 +143,7 @@
             <div class="card mt-4">
 
                 <div class="card-header bg-white">
-                    <h5 class="mb-0">Goods Receipts</h5>
+                    <h5 class="mb-0">أذون استلام الخامات</h5>
                 </div>
 
                 <div class="card-body">
@@ -167,7 +167,7 @@
                                 </div>
 
                                 <span class="badge bg-{{ $receipt->status === 'confirmed' ? 'success' : 'secondary' }}">
-                                    {{ ucfirst($receipt->status) }}
+                                    {{ \App\Support\ArabicLabels::status($receipt->status) }}
                                 </span>
 
                             </div>
@@ -179,7 +179,7 @@
 
                                     {{-- Material --}}
                                     <div class="col-md-3">
-                                        <span class="text-muted">Material</span>
+                                        <span class="text-muted">الخامة</span>
 
                                         <div class="fw-semibold">
                                             {{ $receiptItem->material->name }}
@@ -188,7 +188,7 @@
 
                                     {{-- Received --}}
                                     <div class="col-md-2">
-                                        <span class="text-muted">Received</span>
+                                        <span class="text-muted">المستلم</span>
 
                                         <div>
                                             {{ number_format($receiptItem->received_quantity, 3) }}
@@ -197,7 +197,7 @@
 
                                     {{-- Accepted --}}
                                     <div class="col-md-2">
-                                        <span class="text-muted">Accepted</span>
+                                        <span class="text-muted">المقبول</span>
 
                                         <div class="text-success fw-semibold">
                                             {{ number_format($receiptItem->accepted_quantity, 3) }}
@@ -206,7 +206,7 @@
 
                                     {{-- Rejected --}}
                                     <div class="col-md-2">
-                                        <span class="text-muted">Rejected</span>
+                                        <span class="text-muted">المرفوض</span>
 
                                         <div class="text-danger fw-semibold">
                                             {{ number_format($receiptItem->rejected_quantity, 3) }}
@@ -215,7 +215,7 @@
 
                                     {{-- Unit Cost --}}
                                     <div class="col-md-3">
-                                        <span class="text-muted">Unit Cost</span>
+                                        <span class="text-muted">تكلفة الوحدة</span>
 
                                         <div>
                                             {{ number_format($receiptItem->unit_cost, 2) }}
@@ -230,7 +230,7 @@
                     @empty
 
                         <p class="text-muted mb-0">
-                            No goods receipts have been recorded.
+                            لم تُسجل أذون استلام بعد.
                         </p>
 
                     @endforelse
@@ -263,20 +263,20 @@
             <div class="card">
 
                 <div class="card-header bg-white">
-                    <h5 class="mb-0">Totals</h5>
+                    <h5 class="mb-0">الإجماليات</h5>
                 </div>
 
                 <div class="card-body">
 
                     <div class="d-flex justify-content-between mb-2">
-                        <span>Subtotal</span>
+                        <span>الإجمالي الفرعي</span>
 
                         <span>
 {{ number_format($acceptedSubtotal, 2) }}                        </span>
                     </div>
 
                     <div class="d-flex justify-content-between mb-2">
-                        <span>Discount</span>
+                        <span>الخصم</span>
 
                         <span>
                             {{ number_format($purchaseOrder->discount, 2) }}
@@ -284,7 +284,7 @@
                     </div>
 
                     <div class="d-flex justify-content-between mb-2">
-                        <span>Tax</span>
+                        <span>الضريبة</span>
 
                         <span>
                             {{ number_format($purchaseOrder->tax, 2) }}
@@ -294,7 +294,7 @@
                     <hr>
 
                     <div class="d-flex justify-content-between fw-bold">
-                        <span>Total</span>
+                        <span>الإجمالي</span>
 
                         <span>
 {{ number_format($calculatedTotal, 2) }}                        </span>
@@ -308,7 +308,7 @@
             <div class="card mt-4">
 
                 <div class="card-header bg-white">
-                    <h5 class="mb-0">Receiving Summary</h5>
+                    <h5 class="mb-0">ملخص الاستلام</h5>
                 </div>
 
                 <div class="card-body">
@@ -328,35 +328,35 @@
                     @endphp
 
                     <div class="d-flex justify-content-between mb-3">
-                        <span class="text-muted">Ordered</span>
+                        <span class="text-muted">المطلوب</span>
                         <span class="fw-semibold">
                             {{ number_format($totalOrdered, 3) }}
                         </span>
                     </div>
 
                     <div class="d-flex justify-content-between mb-3">
-                        <span class="text-muted">Received</span>
+                        <span class="text-muted">المستلم</span>
                         <span class="fw-semibold">
                             {{ number_format($totalReceived, 3) }}
                         </span>
                     </div>
 
                     <div class="d-flex justify-content-between mb-3">
-                        <span class="text-muted">Accepted</span>
+                        <span class="text-muted">المقبول</span>
                         <span class="fw-semibold text-success">
                             {{ number_format($totalAccepted, 3) }}
                         </span>
                     </div>
 
                     <div class="d-flex justify-content-between mb-3">
-                        <span class="text-muted">Rejected</span>
+                        <span class="text-muted">المرفوض</span>
                         <span class="fw-semibold text-danger">
                             {{ number_format($totalRejected, 3) }}
                         </span>
                     </div>
 
                     <div class="d-flex justify-content-between">
-                        <span class="text-muted">Remaining</span>
+                        <span class="text-muted">المتبقي</span>
 
                         @if ($totalRemaining > 0)
                             <span class="badge bg-warning text-dark">
@@ -377,13 +377,13 @@
             <div class="card mt-4">
 
                 <div class="card-header bg-white">
-                    <h5 class="mb-0">Details</h5>
+                    <h5 class="mb-0">التفاصيل</h5>
                 </div>
 
                 <div class="card-body">
 
                     <small class="text-muted">
-                        Expected Delivery
+                        التسليم المتوقع
                     </small>
 
                     <div>
@@ -392,7 +392,7 @@
 
 
                     <small class="text-muted d-block mt-3">
-                        Notes
+                        ملاحظات
                     </small>
 
                     <div>
@@ -407,7 +407,7 @@
             <div class="card mt-4">
 
                 <div class="card-header bg-white">
-                    <h5 class="mb-0">Actions</h5>
+                    <h5 class="mb-0">الإجراءات</h5>
                 </div>
 
                 <div class="card-body">
@@ -420,7 +420,7 @@
 
                             <button type="submit" class="btn btn-primary btn-sm w-100 mb-2">
                                 <i class="bi bi-check2 me-1"></i>
-                                Approve
+                                اعتماد
                             </button>
                         </form>
                     @endif
@@ -430,7 +430,7 @@
                     @if (in_array($purchaseOrder->status, ['approved', 'partially_received']))
                         <a href="{{ route('goods-receipts.create', ['purchase_order_id' => $purchaseOrder->id]) }}"
                             class="btn btn-info btn-sm w-100 mb-2">
-                            <i class="bi bi-inbox me-1"></i> Create Goods Receipt
+                            <i class="bi bi-inbox me-1"></i> إنشاء إذن استلام
                         </a>
                     @endif
 
@@ -441,7 +441,7 @@
 
                             <small>
                                 <i class="bi bi-check-circle me-1"></i>
-                                All goods received
+                                تم استلام كل الكميات
                             </small>
 
                         </div>
@@ -454,7 +454,7 @@
 
                             <small>
                                 <i class="bi bi-exclamation-circle me-1"></i>
-                                Purchase order is cancelled
+                                أمر الشراء ملغي
                             </small>
 
                         </div>
@@ -472,7 +472,7 @@
 
         <a href="{{ route('purchase-orders.index') }}" class="btn btn-outline-secondary">
             <i class="bi bi-arrow-left me-1"></i>
-            Back to Purchase Orders
+            العودة إلى أوامر الشراء
         </a>
 
     </div>

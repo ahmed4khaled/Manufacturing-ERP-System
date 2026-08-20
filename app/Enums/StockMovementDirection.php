@@ -10,8 +10,8 @@ enum StockMovementDirection: string
     public function label(): string
     {
         return match ($this) {
-            self::IN => 'Stock In',
-            self::OUT => 'Stock Out',
+            self::IN => 'وارد',
+            self::OUT => 'صادر',
         };
     }
 

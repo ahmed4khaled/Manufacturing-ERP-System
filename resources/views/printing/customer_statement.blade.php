@@ -156,11 +156,11 @@
 
                         <td>
 
-                             @if ($entry->description =='Sales Invoice')
+                             @if (in_array($entry->description, ['Sales Invoice', 'فاتورة مبيعات'], true))
 
                                 {{ ('فاتورة مبيعات رقم')  }}
 
-                            @elseif($entry->description =='Customer Payment Receipt')
+                            @elseif(in_array($entry->description, ['Customer Payment Receipt', 'سند قبض عميل'], true))
 
                                 {{ ('سند قبض عميل رقم')  }}
 

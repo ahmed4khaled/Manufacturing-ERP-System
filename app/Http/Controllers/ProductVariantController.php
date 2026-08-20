@@ -50,7 +50,7 @@ class ProductVariantController extends Controller
 
         return redirect()
             ->route('product-variants.show', $variant)
-            ->with('success', 'Product variant created successfully.');
+            ->with('success', 'تم إنشاء متغير المنتج بنجاح.');
     }
 
     public function show(ProductVariant $productVariant): View
@@ -78,7 +78,7 @@ class ProductVariantController extends Controller
 
         return redirect()
             ->route('product-variants.show', $productVariant)
-            ->with('success', 'Product variant updated successfully.');
+            ->with('success', 'تم تحديث متغير المنتج بنجاح.');
     }
 
     public function destroy(
@@ -89,6 +89,6 @@ class ProductVariantController extends Controller
 
         return redirect()
             ->route('product-variants.index')
-            ->with('success', 'Product variant deleted successfully.');
+            ->with('success', 'تم حذف متغير المنتج بنجاح.');
     }
 }

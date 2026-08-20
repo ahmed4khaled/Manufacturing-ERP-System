@@ -6,18 +6,18 @@
     <div>
         <h1 class="h3 mb-1">{{ $purchaseReturn->return_number }}</h1>
         <div class="text-muted mb-2">
-            <strong>Supplier:</strong> {{ $purchaseReturn->supplier->name }}<br>
-            <strong>Return Date:</strong> {{ $purchaseReturn->return_date->format('M d, Y') }}
+            <strong>المورد:</strong> {{ $purchaseReturn->supplier->name }}<br>
+            <strong>تاريخ المرتجع:</strong> {{ $purchaseReturn->return_date->format('Y-m-d') }}
         </div>
         
         {{-- Status Badge --}}
         @if($purchaseReturn->status === 'draft')
             <span class="badge bg-warning text-dark">
-                <i class="bi bi-clock-history"></i> Draft
+                <i class="bi bi-clock-history"></i> مسودة
             </span>
         @elseif($purchaseReturn->status === 'confirmed')
             <span class="badge bg-success">
-                <i class="bi bi-check-circle"></i> Confirmed
+                <i class="bi bi-check-circle"></i> مؤكد
             </span>
         @endif
     </div>
@@ -27,8 +27,8 @@
         <div>
             <form method="POST" action="{{ route('purchase-returns.confirm', $purchaseReturn) }}" class="d-inline">
                 @csrf
-                <button type="submit" class="btn btn-success" onclick="return confirm('Confirm and post inventory movements?')">
-                    <i class="bi bi-check-circle"></i> Confirm & Post to Inventory
+                <button type="submit" class="btn btn-success" onclick="return confirm('هل تريد التأكيد وترحيل حركات المخزون؟')">
+                    <i class="bi bi-check-circle"></i> تأكيد وترحيل إلى المخزون
                 </button>
             </form>
         </div>
@@ -41,27 +41,27 @@
         <div class="row">
             <div class="col-md-6">
                 <div class="mb-3">
-                    <strong class="d-block text-muted small">Reference</strong>
+                    <strong class="d-block text-muted small">المرجع</strong>
                     <span>{{ $purchaseReturn->goodsReceipt?->receipt_number ?? 'N/A' }}</span>
-                    <small class="text-muted"> (Goods Receipt)</small>
+                    <small class="text-muted"> (إذن استلام)</small>
                 </div>
                 <div class="mb-3">
-                    <strong class="d-block text-muted small">Status</strong>
+                    <strong class="d-block text-muted small">الحالة</strong>
                     @if($purchaseReturn->status === 'draft')
-                        <span class="badge bg-warning text-dark">Draft - Not Posted</span>
+                        <span class="badge bg-warning text-dark">مسودة - غير مرحّلة</span>
                     @elseif($purchaseReturn->status === 'confirmed')
-                        <span class="badge bg-success">Confirmed - Posted</span>
+                        <span class="badge bg-success">مؤكد - تم الترحيل</span>
                     @endif
                 </div>
             </div>
             <div class="col-md-6">
                 <div class="mb-3">
-                    <strong class="d-block text-muted small">Reason</strong>
+                    <strong class="d-block text-muted small">السبب</strong>
                     {{ $purchaseReturn->reason }}
                 </div>
                 @if($purchaseReturn->notes)
                     <div class="mb-3">
-                        <strong class="d-block text-muted small">Notes</strong>
+                        <strong class="d-block text-muted small">ملاحظات</strong>
                         {{ $purchaseReturn->notes }}
                     </div>
                 @endif
@@ -74,7 +74,7 @@
 <div class="card mt-4">
     <div class="card-header">
         <h5 class="mb-0">
-            <i class="bi bi-box-seam"></i> Return Items
+            <i class="bi bi-box-seam"></i> بنود المرتجع
         </h5>
     </div>
     <div class="card-body">
@@ -82,12 +82,12 @@
             <table class="table table-hover mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th style="width: 35%;">Material</th>
-                        <th style="width: 10%;" class="text-end">Unit</th>
-                        <th style="width: 15%;" class="text-end">Return Qty</th>
-                        <th style="width: 15%;" class="text-end">Unit Cost</th>
-                        <th style="width: 15%;" class="text-end">Line Total</th>
-                        <th style="width: 10%;">Reason</th>
+                        <th style="width: 35%;">الخامة</th>
+                        <th style="width: 10%;" class="text-end">الوحدة</th>
+                        <th style="width: 15%;" class="text-end">كمية المرتجع</th>
+                        <th style="width: 15%;" class="text-end">تكلفة الوحدة</th>
+                        <th style="width: 15%;" class="text-end">إجمالي البند</th>
+                        <th style="width: 10%;">السبب</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -120,7 +120,7 @@
                 </tbody>
                 <tfoot class="table-light fw-bold">
                     <tr>
-                        <td colspan="4" class="text-end">Return Total:</td>
+                        <td colspan="4" class="text-end">إجمالي المرتجع:</td>
                         <td class="text-end">{{ number_format($totalAmount, 2) }}</td>
                         <td></td>
                     </tr>
@@ -133,7 +133,7 @@
 {{-- Back Button --}}
 <div class="mt-4">
     <a href="{{ route('purchase-returns.index') }}" class="btn btn-secondary">
-        <i class="bi bi-arrow-left"></i> Back to Returns
+        <i class="bi bi-arrow-left"></i> العودة إلى المرتجعات
     </a>
 </div>
 

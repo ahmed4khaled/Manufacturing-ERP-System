@@ -1,6 +1,6 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Supplier Invoices')
+@section('title', 'فواتير الموردين')
 
 @section('content')
 
@@ -8,11 +8,11 @@
 
         <div>
             <h1 class="h3 mb-1">
-                Supplier Invoices
+                فواتير الموردين
             </h1>
 
             <p class="text-muted mb-0">
-                Payables awaiting settlement
+                مستحقات في انتظار السداد
             </p>
         </div>
 
@@ -21,7 +21,7 @@
             class="btn btn-primary"
         >
             <i class="bi bi-plus-lg me-1"></i>
-            Create Invoice
+            إنشاء فاتورة
         </a>
 
     </div>
@@ -40,35 +40,35 @@
                         <tr>
 
                             <th>
-                                Invoice
+                                الفاتورة
                             </th>
 
                             <th>
-                                Supplier
+                                المورد
                             </th>
 
                             <th>
-                                Invoice Date
+                                تاريخ الفاتورة
                             </th>
 
                             <th>
-                                Due Date
+                                تاريخ الاستحقاق
                             </th>
 
                             <th>
-                                Status
+                                الحالة
                             </th>
 
                             <th class="text-end">
-                                Total
+                                الإجمالي
                             </th>
 
                             <th class="text-end">
-                                Remaining
+                                المتبقي
                             </th>
 
                             <th class="text-end">
-                                Actions
+                                الإجراءات
                             </th>
 
                         </tr>
@@ -90,7 +90,7 @@
                                 </td>
 
 
-                                {{-- Supplier --}}
+                                {{-- المورد --}}
                                 <td>
 
                                     {{ $invoice->supplier->name }}
@@ -143,11 +143,7 @@
                                     <span
                                         class="badge bg-{{ $statusClass }}"
                                     >
-                                        {{ str_replace(
-                                            '_',
-                                            ' ',
-                                            ucfirst($invoice->status)
-                                        ) }}
+                                        {{ \App\Support\ArabicLabels::status($invoice->status) }}
                                     </span>
 
                                 </td>
@@ -189,7 +185,7 @@
                                                 $invoice
                                             ) }}"
                                             class="btn btn-sm btn-outline-primary"
-                                            title="View Invoice"
+                                            title="عرض الفاتورة"
                                         >
                                             <i class="bi bi-eye"></i>
                                         </a>
@@ -203,7 +199,7 @@
                                             ) }}"
                                             target="_blank"
                                             class="btn btn-sm btn-outline-dark"
-                                            title="Print Invoice"
+                                            title="طباعة الفاتورة"
                                         >
                                             <i class="bi bi-printer"></i>
                                         </a>
@@ -222,7 +218,7 @@
                                     colspan="8"
                                     class="text-center text-muted py-5"
                                 >
-                                    No supplier invoices yet.
+                                    لا توجد فواتير موردين حتى الآن.
                                 </td>
 
                             </tr>

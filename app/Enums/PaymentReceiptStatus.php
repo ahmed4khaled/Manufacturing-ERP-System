@@ -11,9 +11,9 @@ enum PaymentReceiptStatus: string
     public function label(): string
     {
         return match ($this) {
-            self::DRAFT => 'Draft',
-            self::CONFIRMED => 'Confirmed',
-            self::CANCELLED => 'Cancelled',
+            self::DRAFT => 'مسودة',
+            self::CONFIRMED => 'مؤكد',
+            self::CANCELLED => 'ملغي',
         };
     }
 

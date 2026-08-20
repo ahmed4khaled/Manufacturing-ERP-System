@@ -89,7 +89,7 @@ class MaterialInventoryController extends Controller
 
         return redirect()
             ->route('material-inventory.show', $movement->material_id)
-            ->with('success', 'Opening stock recorded successfully.');
+            ->with('success', 'تم تسجيل الرصيد الافتتاحي بنجاح.');
     }
 
     public function createAdjustment(): View
@@ -107,6 +107,6 @@ class MaterialInventoryController extends Controller
 
         return redirect()
             ->route('material-inventory.show', $movement->material_id)
-            ->with('success', 'Stock adjustment recorded successfully.');
+            ->with('success', 'تم تسجيل تسوية المخزون بنجاح.');
     }
 }

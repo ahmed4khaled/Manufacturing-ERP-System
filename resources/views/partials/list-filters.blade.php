@@ -1,6 +1,6 @@
 @props([
     'action',
-    'placeholder' => 'Search...',
+    'placeholder' => 'بحث...',
     'statusEnum' => null,
     'extraFilters' => null,
 ])
@@ -22,7 +22,7 @@
     @if ($statusEnum)
         <div class="col-md-4 col-lg-2">
             <select name="status" class="form-select">
-                <option value="">All Statuses</option>
+                <option value="">كل الحالات</option>
                 @foreach ($statusEnum::cases() as $status)
                     <option value="{{ $status->value }}" @selected(request('status') === $status->value)>
                         {{ $status->label() }}
@@ -37,9 +37,9 @@
     @endif
 
     <div class="col-auto">
-        <button type="submit" class="btn btn-primary">Filter</button>
+        <button type="submit" class="btn btn-primary">تصفية</button>
         @if (request()->hasAny(['search', 'status', 'category_id', 'product_id']))
-            <a href="{{ $action }}" class="btn btn-outline-secondary">Clear</a>
+            <a href="{{ $action }}" class="btn btn-outline-secondary">مسح الفلاتر</a>
         @endif
     </div>
 </form>

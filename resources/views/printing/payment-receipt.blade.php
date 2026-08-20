@@ -21,7 +21,7 @@
 
     $paymentMethodLabel =
         $paymentMethodLabels[$paymentMethod]
-        ?? ucfirst(str_replace('_', ' ', $paymentMethod));
+        ?? \App\Support\ArabicLabels::paymentMethod($paymentMethod);
 
 
     /*

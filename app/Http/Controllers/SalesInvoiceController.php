@@ -28,59 +28,28 @@ use App\Services\Printing\DocumentPrinter;
 class SalesInvoiceController extends Controller
 {
 public function print(
-    PaymentReceipt $paymentReceipt,
+    SalesInvoice $salesInvoice,
     DocumentPrinter $printer
 ): View {
-    $paymentReceipt->load([
+    $salesInvoice->load([
         'customer',
-        'creator',
-        'salesInvoice',
+        'items',
     ]);
-
-    $invoice = $paymentReceipt->salesInvoice;
-
-    $previousPaid = 0;
-
-    $invoiceRemaining = null;
-
-    if ($invoice) {
-        $previousPaid = PaymentReceipt::query()
-            ->where('sales_invoice_id', $invoice->id)
-            ->where('id', '!=', $paymentReceipt->id)
-            ->where('status', PaymentReceiptStatus::CONFIRMED)
-            ->sum('amount');
-
-        $invoiceTotal = (float) $invoice->total_amount;
-
-        $currentPayment = (float) $paymentReceipt->amount;
-
-        $invoiceRemaining = max(
-            0,
-            $invoiceTotal
-            - (float) $previousPaid
-            - $currentPayment
-        );
-    }
-
-    /*
-     * Customer balance after this payment.
-     *
-     * Debit - Credit from the customer ledger.
-     */
-    $customerBalance = CustomerLedgerEntry::query()
-        ->where('customer_id', $paymentReceipt->customer_id)
-        ->selectRaw(
-            'COALESCE(SUM(debit), 0) - COALESCE(SUM(credit), 0) as balance'
-        )
-        ->value('balance');
-
+    $paidAmount = PaymentReceipt::query()
+        ->where('sales_invoice_id', $salesInvoice->id)
+        ->where('status', PaymentReceiptStatus::CONFIRMED)
+        ->sum('amount');
+    $invoiceTotal = (float) $salesInvoice->total_amount;
+    $remainingAmount = max(
+        0,
+        $invoiceTotal - (float) $paidAmount
+    );
     return $printer->render(
-        $paymentReceipt,
-        'payment_receipt',
+        $salesInvoice,
+        'sales_invoice',
         [
-            'previousPaid' => (float) $previousPaid,
-            'invoiceRemaining' => $invoiceRemaining,
-            'customerBalance' => max(0, (float) $customerBalance),
+            'paidAmount' => (float) $paidAmount,
+            'remainingAmount' => $remainingAmount,
         ]
     );
 }
@@ -125,7 +94,7 @@ public function print(
 
     return redirect()
         ->route('sales-invoices.show', $invoice)
-        ->with('success', 'Sales invoice created successfully.');
+        ->with('success', 'تم إنشاء فاتورة المبيعات بنجاح.');
 }
 
     public function show(SalesInvoice $salesInvoice): View
@@ -164,7 +133,7 @@ public function print(
         if ($salesInvoice->status !== SalesInvoiceStatus::DRAFT) {
             return redirect()
                 ->route('sales-invoices.show', $salesInvoice)
-                ->with('error', 'Only draft invoices can be edited.');
+                ->with('error', 'لا يمكن تعديل إلا الفواتير المسودة.');
         }
 
         $salesInvoice->load(['items.productVariant']);
@@ -207,7 +176,7 @@ public function print(
 
         return redirect()
             ->route('sales-invoices.show', $salesInvoice)
-            ->with('success', 'Sales invoice updated successfully.');
+            ->with('success', 'تم تحديث فاتورة المبيعات بنجاح.');
     }
 
     public function destroy(
@@ -224,7 +193,7 @@ public function print(
 
         return redirect()
             ->route('sales-invoices.index')
-            ->with('success', 'Sales invoice deleted successfully.');
+            ->with('success', 'تم حذف فاتورة المبيعات بنجاح.');
     }
 
     public function confirm(
@@ -241,7 +210,7 @@ public function print(
 
         return redirect()
             ->route('sales-invoices.show', $salesInvoice)
-            ->with('success', 'Sales invoice confirmed successfully.');
+            ->with('success', 'تم تأكيد فاتورة المبيعات بنجاح.');
     }
 
     public function cancel(
@@ -258,7 +227,7 @@ public function print(
 
         return redirect()
             ->route('sales-invoices.show', $salesInvoice)
-            ->with('success', 'Sales invoice cancelled successfully.');
+            ->with('success', 'تم إلغاء فاتورة المبيعات بنجاح.');
     }
 
     public function productVariants(Product $product, StockService $stockService): JsonResponse

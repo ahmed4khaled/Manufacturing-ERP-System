@@ -18,7 +18,7 @@ class UpdateSalesInvoiceAction
     {
         if ($invoice->status !== SalesInvoiceStatus::DRAFT) {
             throw ValidationException::withMessages([
-                'status' => 'Only draft invoices can be edited.',
+                'status' => 'لا يمكن تعديل إلا الفواتير المسودة.',
             ]);
         }
 

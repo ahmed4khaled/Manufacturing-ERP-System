@@ -13,7 +13,7 @@ class DeletePaymentReceiptAction
     {
         if ($receipt->status !== PaymentReceiptStatus::DRAFT) {
             throw ValidationException::withMessages([
-                'status' => 'Only draft receipts can be deleted.',
+                'status' => 'لا يمكن حذف إلا السندات المسودة.',
             ]);
         }
 

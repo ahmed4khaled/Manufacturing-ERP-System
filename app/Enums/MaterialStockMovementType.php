@@ -13,11 +13,11 @@ enum MaterialStockMovementType: string
     public function label(): string
     {
         return match ($this) {
-            self::OPENING => 'Opening Stock',
-            self::ADJUSTMENT_IN => 'Adjustment In',
-            self::ADJUSTMENT_OUT => 'Adjustment Out',
-            self::PURCHASE_RECEIPT => 'Purchase Receipt',
-            self::PURCHASE_RETURN => 'Purchase Return',
+            self::OPENING => 'رصيد افتتاحي',
+            self::ADJUSTMENT_IN => 'تسوية إضافة',
+            self::ADJUSTMENT_OUT => 'تسوية خصم',
+            self::PURCHASE_RECEIPT => 'استلام مشتريات',
+            self::PURCHASE_RETURN => 'مرتجع مشتريات',
         };
     }
 

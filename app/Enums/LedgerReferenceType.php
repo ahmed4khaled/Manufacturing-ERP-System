@@ -14,12 +14,12 @@ enum LedgerReferenceType: string
     public function label(): string
     {
         return match ($this) {
-            self::SALES_INVOICE => 'Sales Invoice',
-            self::PAYMENT_RECEIPT => 'Payment Receipt',
-            self::SALES_RETURN => 'Sales Return',
-            self::SALES_INVOICE_REVERSAL => 'Sales Invoice Reversal',
-            self::PAYMENT_RECEIPT_REVERSAL => 'Payment Receipt Reversal',
-            self::MANUAL_ADJUSTMENT => 'Manual Adjustment',
+            self::SALES_INVOICE => 'فاتورة مبيعات',
+            self::PAYMENT_RECEIPT => 'سند قبض',
+            self::SALES_RETURN => 'مرتجع مبيعات',
+            self::SALES_INVOICE_REVERSAL => 'عكس فاتورة مبيعات',
+            self::PAYMENT_RECEIPT_REVERSAL => 'عكس سند قبض',
+            self::MANUAL_ADJUSTMENT => 'تسوية يدوية',
         };
     }
 }

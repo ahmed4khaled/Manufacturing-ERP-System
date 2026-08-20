@@ -1,13 +1,13 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Record Supplier Payment')
+@section('title', 'تسجيل دفعة مورد')
 
 @section('content')
 
 <div class="page-header">
-    <h1 class="h3 mb-1">Record Supplier Payment</h1>
+    <h1 class="h3 mb-1">تسجيل دفعة مورد</h1>
     <p class="text-muted mb-0">
-        Record an invoice payment or supplier advance.
+        سجّل سداد فاتورة أو دفعة مقدمة لمورد.
     </p>
 </div>
 
@@ -21,7 +21,7 @@
 
                 {{-- Payment Type --}}
                 <div class="col-md-6">
-                    <label class="form-label">Payment Type *</label>
+                    <label class="form-label">نوع السداد *</label>
 
                     <select
                         name="payment_type"
@@ -30,19 +30,19 @@
                         required
                     >
                         <option value="invoice">
-                            Invoice Payment
+                            سداد فاتورة
                         </option>
 
                         <option value="advance">
-                            Advance Payment
+                            دفعة مقدمة
                         </option>
                     </select>
                 </div>
 
-                {{-- Supplier --}}
+                {{-- المورد --}}
                 <div class="col-md-6">
                     <label class="form-label">
-                        Supplier *
+                        المورد *
                     </label>
 
                     <select
@@ -52,7 +52,7 @@
                         required
                     >
                         <option value="">
-                            Select supplier
+                            اختر المورد
                         </option>
 
                         @foreach ($suppliers as $supplier)
@@ -70,7 +70,7 @@
 >
 
     <label class="form-label">
-        Purchase Order
+        أمر الشراء
     </label>
 
     <select
@@ -79,7 +79,7 @@
         class="form-select"
     >
         <option value="">
-            Not linked
+            غير مرتبط
         </option>
 
         @foreach ($orders as $order)
@@ -97,19 +97,19 @@
     </select>
 
     <small class="text-muted">
-        Required for advance payments.
+        مطلوب للدفعات المقدمة.
     </small>
 
 </div>
 
-                {{-- Supplier Invoice --}}
+                {{-- فاتورة مورد --}}
                 <div
                     class="col-md-6"
                     id="invoice-wrapper"
                 >
 
                     <label class="form-label">
-                        Supplier Invoice *
+                        فاتورة المورد *
                     </label>
 
                     <select
@@ -118,7 +118,7 @@
                         class="form-select"
                     >
                         <option value="">
-                            Select invoice
+                            اختر الفاتورة
                         </option>
 
                         @foreach ($invoices as $invoice)
@@ -132,7 +132,7 @@
                                 —
                                 {{ $invoice->supplier->name }}
                                 —
-                                Remaining:
+                                المتبقي:
                                 {{ number_format($invoice->remaining_amount, 2) }}
                             </option>
                         @endforeach
@@ -149,7 +149,7 @@
 
                             <div class="col-md-4">
                                 <small class="text-muted d-block">
-                                    Invoice Total
+                                    إجمالي الفاتورة
                                 </small>
 
                                 <strong id="invoice-total">
@@ -159,7 +159,7 @@
 
                             <div class="col-md-4">
                                 <small class="text-muted d-block">
-                                    Already Paid
+                                    المدفوع سابقًا
                                 </small>
 
                                 <strong id="invoice-paid">
@@ -169,7 +169,7 @@
 
                             <div class="col-md-4">
                                 <small class="text-muted d-block">
-                                    Remaining
+                                    المتبقي
                                 </small>
 
                                 <strong
@@ -190,7 +190,7 @@
                 <div class="col-md-3">
 
                     <label class="form-label">
-                        Payment Date *
+                        تاريخ السداد *
                     </label>
 
                     <input
@@ -207,7 +207,7 @@
                 <div class="col-md-3">
 
                     <label class="form-label">
-                        Amount *
+                        المبلغ *
                     </label>
 
                     <input
@@ -224,7 +224,7 @@
                         id="amount-help"
                         class="text-muted"
                     >
-                        Enter payment amount.
+                        أدخل مبلغ الدفعة.
                     </small>
 
                 </div>
@@ -233,7 +233,7 @@
                 <div class="col-md-6">
 
                     <label class="form-label">
-                        Method *
+                        الطريقة *
                     </label>
 
                     <select
@@ -242,15 +242,15 @@
                         required
                     >
                         <option value="cash">
-                            Cash
+                            نقدي
                         </option>
 
                         <option value="bank_transfer">
-                            Bank Transfer
+                            تحويل بنكي
                         </option>
 
                         <option value="cheque">
-                            Cheque
+                            شيك
                         </option>
                     </select>
 
@@ -260,7 +260,7 @@
                 <div class="col-md-6">
 
                     <label class="form-label">
-                        Reference
+                        المرجع
                     </label>
 
                     <input
@@ -274,7 +274,7 @@
                 <div class="col-12">
 
                     <label class="form-label">
-                        Notes
+                        ملاحظات
                     </label>
 
                     <textarea
@@ -293,14 +293,14 @@
                     type="submit"
                     class="btn btn-primary"
                 >
-                    Record Payment
+                    تسجيل دفعة
                 </button>
 
                 <a
                     href="{{ route('supplier-payments.index') }}"
                     class="btn btn-outline-secondary"
                 >
-                    Cancel
+                    إلغاء
                 </a>
 
             </div>
@@ -356,7 +356,7 @@ const purchaseOrderWrapper =
 
     /*
     |--------------------------------------------------------------------------
-    | Filter Options By Supplier
+    | Filter Options By المورد
     |--------------------------------------------------------------------------
     */
 
@@ -387,7 +387,7 @@ const purchaseOrderWrapper =
 
     /*
     |--------------------------------------------------------------------------
-    | Reset Invoice Information
+    | إعادة تعيين Invoice Information
     |--------------------------------------------------------------------------
     */
 
@@ -406,14 +406,14 @@ const purchaseOrderWrapper =
         amount.removeAttribute('max');
 
         amountHelp.textContent =
-            'Enter payment amount.';
+            'أدخل مبلغ الدفعة.';
 
     }
 
 
     /*
     |--------------------------------------------------------------------------
-    | Update Invoice Information
+    | تحديث الفاتورة Information
     |--------------------------------------------------------------------------
     */
 
@@ -473,7 +473,7 @@ const purchaseOrderWrapper =
             remaining.toFixed(2);
 
         amountHelp.textContent =
-            `Maximum payment: ${remaining.toFixed(2)}`;
+            `الحد الأقصى للدفعة: ${remaining.toFixed(2)}`;
 
 
         /*
@@ -489,7 +489,7 @@ const purchaseOrderWrapper =
             amount.disabled = true;
 
             amountHelp.textContent =
-                'This invoice is already fully paid.';
+                'هذه الفاتورة مسددة بالكامل.';
 
             invoiceRemaining.classList
                 .remove('text-danger');
@@ -591,7 +591,7 @@ function updatePaymentType() {
 
     /*
     |--------------------------------------------------------------------------
-    | Supplier Change
+    | المورد Change
     |--------------------------------------------------------------------------
     */
 
@@ -615,7 +615,7 @@ function updatePaymentType() {
 
             /*
             |--------------------------------------------------------------------------
-            | Reset Current Selections
+            | إعادة تعيين Current Selections
             |--------------------------------------------------------------------------
             */
 
@@ -675,7 +675,7 @@ function updatePaymentType() {
             if (entered > remaining) {
 
                 this.setCustomValidity(
-                    `Payment cannot exceed remaining amount of ${remaining.toFixed(2)}.`
+                    `لا يمكن أن تتجاوز الدفعة المبلغ المتبقي وقدره ${remaining.toFixed(2)}.`
                 );
 
             } else {

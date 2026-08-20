@@ -1,25 +1,25 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Purchase Returns')
+@section('title', 'مرتجعات المشتريات')
 
 @section('content')
     <div class="page-header d-flex justify-content-between align-items-start mb-4">
         <div>
-            <h1 class="h3 mb-1">Purchase Returns</h1>
-            <p class="text-muted mb-0">Goods returned to suppliers</p>
+            <h1 class="h3 mb-1">مرتجعات المشتريات</h1>
+            <p class="text-muted mb-0">الخامات المرتجعة إلى الموردين</p>
         </div>
 
         <a href="{{ route('purchase-returns.create') }}" class="btn btn-primary">
-            Create Purchase Return
+            إنشاء مرتجع مشتريات
         </a>
     </div>
 
     <div class="card">
         <div class="card-header bg-white d-flex justify-content-between align-items-center">
             <div>
-                <h5 class="mb-1">Return Register</h5>
+                <h5 class="mb-1">سجل المرتجعات</h5>
                 <small class="text-muted">
-                    Track material returns and their stock posting status
+                    متابعة مرتجعات الخامات وحالة ترحيلها إلى المخزون
                 </small>
             </div>
 
@@ -33,13 +33,13 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th class="ps-4">Return</th>
-                            <th>Supplier</th>
-                            <th>Goods Receipt</th>
-                            <th>Date</th>
-                            <th>Total</th>
-                            <th>Status</th>
-                            <th class="text-end pe-4">Actions</th>
+                            <th class="ps-4">المرتجع</th>
+                            <th>المورد</th>
+                            <th>إذن الاستلام</th>
+                            <th>التاريخ</th>
+                            <th>الإجمالي</th>
+                            <th>الحالة</th>
+                            <th class="text-end pe-4">الإجراءات</th>
                         </tr>
                     </thead>
 
@@ -86,11 +86,11 @@
                                 <td>
                                     @if ($return->status === 'confirmed')
                                         <span class="badge bg-success">
-                                            Confirmed
+                                            مؤكد
                                         </span>
                                     @else
                                         <span class="badge bg-warning text-dark">
-                                            Draft
+                                            مسودة
                                         </span>
                                     @endif
                                 </td>
@@ -100,7 +100,7 @@
 
                                         <a href="{{ route('purchase-returns.show', $return) }}"
                                            class="btn btn-sm btn-outline-secondary">
-                                            View
+                                            عرض
                                         </a>
 
                                         @if ($return->status === 'draft')
@@ -110,8 +110,8 @@
 
                                                 <button type="submit"
                                                         class="btn btn-sm btn-success"
-                                                        onclick="return confirm('Confirm this purchase return and deduct the returned quantity from material inventory?')">
-                                                    Confirm
+                                                        onclick="return confirm('هل تريد تأكيد المرتجع وخصم الكميات المرتجعة من مخزون الخامات؟')">
+                                                    تأكيد
                                                 </button>
                                             </form>
                                         @endif
@@ -123,12 +123,12 @@
                             <tr>
                                 <td colspan="7" class="text-center py-5">
                                     <div class="text-muted mb-2">
-                                        No purchase returns yet.
+                                        لا توجد مرتجعات مشتريات حتى الآن.
                                     </div>
 
                                     <a href="{{ route('purchase-returns.create') }}"
                                        class="btn btn-sm btn-primary">
-                                        Create First Purchase Return
+                                        إنشاء أول مرتجع مشتريات
                                     </a>
                                 </td>
                             </tr>

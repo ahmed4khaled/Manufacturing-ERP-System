@@ -164,7 +164,7 @@ class PaymentReceiptController extends Controller
             )
             ->with(
                 'success',
-                'Payment receipt created successfully.'
+                'تم إنشاء سند القبض بنجاح.'
             );
     }
 
@@ -239,7 +239,7 @@ class PaymentReceiptController extends Controller
                 )
                 ->with(
                     'error',
-                    'Only draft receipts can be edited.'
+                    'لا يمكن تعديل إلا السندات المسودة.'
                 );
         }
 
@@ -281,7 +281,7 @@ class PaymentReceiptController extends Controller
             )
             ->with(
                 'success',
-                'Payment receipt updated successfully.'
+                'تم تحديث سند القبض بنجاح.'
             );
     }
 
@@ -320,7 +320,7 @@ class PaymentReceiptController extends Controller
             )
             ->with(
                 'success',
-                'Payment receipt deleted successfully.'
+                'تم حذف سند القبض بنجاح.'
             );
     }
 
@@ -360,7 +360,7 @@ class PaymentReceiptController extends Controller
             )
             ->with(
                 'success',
-                'Payment receipt confirmed successfully.'
+                'تم تأكيد سند القبض بنجاح.'
             );
     }
 
@@ -400,7 +400,7 @@ class PaymentReceiptController extends Controller
             )
             ->with(
                 'success',
-                'Payment receipt cancelled successfully.'
+                'تم إلغاء سند القبض بنجاح.'
             );
     }
 }

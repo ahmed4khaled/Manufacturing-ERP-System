@@ -33,7 +33,7 @@ class StoreProductVariantRequest extends FormRequest
                     ->exists();
 
                 if ($exists) {
-                    $validator->errors()->add('size_id', 'A variant with this product, color, and size combination already exists.');
+                    $validator->errors()->add('size_id', 'يوجد متغير بالفعل بنفس تركيبة المنتج واللون والمقاس.');
                 }
             }
         });

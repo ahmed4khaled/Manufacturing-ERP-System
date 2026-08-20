@@ -3,7 +3,7 @@
     'customers' => [],
     'formAction' => '',
     'formMethod' => 'POST',
-    'submitLabel' => 'Save Receipt',
+    'submitLabel' => 'حفظ السند',
 ])
 
 <form method="POST" action="{{ $formAction }}" id="paymentReceiptForm">
@@ -28,7 +28,7 @@
                 <div class="card-header bg-white">
 
                     <h5 class="card-title mb-0">
-                        Receipt Details
+                        تفاصيل السند
                     </h5>
 
                 </div>
@@ -49,7 +49,7 @@
                                 for="customer_id"
                                 class="form-label"
                             >
-                                Customer
+                                العميل
                                 <span class="text-danger">*</span>
                             </label>
 
@@ -62,7 +62,7 @@
                             >
 
                                 <option value="">
-                                    Select customer
+                                    اختر العميل
                                 </option>
 
 
@@ -110,7 +110,7 @@
                                 for="payment_date"
                                 class="form-label"
                             >
-                                Payment Date
+                                تاريخ السداد
                                 <span class="text-danger">*</span>
                             </label>
 
@@ -150,7 +150,7 @@
                                 for="payment_type"
                                 class="form-label"
                             >
-                                Payment Type
+                                نوع السداد
                                 <span class="text-danger">*</span>
                             </label>
 
@@ -171,7 +171,7 @@
                                         ) === 'invoice'
                                     )
                                 >
-                                    Invoice Payment
+                                    سداد فاتورة
                                 </option>
 
 
@@ -184,7 +184,7 @@
                                         ) === 'advance'
                                     )
                                 >
-                                    Advance Payment
+                                    دفعة مقدمة
                                 </option>
 
                             </select>
@@ -214,7 +214,7 @@
                                 for="sales_invoice_id"
                                 class="form-label"
                             >
-                                Sales Invoice
+                                فاتورة مبيعات
                                 <span class="text-danger">*</span>
                             </label>
 
@@ -226,7 +226,7 @@
                             >
 
                                 <option value="">
-                                    Select invoice
+                                    اختر الفاتورة
                                 </option>
 
                             </select>
@@ -236,7 +236,7 @@
                                 id="invoiceLoading"
                                 class="form-text d-none"
                             >
-                                Loading invoices...
+                                جارٍ تحميل الفواتير...
                             </div>
 
 
@@ -244,7 +244,7 @@
                                 id="invoiceEmpty"
                                 class="form-text text-muted d-none"
                             >
-                                This customer has no unpaid invoices.
+                                لا توجد فواتير غير مسددة لهذا العميل.
                             </div>
 
 
@@ -278,14 +278,14 @@
                                         <div class="col-md-4">
 
                                             <div class="text-muted small">
-                                                Invoice Total
+                                                إجمالي الفاتورة
                                             </div>
 
                                             <div
                                                 class="fw-bold"
                                                 id="invoiceTotal"
                                             >
-                                                0.00 EGP
+                                                0.00 ج.م
                                             </div>
 
                                         </div>
@@ -294,14 +294,14 @@
                                         <div class="col-md-4">
 
                                             <div class="text-muted small">
-                                                Paid Amount
+                                                المبلغ المدفوع
                                             </div>
 
                                             <div
                                                 class="fw-bold text-success"
                                                 id="invoicePaid"
                                             >
-                                                0.00 EGP
+                                                0.00 ج.م
                                             </div>
 
                                         </div>
@@ -310,14 +310,14 @@
                                         <div class="col-md-4">
 
                                             <div class="text-muted small">
-                                                Remaining
+                                                المتبقي
                                             </div>
 
                                             <div
                                                 class="fw-bold text-danger"
                                                 id="invoiceRemaining"
                                             >
-                                                0.00 EGP
+                                                0.00 ج.م
                                             </div>
 
                                         </div>
@@ -341,7 +341,7 @@
                                 for="amount"
                                 class="form-label"
                             >
-                                Amount (EGP)
+                                المبلغ (ج.م)
                                 <span class="text-danger">*</span>
                             </label>
 
@@ -365,7 +365,7 @@
                                 id="amountHelp"
                                 class="form-text"
                             >
-                                Enter the amount received from the customer.
+                                أدخل المبلغ المستلم من العميل.
                             </div>
 
 
@@ -387,7 +387,7 @@
                         <div class="col-md-6">
 
                             <label class="form-label">
-                                Payment Status
+                                حالة السداد
                             </label>
 
 
@@ -411,7 +411,7 @@
                                 for="payment_method"
                                 class="form-label"
                             >
-                                Payment Method
+                                طريقة الدفع
                                 <span class="text-danger">*</span>
                             </label>
 
@@ -424,7 +424,7 @@
                             >
 
                                 <option value="">
-                                    Select method
+                                    اختر طريقة الدفع
                                 </option>
 
 
@@ -470,7 +470,7 @@
                                 for="reference_number"
                                 class="form-label"
                             >
-                                Reference Number
+                                رقم المرجع
                             </label>
 
 
@@ -483,7 +483,7 @@
                                     'reference_number',
                                     $paymentReceipt?->reference_number
                                 ) }}"
-                                placeholder="Cheque #, transfer ref, etc."
+                                placeholder="رقم الشيك أو مرجع التحويل..."
                             >
 
 
@@ -508,7 +508,7 @@
                                 for="notes"
                                 class="form-label"
                             >
-                                Notes
+                                ملاحظات
                             </label>
 
 
@@ -554,7 +554,7 @@
                 <div class="card-header bg-white">
 
                     <h5 class="card-title mb-0">
-                        Information
+                        البيانات
                     </h5>
 
                 </div>
@@ -567,7 +567,7 @@
                         <div class="mb-3">
 
                             <label class="form-label text-muted small mb-1">
-                                Receipt Number
+                                رقم السند
                             </label>
 
                             <p class="mb-0 fw-semibold">
@@ -580,7 +580,7 @@
                         <div class="mb-3">
 
                             <label class="form-label text-muted small mb-1">
-                                Status
+                                الحالة
                             </label>
 
                             <p class="mb-0">
@@ -595,8 +595,8 @@
 
                             <div class="form-text">
 
-                                Use Confirm or Cancel actions
-                                on the receipt page to change status.
+                                استخدم إجراءات التأكيد أو الإلغاء
+                                من صفحة السند لتغيير حالته.
 
                             </div>
 
@@ -608,8 +608,8 @@
 
                             <i class="bi bi-info-circle me-1"></i>
 
-                            Receipt number will be generated automatically
-                            (e.g. RCPT000001) when saved.
+                            سيُنشأ رقم السند تلقائيًا
+                            (مثال: RCPT000001) عند الحفظ.
 
                         </p>
 
@@ -648,7 +648,7 @@
                     }}"
                     class="btn btn-outline-secondary btn-lg"
                 >
-                    Cancel
+                    إلغاء
                 </a>
 
             </div>
@@ -746,7 +746,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function money(value) {
 
         return Number(value || 0)
-            .toLocaleString('en-US', {
+            .toLocaleString('ar-EG', {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
             });
@@ -771,12 +771,12 @@ document.addEventListener('DOMContentLoaded', function () {
         ) {
 
             paymentStatus.innerHTML =
-                '<span class="badge bg-warning text-dark">Advance Payment</span>';
+                '<span class="badge bg-warning text-dark">دفعة مقدمة</span>';
 
             amountInput.removeAttribute('max');
 
             amountHelp.textContent =
-                'This payment will be recorded as an advance payment.';
+                'ستُسجل هذه الدفعة كدفعة مقدمة.';
 
             return;
         }
@@ -789,7 +789,7 @@ document.addEventListener('DOMContentLoaded', function () {
             amountInput.removeAttribute('max');
 
             amountHelp.textContent =
-                'Select an invoice first.';
+                'اختر فاتورة أولًا.';
 
             return;
         }
@@ -810,7 +810,7 @@ document.addEventListener('DOMContentLoaded', function () {
             paymentStatus.textContent = '—';
 
             amountHelp.textContent =
-                `Maximum payment: ${money(remaining)} EGP`;
+                `الحد الأقصى للدفعة: ${money(remaining)} ج.م`;
 
             return;
         }
@@ -819,10 +819,10 @@ document.addEventListener('DOMContentLoaded', function () {
         if (amount > remaining) {
 
             paymentStatus.innerHTML =
-                '<span class="badge bg-danger">Amount exceeds remaining balance</span>';
+                '<span class="badge bg-danger">المبلغ يتجاوز الرصيد المتبقي</span>';
 
             amountHelp.textContent =
-                `Maximum allowed: ${money(remaining)} EGP`;
+                `الحد الأقصى المسموح: ${money(remaining)} ج.م`;
 
             return;
         }
@@ -833,22 +833,22 @@ document.addEventListener('DOMContentLoaded', function () {
         ) {
 
             paymentStatus.innerHTML =
-                '<span class="badge bg-success">Full Payment</span>';
+                '<span class="badge bg-success">سداد كامل</span>';
 
             amountHelp.textContent =
-                'This payment will fully settle the invoice.';
+                'ستؤدي هذه الدفعة إلى سداد الفاتورة بالكامل.';
 
             return;
         }
 
 
         paymentStatus.innerHTML =
-            '<span class="badge bg-warning text-dark">Partial Payment</span>';
+            '<span class="badge bg-warning text-dark">سداد جزئي</span>';
 
         amountHelp.textContent =
-            `Remaining after payment: ${money(
+            `المتبقي بعد الدفعة: ${money(
                 remaining - amount
-            )} EGP`;
+            )} ج.م`;
 
     }
 
@@ -862,7 +862,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function renderInvoices() {
 
         invoiceSelect.innerHTML =
-            '<option value="">Select invoice</option>';
+            '<option value="">اختر الفاتورة</option>';
 
 
         if (!invoices.length) {
@@ -889,7 +889,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 invoice.id;
 
             option.textContent =
-                `${invoice.invoice_number} — ${money(invoice.remaining_amount)} EGP remaining`;
+                `${invoice.invoice_number} — متبقي ${money(invoice.remaining_amount)} ج.م`;
 
             option.dataset.invoiceId =
                 invoice.id;
@@ -963,15 +963,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
         invoiceTotal.textContent =
-            `${money(selectedInvoice.total_amount)} EGP`;
+            `${money(selectedInvoice.total_amount)} ج.م`;
 
 
         invoicePaid.textContent =
-            `${money(selectedInvoice.paid_amount)} EGP`;
+            `${money(selectedInvoice.paid_amount)} ج.م`;
 
 
         invoiceRemaining.textContent =
-            `${money(selectedInvoice.remaining_amount)} EGP`;
+            `${money(selectedInvoice.remaining_amount)} ج.م`;
 
 
         amountInput.max =
@@ -1001,7 +1001,7 @@ document.addEventListener('DOMContentLoaded', function () {
         selectedInvoice = null;
 
         invoiceSelect.innerHTML =
-            '<option value="">Select invoice</option>';
+            '<option value="">اختر الفاتورة</option>';
 
         invoiceSummaryWrapper
             .classList
@@ -1050,7 +1050,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (!response.ok) {
 
                 throw new Error(
-                    'Unable to load customer invoices.'
+                    'تعذر تحميل فواتير العميل.'
                 );
 
             }
@@ -1074,7 +1074,7 @@ document.addEventListener('DOMContentLoaded', function () {
             console.error(error);
 
             invoiceSelect.innerHTML =
-                '<option value="">Unable to load invoices</option>';
+                '<option value="">تعذر تحميل الفواتير</option>';
 
         } finally {
 
@@ -1220,7 +1220,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 event.preventDefault();
 
                 alert(
-                    'Please select a sales invoice.'
+                    'يرجى اختيار فاتورة مبيعات.'
                 );
 
                 return;
@@ -1244,7 +1244,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 event.preventDefault();
 
                 alert(
-                    `Payment cannot exceed the remaining balance of ${money(remaining)} EGP.`
+                    `لا يمكن أن تتجاوز الدفعة الرصيد المتبقي وقدره ${money(remaining)} ج.م.`
                 );
 
                 amountInput.focus();

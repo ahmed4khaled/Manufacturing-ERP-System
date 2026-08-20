@@ -15,14 +15,14 @@ class RecordSupplierPaymentAction
             $amount = (string) $data['amount'];
 
             if (bccomp($amount, '0', 2) <= 0) {
-                throw ValidationException::withMessages(['amount' => 'Payment amount must be greater than zero.']);
+                throw ValidationException::withMessages(['amount' => 'يجب أن يكون مبلغ الدفعة أكبر من صفر.']);
             }
 
             $currentPaid = (string) $invoice->payments()->sum('amount');
             $newPaid = bcadd($currentPaid === '' ? '0' : $currentPaid, $amount, 2);
 
             if (bccomp($newPaid, (string) $invoice->total, 2) > 0) {
-                throw ValidationException::withMessages(['amount' => 'Payment cannot exceed the remaining invoice balance.']);
+                throw ValidationException::withMessages(['amount' => 'لا يمكن أن تتجاوز الدفعة رصيد الفاتورة المتبقي.']);
             }
 
             $payment = $invoice->payments()->create($data + ['supplier_id' => $invoice->supplier_id, 'created_by' => auth()->id()]);

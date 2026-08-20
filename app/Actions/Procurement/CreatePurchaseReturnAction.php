@@ -24,19 +24,19 @@ class CreatePurchaseReturnAction
 
             if ($receipt->status !== 'confirmed') {
                 throw ValidationException::withMessages([
-                    'goods_receipt_id' => 'Only confirmed goods receipts can be returned.',
+                    'goods_receipt_id' => 'لا يمكن إنشاء مرتجع إلا من إذن استلام مؤكد.',
                 ]);
             }
 
             if ((int) $receipt->supplier_id !== (int) ($data['supplier_id'] ?? $receipt->supplier_id)) {
                 throw ValidationException::withMessages([
-                    'supplier_id' => 'The supplier on the return must match the goods receipt supplier.',
+                    'supplier_id' => 'يجب أن يطابق مورد المرتجع مورد إذن الاستلام.',
                 ]);
             }
 
             if (! empty($data['purchase_order_id']) && (int) $receipt->purchase_order_id !== (int) $data['purchase_order_id']) {
                 throw ValidationException::withMessages([
-                    'purchase_order_id' => 'The purchase order on the return must match the goods receipt.',
+                    'purchase_order_id' => 'يجب أن يطابق أمر الشراء في المرتجع أمر إذن الاستلام.',
                 ]);
             }
 
@@ -68,7 +68,7 @@ class CreatePurchaseReturnAction
                 $receiptItem = $receipt->items->first(fn (GoodsReceiptItem $item) => (int) $item->material_id === $materialId);
                 if (! $receiptItem) {
                     throw ValidationException::withMessages([
-                        'items' => 'One or more return items do not belong to the selected goods receipt.',
+                        'items' => 'بند واحد أو أكثر من المرتجع لا يتبع إذن الاستلام المحدد.',
                     ]);
                 }
 
@@ -78,7 +78,7 @@ class CreatePurchaseReturnAction
 
                 if (bccomp($remaining, $quantity, 3) < 0) {
                     throw ValidationException::withMessages([
-                        'items' => 'Return quantity exceeds the accepted quantity available from this receipt.',
+                        'items' => 'كمية المرتجع تتجاوز الكمية المقبولة والمتاحة من إذن الاستلام.',
                     ]);
                 }
 

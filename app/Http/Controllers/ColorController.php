@@ -39,7 +39,7 @@ class ColorController extends Controller
 
         return redirect()
             ->route('colors.show', $color)
-            ->with('success', 'Color created successfully.');
+            ->with('success', 'تم إنشاء اللون بنجاح.');
     }
 
     public function show(Color $color): View
@@ -63,7 +63,7 @@ class ColorController extends Controller
 
         return redirect()
             ->route('colors.show', $color)
-            ->with('success', 'Color updated successfully.');
+            ->with('success', 'تم تحديث اللون بنجاح.');
     }
 
     public function destroy(
@@ -74,6 +74,6 @@ class ColorController extends Controller
 
         return redirect()
             ->route('colors.index')
-            ->with('success', 'Color deleted successfully.');
+            ->with('success', 'تم حذف اللون بنجاح.');
     }
 }

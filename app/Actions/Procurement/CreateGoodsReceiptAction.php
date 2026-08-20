@@ -22,7 +22,7 @@ class CreateGoodsReceiptAction
 
             if ($po->status === 'cancelled') {
                 throw ValidationException::withMessages([
-                    'purchase_order_id' => 'Cancelled purchase orders cannot receive goods.'
+                    'purchase_order_id' => 'لا يمكن استلام خامات على أمر شراء ملغي.'
                 ]);
             }
 
@@ -59,7 +59,7 @@ class CreateGoodsReceiptAction
 
                 if (! $poItem) {
                     throw ValidationException::withMessages([
-                        'items' => 'One or more receipt items do not belong to the selected purchase order.'
+                        'items' => 'بند واحد أو أكثر من إذن الاستلام لا يتبع أمر الشراء المحدد.'
                     ]);
                 }
 
@@ -103,7 +103,7 @@ class CreateGoodsReceiptAction
                     ) !== 0
                 ) {
                     throw ValidationException::withMessages([
-                        'items' => 'Accepted and rejected quantities must equal received quantity.'
+                        'items' => 'يجب أن يساوي مجموع الكمية المقبولة والمرفوضة الكمية المستلمة.'
                     ]);
                 }
 
@@ -113,7 +113,7 @@ class CreateGoodsReceiptAction
                 if (bccomp($accepted, $remaining, 3) > 0) {
                     throw ValidationException::withMessages([
                         'items' =>
-                            "Accepted quantity for {$poItem->material->name} cannot exceed the remaining quantity of {$remaining}."
+                            "لا يمكن أن تتجاوز الكمية المقبولة للخامة {$poItem->material->name} الكمية المتبقية وقدرها {$remaining}."
                     ]);
                 }
 
@@ -133,7 +133,7 @@ class CreateGoodsReceiptAction
                 if (bccomp($received, $maxReceived, 3) > 0) {
                     throw ValidationException::withMessages([
                         'items' =>
-                            "Received quantity for {$poItem->material->name} exceeds the remaining quantity."
+                            "الكمية المستلمة للخامة {$poItem->material->name} تتجاوز الكمية المتبقية."
                     ]);
                 }
 

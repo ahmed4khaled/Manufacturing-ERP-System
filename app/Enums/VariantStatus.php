@@ -11,9 +11,9 @@ enum VariantStatus: string
     public function label(): string
     {
         return match ($this) {
-            self::ACTIVE => 'Active',
-            self::INACTIVE => 'Inactive',
-            self::BLOCKED => 'Blocked',
+            self::ACTIVE => 'نشط',
+            self::INACTIVE => 'غير نشط',
+            self::BLOCKED => 'محظور',
         };
     }
 

@@ -1,25 +1,25 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Material Stock Movements - ' . config('app.name'))
+@section('title', 'حركات مخزون الخامات - ' . config('app.name'))
 
 @section('content')
     <div class="page-header d-flex flex-wrap justify-content-between align-items-center gap-3">
         <div>
-            <h1 class="h3 mb-1">Material Stock Movements</h1>
-            <p class="text-muted mb-0">Raw material inventory movement history</p>
+            <h1 class="h3 mb-1">حركات مخزون الخامات</h1>
+            <p class="text-muted mb-0">سجل حركات مخزون الخامات</p>
         </div>
-        <a href="{{ route('material-inventory.index') }}" class="btn btn-outline-secondary">Stock Overview</a>
+        <a href="{{ route('material-inventory.index') }}" class="btn btn-outline-secondary">ملخص المخزون</a>
     </div>
 
     <div class="card">
         <div class="card-body">
             <form method="GET" class="row g-3 mb-4">
                 <div class="col-md-3">
-                    <input name="search" class="form-control" value="{{ request('search') }}" placeholder="Reference number...">
+                    <input name="search" class="form-control" value="{{ request('search') }}" placeholder="رقم المرجع...">
                 </div>
                 <div class="col-md-3">
                     <select name="material_id" class="form-select">
-                        <option value="">All Materials</option>
+                        <option value="">كل الخامات</option>
                         @foreach($materials as $material)
                             <option value="{{ $material->id }}" @selected(request('material_id') == $material->id)>
                                 {{ $material->code }} - {{ $material->name }}
@@ -29,7 +29,7 @@
                 </div>
                 <div class="col-md-2">
                     <select name="movement_type" class="form-select">
-                        <option value="">All Types</option>
+                        <option value="">كل الأنواع</option>
                         @foreach(\App\Enums\MaterialStockMovementType::cases() as $type)
                             <option value="{{ $type->value }}" @selected(request('movement_type') === $type->value)>{{ $type->label() }}</option>
                         @endforeach
@@ -37,7 +37,7 @@
                 </div>
                 <div class="col-md-2">
                     <select name="direction" class="form-select">
-                        <option value="">All Directions</option>
+                        <option value="">كل الاتجاهات</option>
                         @foreach(\App\Enums\StockMovementDirection::cases() as $direction)
                             <option value="{{ $direction->value }}" @selected(request('direction') === $direction->value)>{{ $direction->label() }}</option>
                         @endforeach
@@ -50,7 +50,7 @@
                     <input type="date" name="date_to" value="{{ request('date_to') }}" class="form-control">
                 </div>
                 <div class="col-auto">
-                    <button class="btn btn-primary">Filter</button>
+                    <button class="btn btn-primary">تصفية</button>
                 </div>
             </form>
 
@@ -58,20 +58,20 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead>
                         <tr>
-                            <th>Date</th>
-                            <th>Material</th>
-                            <th>Category</th>
-                            <th>Type</th>
-                            <th>Direction</th>
-                            <th class="text-end">Quantity</th>
-                            <th>Reference</th>
-                            <th>Notes</th>
+                            <th>التاريخ</th>
+                            <th>الخامة</th>
+                            <th>التصنيف</th>
+                            <th>النوع</th>
+                            <th>الاتجاه</th>
+                            <th class="text-end">الكمية</th>
+                            <th>المرجع</th>
+                            <th>ملاحظات</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($movements as $movement)
                             <tr>
-                                <td>{{ $movement->movement_date->format('M d, Y') }}</td>
+                                <td>{{ $movement->movement_date->format('Y-m-d') }}</td>
                                 <td>
                                     <a href="{{ route('material-inventory.show', $movement->material) }}" class="text-decoration-none">
                                         {{ $movement->material?->code }}
@@ -90,7 +90,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="text-center text-muted py-5">No stock movements found.</td>
+                                <td colspan="8" class="text-center text-muted py-5">لا توجد حركات مخزون.</td>
                             </tr>
                         @endforelse
                     </tbody>

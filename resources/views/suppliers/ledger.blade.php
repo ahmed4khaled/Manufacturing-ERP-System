@@ -1,12 +1,12 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Supplier Ledger')
+@section('title', 'كشف حساب المورد')
 
 @section('content')
 
 <div class="page-header d-flex justify-content-between align-items-start">
     <div>
-        <h1 class="h3 mb-1">Supplier Ledger</h1>
+        <h1 class="h3 mb-1">كشف حساب المورد</h1>
         <p class="text-muted mb-0">
             {{ $supplier->name }}
         </p>
@@ -14,7 +14,7 @@
 
     <a href="{{ route('suppliers.show', $supplier) }}" class="btn btn-secondary">
         <i class="bi bi-arrow-left"></i>
-        Back to Supplier
+        العودة إلى المورد
     </a>
 </div>
 
@@ -23,7 +23,7 @@
     <div class="col-md-4">
         <div class="card h-100">
             <div class="card-body">
-                <div class="text-muted small">Supplier</div>
+                <div class="text-muted small">المورد</div>
                 <div class="fw-bold fs-5">
                     {{ $supplier->name }}
                 </div>
@@ -40,7 +40,7 @@
     <div class="col-md-4">
         <div class="card h-100">
             <div class="card-body">
-                <div class="text-muted small">Total Transactions</div>
+                <div class="text-muted small">إجمالي الحركات</div>
                 <div class="fw-bold fs-4">
                     {{ $transactions->count() }}
                 </div>
@@ -51,7 +51,7 @@
     <div class="col-md-4">
         <div class="card h-100">
             <div class="card-body">
-                <div class="text-muted small">Current Balance</div>
+                <div class="text-muted small">الرصيد الحالي</div>
 
                 <div class="fw-bold fs-4
                     {{ $currentBalance > 0 ? 'text-danger' : 'text-success' }}">
@@ -59,7 +59,7 @@
                 </div>
 
                 <div class="small text-muted">
-                    {{ $currentBalance > 0 ? 'Amount Due' : 'Settled' }}
+                    {{ $currentBalance > 0 ? 'مبلغ مستحق' : 'مسدد' }}
                 </div>
             </div>
         </div>
@@ -72,7 +72,7 @@
     <div class="card-header">
         <h5 class="mb-0">
             <i class="bi bi-journal-text"></i>
-            Ledger Transactions
+            حركات الحساب
         </h5>
     </div>
 
@@ -84,13 +84,13 @@
 
                 <thead class="table-light">
                     <tr>
-                        <th>Date</th>
-                        <th>Reference</th>
-                        <th>Type</th>
-                        <th>Description</th>
-                        <th class="text-end">Debit</th>
-                        <th class="text-end">Credit</th>
-                        <th class="text-end">Balance</th>
+                        <th>التاريخ</th>
+                        <th>المرجع</th>
+                        <th>النوع</th>
+                        <th>الوصف</th>
+                        <th class="text-end">مدين</th>
+                        <th class="text-end">دائن</th>
+                        <th class="text-end">الرصيد</th>
                     </tr>
                 </thead>
 
@@ -113,19 +113,19 @@
                             @if($transaction['type'] === 'Invoice')
 
                                 <span class="badge bg-danger">
-                                    Invoice
+                                    الفاتورة
                                 </span>
 
                             @elseif($transaction['type'] === 'Payment')
 
                                 <span class="badge bg-success">
-                                    Payment
+                                    السداد
                                 </span>
 
                             @else
 
                                 <span class="badge bg-warning text-dark">
-                                    Purchase Return
+                                    مرتجع مشتريات
                                 </span>
 
                             @endif
@@ -162,7 +162,7 @@
 
                     <tr>
                         <td colspan="7" class="text-center text-muted py-5">
-                            No ledger transactions yet.
+                            لا توجد حركات حساب حتى الآن.
                         </td>
                     </tr>
 
@@ -177,7 +177,7 @@
                         <tr>
 
                             <td colspan="4" class="text-end">
-                                Current Balance
+                                الرصيد الحالي
                             </td>
 
                             <td colspan="3" class="text-end">

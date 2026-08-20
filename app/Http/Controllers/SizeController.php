@@ -40,7 +40,7 @@ class SizeController extends Controller
 
         return redirect()
             ->route('sizes.show', $size)
-            ->with('success', 'Size created successfully.');
+            ->with('success', 'تم إنشاء المقاس بنجاح.');
     }
 
     public function show(Size $size): View
@@ -64,7 +64,7 @@ class SizeController extends Controller
 
         return redirect()
             ->route('sizes.show', $size)
-            ->with('success', 'Size updated successfully.');
+            ->with('success', 'تم تحديث المقاس بنجاح.');
     }
 
     public function destroy(
@@ -75,6 +75,6 @@ class SizeController extends Controller
 
         return redirect()
             ->route('sizes.index')
-            ->with('success', 'Size deleted successfully.');
+            ->with('success', 'تم حذف المقاس بنجاح.');
     }
 }

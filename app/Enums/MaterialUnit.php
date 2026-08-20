@@ -15,13 +15,13 @@ enum MaterialUnit: string
     public function label(): string
     {
         return match ($this) {
-            self::METER => 'Meter',
-            self::KILOGRAM => 'Kilogram',
-            self::PIECE => 'Piece',
-            self::ROLL => 'Roll',
-            self::YARD => 'Yard',
-            self::LITER => 'Liter',
-            self::OTHER => 'Other',
+            self::METER => 'متر',
+            self::KILOGRAM => 'كيلوجرام',
+            self::PIECE => 'قطعة',
+            self::ROLL => 'لفة',
+            self::YARD => 'ياردة',
+            self::LITER => 'لتر',
+            self::OTHER => 'أخرى',
         };
     }
 }

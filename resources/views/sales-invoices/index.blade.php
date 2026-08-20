@@ -1,12 +1,12 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Sales Invoices - ' . config('app.name'))
+@section('title', 'فواتير المبيعات - ' . config('app.name'))
 
 @section('breadcrumb')
-    <nav aria-label="breadcrumb">
+    <nav aria-label="مسار التنقل">
         <ol class="breadcrumb mb-0">
-            <li class="breadcrumb-item"><a href="{{ route('dashboard') }}" class="text-decoration-none">Dashboard</a></li>
-            <li class="breadcrumb-item active">Sales Invoices</li>
+            <li class="breadcrumb-item"><a href="{{ route('dashboard') }}" class="text-decoration-none">لوحة التحكم</a></li>
+            <li class="breadcrumb-item active">فواتير المبيعات</li>
         </ol>
     </nav>
 @endsection
@@ -14,11 +14,11 @@
 @section('content')
     <div class="page-header d-flex flex-wrap justify-content-between align-items-center gap-3">
         <div>
-            <h1 class="h3 mb-1">Sales Invoices</h1>
-            <p class="text-muted mb-0">Manage customer sales invoices</p>
+            <h1 class="h3 mb-1">فواتير المبيعات</h1>
+            <p class="text-muted mb-0">إدارة فواتير مبيعات العملاء</p>
         </div>
         <a href="{{ route('sales-invoices.create') }}" class="btn btn-primary">
-            <i class="bi bi-plus-lg me-1"></i> Create Invoice
+            <i class="bi bi-plus-lg me-1"></i> إنشاء فاتورة
         </a>
     </div>
 
@@ -28,12 +28,12 @@
                 <div class="col-md-3">
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-search"></i></span>
-                        <input type="text" name="search" class="form-control" placeholder="Invoice #, customer..." value="{{ request('search') }}">
+                        <input type="text" name="search" class="form-control" placeholder="رقم الفاتورة أو العميل..." value="{{ request('search') }}">
                     </div>
                 </div>
                 <div class="col-md-3">
                     <select name="customer_id" class="form-select">
-                        <option value="">All Customers</option>
+                        <option value="">كل العملاء</option>
                         @foreach ($customers as $customer)
                             <option value="{{ $customer->id }}" @selected(request('customer_id') == $customer->id)>{{ $customer->name }}</option>
                         @endforeach
@@ -41,16 +41,16 @@
                 </div>
                 <div class="col-md-2">
                     <select name="status" class="form-select">
-                        <option value="">All Statuses</option>
+                        <option value="">كل الحالات</option>
                         @foreach (\App\Enums\SalesInvoiceStatus::cases() as $status)
                             <option value="{{ $status->value }}" @selected(request('status') === $status->value)>{{ $status->label() }}</option>
                         @endforeach
                     </select>
                 </div>
                 <div class="col-auto">
-                    <button type="submit" class="btn btn-primary">Filter</button>
+                    <button type="submit" class="btn btn-primary">تصفية</button>
                     @if (request()->hasAny(['search', 'status', 'customer_id']))
-                        <a href="{{ route('sales-invoices.index') }}" class="btn btn-outline-secondary">Clear</a>
+                        <a href="{{ route('sales-invoices.index') }}" class="btn btn-outline-secondary">مسح الفلاتر</a>
                     @endif
                 </div>
             </form>
@@ -59,15 +59,15 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead>
                         <tr>
-                            <th>Invoice #</th>
-                            <th>Customer</th>
-                            <th>Date</th>
-                            <th>Status</th>
-                            <th class="text-end">Qty</th>
-                            <th class="text-end">Total</th>
-                            <th>Payment</th>
+                            <th>رقم الفاتورة</th>
+                            <th>العميل</th>
+                            <th>التاريخ</th>
+                            <th>الحالة</th>
+                            <th class="text-end">الكمية</th>
+                            <th class="text-end">الإجمالي</th>
+                            <th>السداد</th>
 
-                            <th class="text-end">Actions</th>
+                            <th class="text-end">الإجراءات</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -79,10 +79,10 @@
                                     </a>
                                 </td>
                                 <td>{{ $invoice->customer?->name }}</td>
-                                <td>{{ $invoice->invoice_date->format('M d, Y') }}</td>
+                                <td>{{ $invoice->invoice_date->format('Y-m-d') }}</td>
                                 <td><span class="badge bg-{{ $invoice->status->badgeClass() }}">{{ $invoice->status->label() }}</span></td>
                                 <td class="text-end">{{ number_format($invoice->total_quantity) }}</td>
-                                <td class="text-end">{{ number_format($invoice->total_amount, 2) }} EGP</td>
+                                <td class="text-end">{{ number_format($invoice->total_amount, 2) }} ج.م</td>
                              
 
 <td>
@@ -92,9 +92,9 @@
 
     @if ($invoice->payment_status === 'partially_paid')
         <div class="small text-muted mt-1">
-            Remaining:
+            المتبقي:
             {{ number_format($invoice->remaining_amount, 2) }}
-            EGP
+            ج.م
         </div>
     @endif
 </td>
@@ -107,16 +107,16 @@
                                             ) }}"
                                             target="_blank"
                                             class="btn btn-sm btn-outline-dark"
-                                            title="Print Invoice"
+                                            title="طباعة الفاتورة"
                                         >
                                             <i class="bi bi-printer"></i>
                                         </a>
-                                        <a href="{{ route('sales-invoices.show', $invoice) }}" class="btn btn-outline-secondary" title="View"><i class="bi bi-eye"></i></a>
+                                        <a href="{{ route('sales-invoices.show', $invoice) }}" class="btn btn-outline-secondary" title="عرض"><i class="bi bi-eye"></i></a>
                                         @if ($invoice->status === \App\Enums\SalesInvoiceStatus::DRAFT)
-                                            <a href="{{ route('sales-invoices.edit', $invoice) }}" class="btn btn-outline-primary" title="Edit"><i class="bi bi-pencil"></i></a>
-                                            <form action="{{ route('sales-invoices.destroy', $invoice) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this draft invoice?')">
+                                            <a href="{{ route('sales-invoices.edit', $invoice) }}" class="btn btn-outline-primary" title="تعديل"><i class="bi bi-pencil"></i></a>
+                                            <form action="{{ route('sales-invoices.destroy', $invoice) }}" method="POST" class="d-inline" onsubmit="return confirm('هل تريد حذف مسودة الفاتورة؟')">
                                                 @csrf @method('DELETE')
-                                                <button type="submit" class="btn btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>
+                                                <button type="submit" class="btn btn-outline-danger" title="حذف"><i class="bi bi-trash"></i></button>
                                             </form>
                                         @endif
                                     </div>
@@ -126,7 +126,7 @@
                             <tr>
                                 <td colspan="7" class="text-center text-muted py-5">
                                     <i class="bi bi-receipt display-6 d-block mb-2"></i>
-                                    No sales invoices found.
+                                    لا توجد فواتير مبيعات.
                                 </td>
                             </tr>
                         @endforelse

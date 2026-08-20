@@ -25,19 +25,19 @@ class ConfirmSalesInvoiceAction
 
             if ($invoice->status === SalesInvoiceStatus::CONFIRMED) {
                 throw ValidationException::withMessages([
-                    'status' => 'This invoice is already confirmed.',
+                    'status' => 'هذه الفاتورة مؤكدة بالفعل.',
                 ]);
             }
 
             if ($invoice->status === SalesInvoiceStatus::CANCELLED) {
                 throw ValidationException::withMessages([
-                    'status' => 'Cancelled invoices cannot be confirmed.',
+                    'status' => 'لا يمكن تأكيد فاتورة ملغاة.',
                 ]);
             }
 
             if ($invoice->status !== SalesInvoiceStatus::DRAFT) {
                 throw ValidationException::withMessages([
-                    'status' => 'Only draft invoices can be confirmed.',
+                    'status' => 'لا يمكن تأكيد إلا الفواتير المسودة.',
                 ]);
             }
 
@@ -45,13 +45,13 @@ class ConfirmSalesInvoiceAction
 
             if ($invoice->items->isEmpty()) {
                 throw ValidationException::withMessages([
-                    'products' => 'Cannot confirm an invoice with no items.',
+                    'products' => 'لا يمكن تأكيد فاتورة بلا بنود.',
                 ]);
             }
 
             if ((float) $invoice->total_amount <= 0) {
                 throw ValidationException::withMessages([
-                    'total_amount' => 'Cannot confirm an invoice with zero total.',
+                    'total_amount' => 'لا يمكن تأكيد فاتورة بإجمالي صفر.',
                 ]);
             }
 
@@ -62,7 +62,7 @@ class ConfirmSalesInvoiceAction
 
             if ($alreadyPosted) {
                 throw ValidationException::withMessages([
-                    'status' => 'A ledger entry already exists for this invoice.',
+                    'status' => 'يوجد قيد حساب مسجل بالفعل لهذه الفاتورة.',
                 ]);
             }
 
@@ -76,7 +76,7 @@ class ConfirmSalesInvoiceAction
                 'reference_id' => $invoice->id,
                 'reference_number' => $invoice->invoice_number,
                 'transaction_date' => $invoice->invoice_date,
-                'description' => 'Sales Invoice',
+                'description' => 'فاتورة مبيعات',
                 'debit' => $invoice->total_amount,
                 'credit' => 0,
                 'created_by' => auth()->id(),

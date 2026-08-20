@@ -1,13 +1,13 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Create Supplier Invoice')
+@section('title', 'إنشاء فاتورة مورد')
 
 @section('content')
 
 <div class="page-header">
-    <h1 class="h3 mb-1">Create Supplier Invoice</h1>
+    <h1 class="h3 mb-1">إنشاء فاتورة مورد</h1>
     <p class="text-muted mb-0">
-        Record a payable invoice from a supplier.
+        سجّل فاتورة مستحقة لمورد.
     </p>
 </div>
 
@@ -22,9 +22,9 @@
 
             <div class="row g-3">
 
-                {{-- Supplier --}}
+                {{-- المورد --}}
                 <div class="col-md-6">
-                    <label class="form-label">Supplier *</label>
+                    <label class="form-label">المورد *</label>
 
                     <select
                         name="supplier_id"
@@ -32,7 +32,7 @@
                         class="form-select"
                         required
                     >
-                        <option value="">Select supplier</option>
+                        <option value="">اختر المورد</option>
 
                         @foreach ($suppliers as $supplier)
                             <option value="{{ $supplier->id }}">
@@ -48,7 +48,7 @@
                 <div class="col-md-6">
 
                     <label class="form-label">
-                        Purchase Order
+                        أمر الشراء
                     </label>
 
                     <select
@@ -58,7 +58,7 @@
                     >
 
                         <option value="">
-                            Not linked
+                            غير مرتبط
                         </option>
 
                         @foreach ($orders as $order)
@@ -84,7 +84,7 @@
                 <div class="col-md-6">
 
                     <label class="form-label">
-                        Goods Receipt
+                        إذن الاستلام
                     </label>
 
                     <select
@@ -94,7 +94,7 @@
                     >
 
                         <option value="">
-                            Not linked
+                            غير مرتبط
                         </option>
 
                         @foreach ($receipts as $receipt)
@@ -120,7 +120,7 @@
                 <div class="col-md-3">
 
                     <label class="form-label">
-                        Invoice Date *
+                        تاريخ الفاتورة *
                     </label>
 
                     <input
@@ -138,7 +138,7 @@
                 <div class="col-md-3">
 
                     <label class="form-label">
-                        Due Date
+                        تاريخ الاستحقاق
                     </label>
 
                     <input
@@ -167,11 +167,11 @@
                             <div>
 
                                 <strong>
-                                    Advance Payment
+                                    دفعة مقدمة
                                 </strong>
 
                                 <div class="small text-muted">
-                                    Amount already paid for this purchase order.
+                                    المبلغ المدفوع سابقًا لأمر الشراء.
                                 </div>
 
                             </div>
@@ -204,7 +204,7 @@
                     >
 
                         <h5 class="mb-3">
-                            Goods Receipt Items
+                            بنود إذن الاستلام
                         </h5>
 
                         <div class="table-responsive">
@@ -214,13 +214,13 @@
                                 <thead>
 
                                     <tr>
-                                        <th>Material</th>
-                                        <th>Ordered</th>
-                                        <th>Received</th>
-                                        <th>Accepted</th>
-                                        <th>Rejected</th>
-                                        <th>Unit Cost</th>
-                                        <th>Line Total</th>
+                                        <th>الخامة</th>
+                                        <th>المطلوب</th>
+                                        <th>المستلم</th>
+                                        <th>المقبول</th>
+                                        <th>المرفوض</th>
+                                        <th>تكلفة الوحدة</th>
+                                        <th>إجمالي البند</th>
                                     </tr>
 
                                 </thead>
@@ -235,7 +235,7 @@
                                             colspan="6"
                                             class="text-end"
                                         >
-                                            Subtotal
+                                            الإجمالي الفرعي
                                         </th>
 
                                         <th>
@@ -263,7 +263,7 @@
                 <div class="col-md-4">
 
                     <label class="form-label">
-                        Subtotal *
+                        الإجمالي الفرعي *
                     </label>
 
                     <input
@@ -278,7 +278,7 @@
                     >
 
                     <small class="text-muted">
-                        Automatically calculated from accepted quantities.
+                        يُحسب تلقائيًا من الكميات المقبولة.
                     </small>
 
                 </div>
@@ -288,7 +288,7 @@
                 <div class="col-md-4">
 
                     <label class="form-label">
-                        Discount
+                        الخصم
                     </label>
 
                     <input
@@ -308,7 +308,7 @@
                 <div class="col-md-4">
 
                     <label class="form-label">
-                        Tax
+                        الضريبة
                     </label>
 
                     <input
@@ -328,7 +328,7 @@
                 <div class="col-md-4">
 
                     <label class="form-label">
-                        Invoice Total
+                        إجمالي الفاتورة
                     </label>
 
                     <input
@@ -346,7 +346,7 @@
                 <div class="col-md-4">
 
                     <label class="form-label">
-                        Advance Paid
+                        المقدم المدفوع
                     </label>
 
                     <input
@@ -364,7 +364,7 @@
                 <div class="col-md-4">
 
                     <label class="form-label">
-                        Remaining Amount
+                        المبلغ المتبقي
                     </label>
 
                     <input
@@ -391,7 +391,7 @@
                 <div class="col-12">
 
                     <label class="form-label">
-                        Notes
+                        ملاحظات
                     </label>
 
                     <textarea
@@ -411,14 +411,14 @@
                     type="submit"
                     class="btn btn-primary"
                 >
-                    Create Invoice
+                    إنشاء فاتورة
                 </button>
 
                 <a
                     class="btn btn-outline-secondary"
                     href="{{ route('supplier-invoices.index') }}"
                 >
-                    Cancel
+                    إلغاء
                 </a>
 
             </div>
@@ -922,7 +922,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Line Total
         lineTotalElement.textContent =
-            lineTotal.toLocaleString('en-US', {
+            lineTotal.toLocaleString('ar-EG', {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
             });
@@ -940,7 +940,7 @@ document.addEventListener('DOMContentLoaded', function () {
         subtotal.toFixed(2);
 
     calculatedSubtotal.textContent =
-        subtotal.toLocaleString('en-US', {
+        subtotal.toLocaleString('ar-EG', {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
         });
@@ -978,7 +978,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     totalInput.value =
-        total.toLocaleString('en-US', {
+        total.toLocaleString('ar-EG', {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
         });
@@ -1010,7 +1010,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     remainingDisplay.value =
-        remaining.toLocaleString('en-US', {
+        remaining.toLocaleString('ar-EG', {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
         });

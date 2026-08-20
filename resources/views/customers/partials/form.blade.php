@@ -2,7 +2,7 @@
 
 <div class="row g-3">
     <div class="col-md-6">
-        <label for="name" class="form-label">Name <span class="text-danger">*</span></label>
+        <label for="name" class="form-label">الاسم <span class="text-danger">*</span></label>
         <input
             type="text"
             name="name"
@@ -17,7 +17,7 @@
     </div>
 
     <div class="col-md-6">
-        <label for="phone" class="form-label">Phone <span class="text-danger">*</span></label>
+        <label for="phone" class="form-label">الهاتف <span class="text-danger">*</span></label>
         <input
             type="text"
             name="phone"
@@ -32,7 +32,7 @@
     </div>
 
     <div class="col-md-6">
-        <label for="phone_2" class="form-label">Phone 2</label>
+        <label for="phone_2" class="form-label">هاتف إضافي</label>
         <input
             type="text"
             name="phone_2"
@@ -46,7 +46,7 @@
     </div>
 
     <div class="col-md-6">
-        <label for="city" class="form-label">City</label>
+        <label for="city" class="form-label">المدينة</label>
         <input
             type="text"
             name="city"
@@ -60,7 +60,7 @@
     </div>
 
     <div class="col-12">
-        <label for="address" class="form-label">Address</label>
+        <label for="address" class="form-label">العنوان</label>
         <textarea
             name="address"
             id="address"
@@ -73,9 +73,9 @@
     </div>
 
     <div class="col-md-6">
-        <label for="credit_limit" class="form-label">Credit Limit</label>
+        <label for="credit_limit" class="form-label">حد الائتمان</label>
         <div class="input-group">
-            <span class="input-group-text">SAR</span>
+            <span class="input-group-text">ج.م</span>
             <input
                 type="number"
                 name="credit_limit"
@@ -93,7 +93,7 @@
 
     @if ($customer)
         <div class="col-md-6">
-            <label for="status" class="form-label">Status <span class="text-danger">*</span></label>
+            <label for="status" class="form-label">الحالة <span class="text-danger">*</span></label>
             <select name="status" id="status" class="form-select @error('status') is-invalid @enderror" required>
                 @foreach (\App\Enums\CustomerStatus::cases() as $status)
                     <option value="{{ $status->value }}" @selected(old('status', $customer->status->value) === $status->value)>
@@ -108,7 +108,7 @@
     @endif
 
     <div class="col-12">
-        <label for="notes" class="form-label">Notes</label>
+        <label for="notes" class="form-label">ملاحظات</label>
         <textarea
             name="notes"
             id="notes"

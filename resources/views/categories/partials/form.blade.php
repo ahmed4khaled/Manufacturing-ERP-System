@@ -2,7 +2,7 @@
 
 <div class="row g-3">
     <div class="col-md-6">
-        <label for="name" class="form-label">Name <span class="text-danger">*</span></label>
+        <label for="name" class="form-label">الاسم <span class="text-danger">*</span></label>
         <input
             type="text"
             name="name"
@@ -17,7 +17,7 @@
     </div>
 
     <div class="col-12">
-        <label for="description" class="form-label">Description</label>
+        <label for="description" class="form-label">الوصف</label>
         <textarea
             name="description"
             id="description"
@@ -31,7 +31,7 @@
 
     @if ($category)
         <div class="col-md-6">
-            <label for="status" class="form-label">Status <span class="text-danger">*</span></label>
+            <label for="status" class="form-label">الحالة <span class="text-danger">*</span></label>
             <select name="status" id="status" class="form-select @error('status') is-invalid @enderror" required>
                 @foreach (\App\Enums\CategoryStatus::cases() as $status)
                     <option value="{{ $status->value }}" @selected(old('status', $category->status->value) === $status->value)>

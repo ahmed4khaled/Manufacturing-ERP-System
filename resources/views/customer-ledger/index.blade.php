@@ -1,20 +1,20 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Customer Ledger - ' . config('app.name'))
+@section('title', 'كشف حساب العملاء - ' . config('app.name'))
 
 @section('breadcrumb')
-    <nav aria-label="breadcrumb">
+    <nav aria-label="مسار التنقل">
         <ol class="breadcrumb mb-0">
-            <li class="breadcrumb-item"><a href="{{ route('dashboard') }}" class="text-decoration-none">Dashboard</a></li>
-            <li class="breadcrumb-item active">Customer Ledger</li>
+            <li class="breadcrumb-item"><a href="{{ route('dashboard') }}" class="text-decoration-none">لوحة التحكم</a></li>
+            <li class="breadcrumb-item active">كشف حساب العملاء</li>
         </ol>
     </nav>
 @endsection
 
 @section('content')
     <div class="page-header">
-        <h1 class="h3 mb-1">Customer Ledger</h1>
-        <p class="text-muted mb-0">Accounts receivable — all customer financial transactions</p>
+        <h1 class="h3 mb-1">كشف حساب العملاء</h1>
+        <p class="text-muted mb-0">حسابات العملاء المدينة — جميع الحركات المالية للعملاء</p>
     </div>
 
     <div class="card">
@@ -23,27 +23,27 @@
                 <div class="col-md-3">
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-search"></i></span>
-                        <input type="text" name="search" class="form-control" placeholder="Reference, customer..." value="{{ request('search') }}">
+                        <input type="text" name="search" class="form-control" placeholder="المرجع أو العميل..." value="{{ request('search') }}">
                     </div>
                 </div>
                 <div class="col-md-3">
                     <select name="customer_id" class="form-select">
-                        <option value="">All Customers</option>
+                        <option value="">كل العملاء</option>
                         @foreach ($customers as $customer)
                             <option value="{{ $customer->id }}" @selected(request('customer_id') == $customer->id)>{{ $customer->code }} — {{ $customer->name }}</option>
                         @endforeach
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <input type="date" name="date_from" class="form-control" value="{{ request('date_from') }}" placeholder="From">
+                    <input type="date" name="date_from" class="form-control" value="{{ request('date_from') }}" placeholder="من">
                 </div>
                 <div class="col-md-2">
-                    <input type="date" name="date_to" class="form-control" value="{{ request('date_to') }}" placeholder="To">
+                    <input type="date" name="date_to" class="form-control" value="{{ request('date_to') }}" placeholder="إلى">
                 </div>
                 <div class="col-auto">
-                    <button type="submit" class="btn btn-primary">Filter</button>
+                    <button type="submit" class="btn btn-primary">تصفية</button>
                     @if (request()->hasAny(['search', 'customer_id', 'date_from', 'date_to']))
-                        <a href="{{ route('customer-ledger.index') }}" class="btn btn-outline-secondary">Clear</a>
+                        <a href="{{ route('customer-ledger.index') }}" class="btn btn-outline-secondary">مسح الفلاتر</a>
                     @endif
                 </div>
             </form>
@@ -52,19 +52,19 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead>
                         <tr>
-                            <th>Date</th>
-                            <th>Customer</th>
-                            <th>Reference</th>
-                            <th>Description</th>
-                            <th class="text-end">Debit</th>
-                            <th class="text-end">Credit</th>
-                            <th class="text-end">Running Balance</th>
+                            <th>التاريخ</th>
+                            <th>العميل</th>
+                            <th>المرجع</th>
+                            <th>الوصف</th>
+                            <th class="text-end">مدين</th>
+                            <th class="text-end">دائن</th>
+                            <th class="text-end">الرصيد التراكمي</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse ($entries as $entry)
                             <tr>
-                                <td>{{ $entry->transaction_date->format('M d, Y') }}</td>
+                                <td>{{ $entry->transaction_date->format('Y-m-d') }}</td>
                                 <td>
                                     <a href="{{ route('customers.show', $entry->customer) }}" class="text-decoration-none">
                                         {{ $entry->customer?->name }}
@@ -83,7 +83,7 @@
                             <tr>
                                 <td colspan="7" class="text-center text-muted py-5">
                                     <i class="bi bi-journal-text display-6 d-block mb-2"></i>
-                                    No ledger entries found.
+                                    لا توجد قيود حساب.
                                 </td>
                             </tr>
                         @endforelse

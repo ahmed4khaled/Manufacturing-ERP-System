@@ -13,7 +13,7 @@ class DeleteSalesInvoiceAction
     {
         if ($salesInvoice->status !== SalesInvoiceStatus::DRAFT) {
             throw ValidationException::withMessages([
-                'status' => 'Only draft invoices can be deleted.',
+                'status' => 'لا يمكن حذف إلا الفواتير المسودة.',
             ]);
         }
 

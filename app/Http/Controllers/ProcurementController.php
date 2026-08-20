@@ -145,17 +145,17 @@ public function showSupplierInvoice(
         $data = $request->validate(['name' => 'required|string|max:255', 'code' => ['required', 'string', 'max:255', Rule::unique('suppliers', 'code')->ignore($supplier)], 'phone' => 'nullable|string', 'email' => 'nullable|email', 'address' => 'nullable|string', 'tax_number' => ['nullable', 'string', Rule::unique('suppliers', 'tax_number')->ignore($supplier)], 'notes' => 'nullable|string', 'status' => ['required', Rule::in(['active', 'inactive'])]]);
         $supplier->update($data);
 
-        return redirect()->route('suppliers.show', $supplier)->with('success', 'Supplier updated successfully.');
+        return redirect()->route('suppliers.show', $supplier)->with('success', 'تم تحديث المورد بنجاح.');
     }
 
     public function destroySupplier(Supplier $supplier): RedirectResponse
     {
         if ($supplier->purchaseOrders()->exists() || $supplier->invoices()->exists()) {
-            return back()->with('error', 'A supplier with procurement documents cannot be deleted. Set it inactive instead.');
+            return back()->with('error', 'لا يمكن حذف مورد مرتبط بمستندات مشتريات. اجعله غير نشط بدلًا من ذلك.');
         }
         $supplier->delete();
 
-        return redirect()->route('suppliers.index')->with('success', 'Supplier deleted successfully.');
+        return redirect()->route('suppliers.index')->with('success', 'تم حذف المورد بنجاح.');
     }
 
     public function storeSupplierContact(Request $request, Supplier $supplier): RedirectResponse
@@ -166,7 +166,7 @@ public function showSupplierInvoice(
         }
         $supplier->contacts()->create($data + ['is_primary' => $request->boolean('is_primary')]);
 
-        return back()->with('success', 'Supplier contact added.');
+        return back()->with('success', 'تمت إضافة جهة اتصال المورد.');
     }
 
     public function destroySupplierContact(Supplier $supplier, SupplierContact $contact): RedirectResponse
@@ -174,7 +174,7 @@ public function showSupplierInvoice(
         abort_unless($contact->supplier_id === $supplier->id, 404);
         $contact->delete();
 
-        return back()->with('success', 'Supplier contact removed.');
+        return back()->with('success', 'تم حذف جهة اتصال المورد.');
     }
 
     public function purchaseOrders(Request $request): View
@@ -377,7 +377,7 @@ public function showSupplierInvoice(
 
         return redirect()
             ->route('suppliers.index')
-            ->with('success', 'Supplier created successfully.');
+            ->with('success', 'تم إنشاء المورد بنجاح.');
     }
 
     public function storePurchaseOrder(StorePurchaseOrderRequest $request, CreatePurchaseOrderAction $action): RedirectResponse
@@ -386,7 +386,7 @@ public function showSupplierInvoice(
 
         return redirect()
             ->route('purchase-orders.show', $action->handle($data))
-            ->with('success', 'Purchase order created.');
+            ->with('success', 'تم إنشاء أمر الشراء.');
     }
 
     public function showPurchaseOrder(PurchaseOrder $purchaseOrder): View
@@ -403,7 +403,7 @@ public function showSupplierInvoice(
     ): RedirectResponse {
         $action->handle($purchaseOrder);
 
-        return back()->with('success', 'Purchase order approved successfully.');
+        return back()->with('success', 'تم اعتماد أمر الشراء بنجاح.');
     }
 
     public function confirmReceipt(
@@ -414,7 +414,7 @@ public function showSupplierInvoice(
         $action->handle($goodsReceipt);
 
 
-        return back()->with('success', 'Goods receipt confirmed and inventory posted.');
+        return back()->with('success', 'تم تأكيد إذن الاستلام وترحيله إلى المخزون.');
     }
 
     public function storeGoodsReceipt(StoreGoodsReceiptRequest $request, CreateGoodsReceiptAction $action): RedirectResponse
@@ -423,7 +423,7 @@ public function showSupplierInvoice(
 
         $receipt = $action->handle($data);
 
-        return redirect()->route('goods-receipts.show', $receipt)->with('success', 'Goods receipt created.');
+        return redirect()->route('goods-receipts.show', $receipt)->with('success', 'تم إنشاء إذن الاستلام.');
     }
 
     public function showGoodsReceipt(GoodsReceipt $goodsReceipt): View
@@ -439,7 +439,7 @@ public function showSupplierInvoice(
 
         $return = $action->handle($data);
 
-        return redirect()->route('purchase-returns.show', $return)->with('success', 'Purchase return saved.');
+        return redirect()->route('purchase-returns.show', $return)->with('success', 'تم حفظ مرتجع المشتريات.');
     }
 
     public function showReturn(PurchaseReturn $purchaseReturn): View
@@ -473,7 +473,7 @@ public function showSupplierInvoice(
             if ((int) $po->supplier_id !== (int) $data['supplier_id']) {
                 abort(
                     422,
-                    'Purchase order supplier must match invoice supplier.'
+                    'يجب أن يطابق مورد أمر الشراء مورد الفاتورة.'
                 );
             }
         }
@@ -499,7 +499,7 @@ public function showSupplierInvoice(
             if ((int) $receipt->supplier_id !== (int) $data['supplier_id']) {
                 abort(
                     422,
-                    'Goods receipt supplier must match invoice supplier.'
+                    'يجب أن يطابق مورد إذن الاستلام مورد الفاتورة.'
                 );
             }
 
@@ -514,7 +514,7 @@ public function showSupplierInvoice(
             ) {
                 abort(
                     422,
-                    'Purchase order must match the selected goods receipt.'
+                    'يجب أن يطابق أمر الشراء إذن الاستلام المحدد.'
                 );
             }
 
@@ -577,14 +577,14 @@ public function showSupplierInvoice(
         if (bccomp($discount, '0', 2) < 0) {
             abort(
                 422,
-                'Discount cannot be negative.'
+                'لا يمكن أن يكون الخصم سالبًا.'
             );
         }
 
         if (bccomp($discount, $subtotal, 2) > 0) {
             abort(
                 422,
-                'Discount cannot exceed invoice subtotal.'
+                'لا يمكن أن يتجاوز الخصم الإجمالي الفرعي للفاتورة.'
             );
         }
 
@@ -597,7 +597,7 @@ public function showSupplierInvoice(
         if (bccomp($tax, '0', 2) < 0) {
             abort(
                 422,
-                'Tax cannot be negative.'
+                'لا يمكن أن تكون الضريبة سالبة.'
             );
         }
 
@@ -628,7 +628,7 @@ public function showSupplierInvoice(
         if (bccomp($total, '0', 2) < 0) {
             abort(
                 422,
-                'Invoice total cannot be negative.'
+                'لا يمكن أن يكون إجمالي الفاتورة سالبًا.'
             );
         }
 
@@ -659,7 +659,7 @@ public function showSupplierInvoice(
 
             abort(
                 422,
-                'Advance payments cannot exceed invoice total.'
+                'لا يمكن أن تتجاوز الدفعات المقدمة إجمالي الفاتورة.'
             );
         }
 
@@ -722,7 +722,7 @@ public function showSupplierInvoice(
 
         return back()->with(
             'success',
-            "Invoice {$invoice->invoice_number} created."
+            "تم إنشاء الفاتورة {$invoice->invoice_number}."
         );
     }
     public function storePayment(
@@ -759,7 +759,7 @@ public function showSupplierInvoice(
             if ((int) $po->supplier_id !== (int) $supplier->id) {
                 abort(
                     422,
-                    'Purchase order supplier must match payment supplier.'
+                    'يجب أن يطابق مورد أمر الشراء مورد الدفعة.'
                 );
             }
 
@@ -804,7 +804,7 @@ public function showSupplierInvoice(
 
             return back()->with(
                 'success',
-                "Advance payment {$payment->payment_number} recorded."
+                "تم تسجيل الدفعة المقدمة {$payment->payment_number}."
             );
         }
 
@@ -841,7 +841,7 @@ public function showSupplierInvoice(
             if ((int) $invoice->supplier_id !== (int) $supplier->id) {
                 abort(
                     422,
-                    'Invoice supplier must match payment supplier.'
+                    'يجب أن يطابق مورد الفاتورة مورد الدفعة.'
                 );
             }
 
@@ -864,7 +864,7 @@ public function showSupplierInvoice(
             if (bccomp($amount, '0', 2) <= 0) {
                 abort(
                     422,
-                    'Payment amount must be greater than zero.'
+                    'يجب أن يكون مبلغ الدفعة أكبر من صفر.'
                 );
             }
 
@@ -877,7 +877,7 @@ public function showSupplierInvoice(
             if (bccomp($amount, $remaining, 2) > 0) {
                 abort(
                     422,
-                    'Payment amount cannot exceed invoice remaining amount.'
+                    'لا يمكن أن يتجاوز مبلغ الدفعة المتبقي على الفاتورة.'
                 );
             }
 
@@ -970,7 +970,7 @@ public function showSupplierInvoice(
 
         return back()->with(
             'success',
-            'Supplier payment recorded successfully.'
+            'تم تسجيل دفعة المورد بنجاح.'
         );
     }
 
@@ -980,7 +980,7 @@ public function showSupplierInvoice(
     ): RedirectResponse {
         $action->handle($purchaseReturn);
 
-        return back()->with('success', 'Purchase return confirmed and inventory posted.');
+        return back()->with('success', 'تم تأكيد مرتجع المشتريات وترحيله إلى المخزون.');
     }
     public function supplierLedger(Supplier $supplier)
     {
@@ -1007,7 +1007,7 @@ public function showSupplierInvoice(
                 'date' => $invoice->invoice_date,
                 'reference' => $invoice->invoice_number,
                 'type' => 'Invoice',
-                'description' => 'Supplier Invoice',
+                'description' => 'فاتورة مورد',
                 'debit' => (float) $invoice->total,
                 'credit' => 0,
                 'model' => $invoice,
@@ -1019,7 +1019,7 @@ public function showSupplierInvoice(
                 'date' => $payment->payment_date,
                 'reference' => 'PAY-' . $payment->id,
                 'type' => 'Payment',
-                'description' => $payment->payment_method ?? 'Supplier Payment',
+                'description' => $payment->payment_method ?? 'دفعة مورد',
                 'debit' => 0,
                 'credit' => (float) $payment->amount,
                 'model' => $payment,
@@ -1034,8 +1034,8 @@ public function showSupplierInvoice(
             $transactions->push([
                 'date' => $return->return_date,
                 'reference' => $return->return_number,
-                'type' => 'Purchase Return',
-                'description' => $return->reason ?? 'Purchase Return',
+                'type' => 'مرتجع مشتريات',
+                'description' => $return->reason ?? 'مرتجع مشتريات',
                 'debit' => 0,
                 'credit' => $amount,
                 'model' => $return,

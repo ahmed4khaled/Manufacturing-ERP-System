@@ -13,13 +13,13 @@ class VariantSkuGeneratorService
     {
         if (blank($product->code)) {
             throw ValidationException::withMessages([
-                'product_id' => 'Product code is required to generate SKU.',
+                'product_id' => 'كود المنتج مطلوب لإنشاء رمز المخزون.',
             ]);
         }
 
         if (blank($color->code)) {
             throw ValidationException::withMessages([
-                'color_id' => 'Color code is required to generate SKU.',
+                'color_id' => 'كود اللون مطلوب لإنشاء رمز المخزون.',
             ]);
         }
 

@@ -28,7 +28,7 @@ class ValidateCustomerCreditLimitAction
             2
         ) > 0) {
             throw ValidationException::withMessages([
-                'customer_id' => 'Credit limit exceeded for the selected customer.',
+                'customer_id' => 'تم تجاوز حد الائتمان للعميل المحدد.',
             ]);
         }
     }

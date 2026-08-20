@@ -36,7 +36,7 @@ class SalesInvoiceItemService
 
                 if (! $variant || $variant->product_id !== $productId) {
                     throw ValidationException::withMessages([
-                        'products' => 'Invalid variant selection for the selected product.',
+                        'products' => 'اختيار المتغير غير صالح للمنتج المحدد.',
                     ]);
                 }
 
@@ -49,7 +49,7 @@ class SalesInvoiceItemService
 
         if ($createdItems->isEmpty()) {
             throw ValidationException::withMessages([
-                'products' => 'At least one variant must have a quantity greater than zero.',
+                'products' => 'يجب إدخال كمية أكبر من صفر لمتغير واحد على الأقل.',
             ]);
         }
 
@@ -90,7 +90,7 @@ class SalesInvoiceItemService
 
                     if (! $variant || $variant->product_id !== $productId) {
                         throw ValidationException::withMessages([
-                            'products' => 'Invalid variant selection for the selected product.',
+                            'products' => 'اختيار المتغير غير صالح للمنتج المحدد.',
                         ]);
                     }
 
@@ -115,7 +115,7 @@ class SalesInvoiceItemService
 
                 if (! $variant || $variant->product_id !== $productId) {
                     throw ValidationException::withMessages([
-                        'products' => 'Invalid variant selection for the selected product.',
+                        'products' => 'اختيار المتغير غير صالح للمنتج المحدد.',
                     ]);
                 }
 
@@ -129,7 +129,7 @@ class SalesInvoiceItemService
 
         if ($items->isEmpty()) {
             throw ValidationException::withMessages([
-                'products' => 'At least one variant must have a quantity greater than zero.',
+                'products' => 'يجب إدخال كمية أكبر من صفر لمتغير واحد على الأقل.',
             ]);
         }
 

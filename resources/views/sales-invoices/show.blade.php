@@ -3,18 +3,18 @@
 @section('title', $salesInvoice->invoice_number . ' - ' . config('app.name'))
 
 @section('breadcrumb')
-    <nav aria-label="breadcrumb">
+    <nav aria-label="مسار التنقل">
         <ol class="breadcrumb mb-0">
 
             <li class="breadcrumb-item">
                 <a href="{{ route('dashboard') }}" class="text-decoration-none">
-                    Dashboard
+                    لوحة التحكم
                 </a>
             </li>
 
             <li class="breadcrumb-item">
                 <a href="{{ route('sales-invoices.index') }}" class="text-decoration-none">
-                    Sales Invoices
+                    فواتير المبيعات
                 </a>
             </li>
 
@@ -66,7 +66,7 @@
 
                 ·
 
-                {{ $salesInvoice->invoice_date->format('M d, Y') }}
+                {{ $salesInvoice->invoice_date->format('Y-m-d') }}
 
             </p>
 
@@ -89,7 +89,7 @@
 
                 <i class="bi bi-printer me-1"></i>
 
-                Print
+                طباعة
 
             </a>
 
@@ -107,7 +107,7 @@
 
                     <i class="bi bi-cash-coin me-1"></i>
 
-                    Receive Payment
+                    تسجيل دفعة
 
                 </a>
 
@@ -124,7 +124,7 @@
 
                     <i class="bi bi-pencil me-1"></i>
 
-                    Edit
+                    تعديل
 
                 </a>
 
@@ -132,7 +132,7 @@
                 <form
                     action="{{ route('sales-invoices.confirm', $salesInvoice) }}"
                     method="POST"
-                    onsubmit="return confirm('Confirm this invoice? This will post the amount to the customer ledger.')"
+                    onsubmit="return confirm('هل تريد تأكيد الفاتورة؟ سيتم ترحيل المبلغ إلى حساب العميل.')"
                 >
 
                     @csrf
@@ -144,7 +144,7 @@
 
                         <i class="bi bi-check-circle me-1"></i>
 
-                        Confirm
+                        تأكيد
 
                     </button>
 
@@ -154,7 +154,7 @@
                 <form
                     action="{{ route('sales-invoices.destroy', $salesInvoice) }}"
                     method="POST"
-                    onsubmit="return confirm('Delete this draft invoice?')"
+                    onsubmit="return confirm('هل تريد حذف مسودة الفاتورة؟')"
                 >
 
                     @csrf
@@ -167,7 +167,7 @@
 
                         <i class="bi bi-trash me-1"></i>
 
-                        Delete
+                        حذف
 
                     </button>
 
@@ -178,7 +178,7 @@
                 <form
                     action="{{ route('sales-invoices.cancel', $salesInvoice) }}"
                     method="POST"
-                    onsubmit="return confirm('Cancel this invoice?')"
+                    onsubmit="return confirm('هل تريد إلغاء هذه الفاتورة؟')"
                 >
 
                     @csrf
@@ -190,7 +190,7 @@
 
                         <i class="bi bi-x-circle me-1"></i>
 
-                        Cancel Invoice
+                        إلغاء الفاتورة
 
                     </button>
 
@@ -219,7 +219,7 @@
                 <div class="card-header bg-white">
 
                     <h5 class="card-title mb-0">
-                        Customer
+                        العميل
                     </h5>
 
                 </div>
@@ -254,7 +254,7 @@
                     <div class="card-header bg-white">
 
                         <h5 class="card-title mb-0">
-                            Payment Summary
+                            ملخص السداد
                         </h5>
 
                     </div>
@@ -266,7 +266,7 @@
                         <div class="d-flex justify-content-between align-items-center mb-3">
 
                             <span class="text-muted">
-                                Payment Status
+                                حالة السداد
                             </span>
 
                             <span class="badge bg-{{ $salesInvoice->payment_status_badge_class }}">
@@ -280,12 +280,12 @@
                         <div class="d-flex justify-content-between mb-2">
 
                             <span class="text-muted">
-                                Invoice Total
+                                إجمالي الفاتورة
                             </span>
 
                             <strong>
                                 {{ number_format($salesInvoice->total_amount, 2) }}
-                                EGP
+                                ج.م
                             </strong>
 
                         </div>
@@ -295,14 +295,14 @@
                         <div class="d-flex justify-content-between mb-2">
 
                             <span class="text-muted">
-                                Paid
+                                مدفوع
                             </span>
 
                             <strong class="text-success">
 
                                 {{ number_format($salesInvoice->paid_amount, 2) }}
 
-                                EGP
+                                ج.م
 
                             </strong>
 
@@ -313,7 +313,7 @@
                         <div class="d-flex justify-content-between pt-2 border-top">
 
                             <span class="text-muted">
-                                Remaining
+                                المتبقي
                             </span>
 
                             <strong
@@ -322,7 +322,7 @@
 
                                 {{ number_format($salesInvoice->remaining_amount, 2) }}
 
-                                EGP
+                                ج.م
 
                             </strong>
 
@@ -341,7 +341,7 @@
 
                                     <i class="bi bi-cash-coin me-1"></i>
 
-                                    Receive Payment
+                                    تسجيل دفعة
 
                                 </a>
 
@@ -353,7 +353,7 @@
 
                                 <i class="bi bi-check-circle me-1"></i>
 
-                                Invoice fully paid.
+                                الفاتورة مسددة بالكامل.
 
                             </div>
 
@@ -377,7 +377,7 @@
                     <div class="card-header bg-white">
 
                         <h5 class="card-title mb-0">
-                            Notes
+                            ملاحظات
                         </h5>
 
                     </div>
@@ -404,7 +404,7 @@
                 <div class="card-header bg-white">
 
                     <h5 class="card-title mb-0">
-                        Totals
+                        الإجماليات
                     </h5>
 
                 </div>
@@ -415,12 +415,12 @@
                     <div class="d-flex justify-content-between mb-2">
 
                         <span class="text-muted">
-                            Total Quantity
+                            إجمالي الكمية
                         </span>
 
                         <strong>
                             {{ number_format($salesInvoice->total_quantity) }}
-                            Pieces
+                            قطعة
                         </strong>
 
                     </div>
@@ -429,14 +429,14 @@
                     <div class="d-flex justify-content-between">
 
                         <span class="text-muted">
-                            Invoice Total
+                            إجمالي الفاتورة
                         </span>
 
                         <strong class="fs-5 text-primary">
 
                             {{ number_format($salesInvoice->total_amount, 2) }}
 
-                            EGP
+                            ج.م
 
                         </strong>
 
@@ -460,7 +460,7 @@
                 <div class="card-header bg-white">
 
                     <h5 class="card-title mb-0">
-                        Invoice Items (by Model)
+                        بنود الفاتورة (حسب الموديل)
                     </h5>
 
                 </div>
@@ -488,7 +488,7 @@
 
                                     <strong>
                                         {{ number_format($group['total_quantity']) }}
-                                        Pieces
+                                        قطعة
                                     </strong>
 
                                     <br>
@@ -497,7 +497,7 @@
 
                                         {{ number_format($group['total_amount'], 2) }}
 
-                                        EGP
+                                        ج.م
 
                                     </span>
 
@@ -515,31 +515,31 @@
                                         <tr>
 
                                             <th>
-                                                Color
+                                                اللون
                                             </th>
 
                                             <th>
-                                                Size
+                                                المقاس
                                             </th>
 
                                             <th>
-                                                SKU
+                                                رمز المخزون
                                             </th>
 
                                             <th>
-                                                Barcode
+                                                الباركود
                                             </th>
 
                                             <th class="text-end">
-                                                Unit Price
+                                                سعر الوحدة
                                             </th>
 
                                             <th class="text-end">
-                                                Qty
+                                                الكمية
                                             </th>
 
                                             <th class="text-end">
-                                                Line Total
+                                                إجمالي البند
                                             </th>
 
                                         </tr>
@@ -631,7 +631,7 @@
 
             <i class="bi bi-arrow-left me-1"></i>
 
-            Back to Invoices
+            العودة إلى الفواتير
 
         </a>
 

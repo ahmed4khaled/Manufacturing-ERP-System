@@ -1,20 +1,20 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Colors - ' . config('app.name'))
+@section('title', 'الألوان - ' . config('app.name'))
 
 @section('content')
     <div class="page-header d-flex flex-wrap justify-content-between align-items-center gap-3">
-        <div><h1 class="h3 mb-1">Colors</h1><p class="text-muted mb-0">Manage abaya color options</p></div>
-        <a href="{{ route('colors.create') }}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i> Create Color</a>
+        <div><h1 class="h3 mb-1">الألوان</h1><p class="text-muted mb-0">إدارة ألوان العبايات</p></div>
+        <a href="{{ route('colors.create') }}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i> إنشاء لون</a>
     </div>
 
     <div class="card">
         <div class="card-body">
-            @include('partials.list-filters', ['action' => route('colors.index'), 'placeholder' => 'Search by code, name, hex...', 'statusEnum' => \App\Enums\ColorStatus::class])
+            @include('partials.list-filters', ['action' => route('colors.index'), 'placeholder' => 'ابحث بالكود أو الاسم أو الرمز السداسي...', 'statusEnum' => \App\Enums\ColorStatus::class])
 
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
-                    <thead><tr><th>Color</th><th>Code</th><th>Name</th><th>Hex</th><th>Status</th><th class="text-end">Actions</th></tr></thead>
+                    <thead><tr><th>اللون</th><th>الكود</th><th>الاسم</th><th>الرمز السداسي</th><th>الحالة</th><th class="text-end">الإجراءات</th></tr></thead>
                     <tbody>
                         @forelse ($colors as $color)
                             <tr>
@@ -27,12 +27,12 @@
                                     <div class="btn-group btn-group-sm">
                                         <a href="{{ route('colors.show', $color) }}" class="btn btn-outline-secondary"><i class="bi bi-eye"></i></a>
                                         <a href="{{ route('colors.edit', $color) }}" class="btn btn-outline-primary"><i class="bi bi-pencil"></i></a>
-                                        <form action="{{ route('colors.destroy', $color) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this color?')">@csrf @method('DELETE')<button class="btn btn-outline-danger"><i class="bi bi-trash"></i></button></form>
+                                        <form action="{{ route('colors.destroy', $color) }}" method="POST" class="d-inline" onsubmit="return confirm('هل تريد حذف هذا اللون؟')">@csrf @method('DELETE')<button class="btn btn-outline-danger"><i class="bi bi-trash"></i></button></form>
                                     </div>
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="6" class="text-center text-muted py-5">No colors found.</td></tr>
+                            <tr><td colspan="6" class="text-center text-muted py-5">لا توجد ألوان.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

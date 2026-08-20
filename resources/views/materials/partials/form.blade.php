@@ -2,7 +2,7 @@
 
 <div class="row g-3">
     <div class="col-md-6">
-        <label for="name" class="form-label">Name <span class="text-danger">*</span></label>
+        <label for="name" class="form-label">الاسم <span class="text-danger">*</span></label>
         <input
             type="text"
             name="name"
@@ -17,9 +17,9 @@
     </div>
 
     <div class="col-md-6">
-        <label for="category" class="form-label">Category <span class="text-danger">*</span></label>
+        <label for="category" class="form-label">التصنيف <span class="text-danger">*</span></label>
         <select name="category" id="category" class="form-select @error('category') is-invalid @enderror" required>
-            <option value="">Select category</option>
+            <option value="">اختر التصنيف</option>
             @foreach (\App\Enums\MaterialCategory::cases() as $category)
                 <option value="{{ $category->value }}" @selected(old('category', $material?->category?->value) === $category->value)>
                     {{ $category->label() }}
@@ -32,9 +32,9 @@
     </div>
 
     <div class="col-md-6">
-        <label for="unit" class="form-label">Unit of Measure <span class="text-danger">*</span></label>
+        <label for="unit" class="form-label">وحدة القياس <span class="text-danger">*</span></label>
         <select name="unit" id="unit" class="form-select @error('unit') is-invalid @enderror" required>
-            <option value="">Select unit</option>
+            <option value="">اختر الوحدة</option>
             @foreach (\App\Enums\MaterialUnit::cases() as $unit)
                 <option value="{{ $unit->value }}" @selected(old('unit', $material?->unit?->value) === $unit->value)>
                     {{ $unit->label() }}
@@ -47,7 +47,7 @@
     </div>
 
     <div class="col-md-6">
-        <label for="minimum_stock" class="form-label">Minimum / Reorder Level</label>
+        <label for="minimum_stock" class="form-label">الحد الأدنى / حد إعادة الطلب</label>
         <input
             type="number"
             name="minimum_stock"
@@ -63,7 +63,7 @@
     </div>
 
     <div class="col-12">
-        <label for="description" class="form-label">Description</label>
+        <label for="description" class="form-label">الوصف</label>
         <textarea
             name="description"
             id="description"
@@ -77,7 +77,7 @@
 
     @if ($material)
         <div class="col-md-6">
-            <label for="status" class="form-label">Status <span class="text-danger">*</span></label>
+            <label for="status" class="form-label">الحالة <span class="text-danger">*</span></label>
             <select name="status" id="status" class="form-select @error('status') is-invalid @enderror" required>
                 @foreach (\App\Enums\MaterialStatus::cases() as $status)
                     <option value="{{ $status->value }}" @selected(old('status', $material->status->value) === $status->value)>

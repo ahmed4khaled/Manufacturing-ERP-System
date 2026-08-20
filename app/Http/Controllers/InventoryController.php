@@ -65,7 +65,7 @@ class InventoryController extends Controller
     {
         $movement = $action->handle($request->validated());
 
-        return redirect()->route('inventory.show', $movement->product_variant_id)->with('success', 'Opening stock recorded successfully.');
+        return redirect()->route('inventory.show', $movement->product_variant_id)->with('success', 'تم تسجيل الرصيد الافتتاحي بنجاح.');
     }
 
     public function createAdjustment(): View
@@ -79,6 +79,6 @@ class InventoryController extends Controller
     {
         $movement = $action->handle($request->validated());
 
-        return redirect()->route('inventory.show', $movement->product_variant_id)->with('success', 'Stock adjustment recorded successfully.');
+        return redirect()->route('inventory.show', $movement->product_variant_id)->with('success', 'تم تسجيل تسوية المخزون بنجاح.');
     }
 }

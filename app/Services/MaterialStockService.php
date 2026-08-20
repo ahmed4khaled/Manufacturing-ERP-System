@@ -101,7 +101,7 @@ class MaterialStockService
 
             if (bccomp($availableStock, (string) $requestedQuantity, 3) < 0) {
                 throw ValidationException::withMessages([
-                    'materials' => "Insufficient stock for material {$material?->code}. Available: {$availableStock}. Requested: {$requestedQuantity}.",
+                    'materials' => "الرصيد غير كافٍ للخامة {$material?->code}. المتاح: {$availableStock}. المطلوب: {$requestedQuantity}.",
                 ]);
             }
         }
@@ -125,7 +125,7 @@ class MaterialStockService
 
             if (bccomp($availableStock, (string) $data['quantity'], 3) < 0) {
                 throw ValidationException::withMessages([
-                    'quantity' => "Insufficient stock. Available: {$availableStock}. Requested: {$data['quantity']}.",
+                    'quantity' => "الرصيد غير كافٍ. المتاح: {$availableStock}. المطلوب: {$data['quantity']}.",
                 ]);
             }
         }
@@ -158,7 +158,7 @@ class MaterialStockService
             ->where('reference_id', $receipt->id)
             ->exists()) {
             throw ValidationException::withMessages([
-                'status' => 'Receipt inventory is already posted.',
+                'status' => 'تم ترحيل إذن الاستلام إلى المخزون بالفعل.',
             ]);
         }
 
@@ -174,7 +174,7 @@ class MaterialStockService
                 'reference_id' => $receipt->id,
                 'reference_number' => $receipt->receipt_number,
                 'movement_date' => $receipt->received_at->toDateString(),
-                'notes' => 'Goods Receipt',
+                'notes' => 'إذن استلام',
                 'user_id' => $receipt->received_by,
             ]);
         }
@@ -187,7 +187,7 @@ class MaterialStockService
             ->where('reference_id', $return->id)
             ->exists()) {
             throw ValidationException::withMessages([
-                'status' => 'Return inventory is already posted.',
+                'status' => 'تم ترحيل المرتجع إلى المخزون بالفعل.',
             ]);
         }
 
@@ -199,7 +199,7 @@ class MaterialStockService
                 'reference_id' => $return->id,
                 'reference_number' => $return->return_number,
                 'movement_date' => $return->return_date->toDateString(),
-                'notes' => 'Purchase Return',
+                'notes' => 'مرتجع مشتريات',
                 'user_id' => $return->created_by,
             ]);
         }
@@ -218,7 +218,7 @@ class MaterialStockService
 
         if (bccomp($availableStock, (string) $data['quantity'], 3) < 0) {
             throw ValidationException::withMessages([
-                'quantity' => "Insufficient stock. Available: {$availableStock}. Requested: {$data['quantity']}.",
+                'quantity' => "الرصيد غير كافٍ. المتاح: {$availableStock}. المطلوب: {$data['quantity']}.",
             ]);
         }
 
@@ -245,7 +245,7 @@ class MaterialStockService
     {
         if ($this->referenceAlreadyPosted($referenceType, $referenceId, $materialId)) {
             throw ValidationException::withMessages([
-                'reference' => 'A stock movement for this reference has already been posted for this material.',
+                'reference' => 'تم ترحيل حركة مخزون لهذا المرجع وهذه الخامة بالفعل.',
             ]);
         }
     }

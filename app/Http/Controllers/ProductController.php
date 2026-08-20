@@ -46,7 +46,7 @@ class ProductController extends Controller
 
         return redirect()
             ->route('products.show', $product)
-            ->with('success', 'Product created successfully.');
+            ->with('success', 'تم إنشاء الموديل بنجاح.');
     }
 
     public function show(Product $product): View
@@ -72,7 +72,7 @@ class ProductController extends Controller
 
         return redirect()
             ->route('products.show', $product)
-            ->with('success', 'Product updated successfully.');
+            ->with('success', 'تم تحديث الموديل بنجاح.');
     }
 
     public function destroy(
@@ -83,6 +83,6 @@ class ProductController extends Controller
 
         return redirect()
             ->route('products.index')
-            ->with('success', 'Product deleted successfully.');
+            ->with('success', 'تم حذف الموديل بنجاح.');
     }
 }

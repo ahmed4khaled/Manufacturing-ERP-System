@@ -1,6 +1,6 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Supplier Payment ' . ($supplierPayment->payment_number ?? ''))
+@section('title', 'دفعة مورد ' . ($supplierPayment->payment_number ?? ''))
 
 @section('content')
 
@@ -11,25 +11,25 @@
             <div class="d-flex align-items-center gap-2 mb-1">
 
                 <h1 class="h3 mb-0">
-                    {{ $supplierPayment->payment_number ?? 'Supplier Payment' }}
+                    {{ $supplierPayment->payment_number ?? 'دفعة مورد' }}
                 </h1>
 
                 @if ($supplierPayment->payment_type === 'advance')
 
                     <span class="badge bg-warning text-dark">
-                        Advance Payment
+                        دفعة مقدمة
                     </span>
 
                 @elseif ($supplierPayment->payment_type === 'invoice')
 
                     <span class="badge bg-primary">
-                        Invoice Payment
+                        سداد فاتورة
                     </span>
 
                 @else
 
                     <span class="badge bg-secondary">
-                        {{ ucfirst($supplierPayment->payment_type ?? 'Payment') }}
+                        {{ \App\Support\ArabicLabels::paymentType($supplierPayment->payment_type) }}
                     </span>
 
                 @endif
@@ -37,7 +37,7 @@
             </div>
 
             <p class="text-muted mb-0">
-                Supplier payment made by KONOZ
+                دفعة مورد مسجلة بواسطة KONOZ
             </p>
 
         </div>
@@ -55,7 +55,7 @@
                 class="btn btn-outline-dark"
             >
                 <i class="bi bi-printer me-1"></i>
-                Print Payment
+                طباعة الدفعة
             </a>
 
             <a
@@ -63,7 +63,7 @@
                 class="btn btn-outline-secondary"
             >
                 <i class="bi bi-arrow-left me-1"></i>
-                Back
+                رجوع
             </a>
 
         </div>
@@ -78,13 +78,13 @@
         <div class="col-lg-4">
 
 
-            {{-- Supplier --}}
+            {{-- المورد --}}
             <div class="card">
 
                 <div class="card-header bg-white">
 
                     <h5 class="card-title mb-0">
-                        Supplier
+                        المورد
                     </h5>
 
                 </div>
@@ -102,7 +102,7 @@
 
                         <div class="text-muted small mb-2">
 
-                            Code:
+                            الكود:
                             {{ $supplierPayment->supplier->code }}
 
                         </div>
@@ -114,7 +114,7 @@
 
                         <div class="text-muted small">
 
-                            Phone:
+                            الهاتف:
                             {{ $supplierPayment->supplier->phone }}
 
                         </div>
@@ -132,7 +132,7 @@
                 <div class="card-header bg-white">
 
                     <h5 class="card-title mb-0">
-                        Payment Information
+                        بيانات السداد
                     </h5>
 
                 </div>
@@ -143,7 +143,7 @@
                     <div class="d-flex justify-content-between mb-3">
 
                         <span class="text-muted">
-                            Payment Number
+                            رقم الدفعة
                         </span>
 
                         <strong>
@@ -156,7 +156,7 @@
                     <div class="d-flex justify-content-between mb-3">
 
                         <span class="text-muted">
-                            Payment Date
+                            تاريخ السداد
                         </span>
 
                         <strong>
@@ -174,18 +174,12 @@
                     <div class="d-flex justify-content-between mb-3">
 
                         <span class="text-muted">
-                            Payment Method
+                            طريقة الدفع
                         </span>
 
                         <strong>
 
-                            {{ ucfirst(
-                                str_replace(
-                                    '_',
-                                    ' ',
-                                    $supplierPayment->payment_method ?? ''
-                                )
-                            ) ?: '—' }}
+                            {{ \App\Support\ArabicLabels::paymentMethod($supplierPayment->payment_method) }}
 
                         </strong>
 
@@ -195,7 +189,7 @@
                     <div class="d-flex justify-content-between">
 
                         <span class="text-muted">
-                            Reference
+                            المرجع
                         </span>
 
                         <strong>
@@ -219,7 +213,7 @@
                     <div class="card-header bg-white">
 
                         <h5 class="card-title mb-0">
-                            Notes
+                            ملاحظات
                         </h5>
 
                     </div>
@@ -249,7 +243,7 @@
                 <div class="card-header bg-white">
 
                     <h5 class="card-title mb-0">
-                        Payment Details
+                        تفاصيل السداد
                     </h5>
 
                 </div>
@@ -261,28 +255,22 @@
                     <div class="d-flex justify-content-between mb-4">
 
                         <span class="text-muted">
-                            Payment Type
+                            نوع السداد
                         </span>
 
                         <strong>
 
                             @if ($supplierPayment->payment_type === 'advance')
 
-                                Advance Payment
+                                دفعة مقدمة
 
                             @elseif ($supplierPayment->payment_type === 'invoice')
 
-                                Invoice Payment
+                                سداد فاتورة
 
                             @else
 
-                                {{ ucfirst(
-                                    str_replace(
-                                        '_',
-                                        ' ',
-                                        $supplierPayment->payment_type ?? 'Payment'
-                                    )
-                                ) }}
+                                {{ \App\Support\ArabicLabels::paymentType($supplierPayment->payment_type) }}
 
                             @endif
 
@@ -295,7 +283,7 @@
                     <div class="d-flex justify-content-between mb-4">
 
                         <span class="text-muted">
-                            Purchase Order
+                            أمر الشراء
                         </span>
 
                         <strong>
@@ -307,7 +295,7 @@
                             @else
 
                                 <span class="text-muted">
-                                    Not linked
+                                    غير مرتبط
                                 </span>
 
                             @endif
@@ -317,11 +305,11 @@
                     </div>
 
 
-                    {{-- Supplier Invoice --}}
+                    {{-- فاتورة مورد --}}
                     <div class="d-flex justify-content-between mb-4">
 
                         <span class="text-muted">
-                            Supplier Invoice
+                            فاتورة مورد
                         </span>
 
                         <strong>
@@ -333,7 +321,7 @@
                             @else
 
                                 <span class="text-muted">
-                                    Not linked
+                                    غير مرتبط
                                 </span>
 
                             @endif
@@ -350,7 +338,7 @@
                     <div class="d-flex justify-content-between align-items-center">
 
                         <span class="fw-semibold fs-5">
-                            Amount Paid
+                            المبلغ المدفوع
                         </span>
 
                         <strong class="fs-3 text-primary">
@@ -360,7 +348,7 @@
                                 2
                             ) }}
 
-                            EGP
+                            ج.م
 
                         </strong>
 
@@ -377,7 +365,7 @@
                 <div class="card-header bg-white">
 
                     <h5 class="card-title mb-0">
-                        Payment Statement
+                        كشف المدفوعات
                     </h5>
 
                 </div>
@@ -387,38 +375,38 @@
                     <div class="alert alert-light border mb-0">
 
                         <div class="fw-semibold mb-2">
-                            Supplier Payment
+                            دفعة مورد
                         </div>
 
                         <div class="text-muted">
 
-                            KONOZ paid
+                            دفعت KONOZ
 
                             <strong>
                                 {{ number_format(
                                     (float) $supplierPayment->amount,
                                     2
                                 ) }}
-                                EGP
+                                ج.م
                             </strong>
 
-                            to
+                            إلى
 
                             <strong>
-                                {{ $supplierPayment->supplier?->name ?? 'the supplier' }}
+                                {{ $supplierPayment->supplier?->name ?? 'المورد' }}
                             </strong>
 
                             @if ($supplierPayment->payment_type === 'advance')
 
-                                as an advance payment.
+                                كدفعة مقدمة.
 
                             @elseif ($supplierPayment->payment_type === 'invoice')
 
-                                as payment against the supplier invoice.
+                                كسداد على فاتورة المورد.
 
                             @else
 
-                                as a supplier payment.
+                                كدفعة للمورد.
 
                             @endif
 
@@ -437,7 +425,7 @@
                 <div class="card-header bg-white">
 
                     <h5 class="card-title mb-0">
-                        References
+                        المراجع
                     </h5>
 
                 </div>
@@ -452,13 +440,13 @@
                             <div class="border rounded p-3">
 
                                 <div class="text-muted small mb-1">
-                                    Purchase Order
+                                    أمر الشراء
                                 </div>
 
                                 <div class="fw-semibold">
 
                                     {{ $supplierPayment->purchaseOrder?->purchase_order_number
-                                        ?? 'Not linked'
+                                        ?? 'غير مرتبط'
                                     }}
 
                                 </div>
@@ -473,13 +461,13 @@
                             <div class="border rounded p-3">
 
                                 <div class="text-muted small mb-1">
-                                    Supplier Invoice
+                                    فاتورة مورد
                                 </div>
 
                                 <div class="fw-semibold">
 
                                     {{ $supplierPayment->invoice?->invoice_number
-                                        ?? 'Not linked'
+                                        ?? 'غير مرتبط'
                                     }}
 
                                 </div>
@@ -507,7 +495,7 @@
             class="btn btn-outline-secondary"
         >
             <i class="bi bi-arrow-left me-1"></i>
-            Back to Supplier Payments
+            العودة إلى مدفوعات الموردين
         </a>
 
 
@@ -520,7 +508,7 @@
             class="btn btn-dark"
         >
             <i class="bi bi-printer me-1"></i>
-            Print Payment
+            طباعة الدفعة
         </a>
 
     </div>

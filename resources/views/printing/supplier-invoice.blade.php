@@ -8,7 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>
-        {{ $document->invoice_number ?? 'Supplier Invoice' }}
+        {{ $document->invoice_number ?? 'فاتورة مورد' }}
     </title>
 
     <style>
@@ -452,7 +452,7 @@
     <div class="info-grid">
 
 
-        {{-- Supplier --}}
+        {{-- المورد --}}
 
         <div class="box">
 
@@ -624,11 +624,7 @@
 
                     <div class="po-info-value">
 
-                        {{ str_replace(
-                            '_',
-                            ' ',
-                            ucfirst($document->purchaseOrder->status ?? '—')
-                        ) }}
+                        {{ \App\Support\ArabicLabels::status($document->purchaseOrder->status) }}
 
                     </div>
 
@@ -1092,13 +1088,7 @@
 
                             <td>
 
-                                {{ ucfirst(
-                                    str_replace(
-                                        '_',
-                                        ' ',
-                                        $payment->payment_method ?? ''
-                                    )
-                                ) }}
+                                {{ \App\Support\ArabicLabels::paymentMethod($payment->payment_method) }}
 
                             </td>
 

@@ -389,7 +389,7 @@
     <div class="info-grid">
 
 
-        {{-- Supplier --}}
+        {{-- المورد --}}
 
         <div class="box">
 
@@ -472,13 +472,7 @@
 
                 <span class="value">
 
-                    {{ ucfirst(
-                        str_replace(
-                            '_',
-                            ' ',
-                            $document->payment_method ?? ''
-                        )
-                    ) ?: '—' }}
+                    {{ \App\Support\ArabicLabels::paymentMethod($document->payment_method) }}
 
                 </span>
 
@@ -576,13 +570,7 @@
 
                     <div class="po-value">
 
-                        {{ str_replace(
-                            '_',
-                            ' ',
-                            ucfirst(
-                                $document->purchaseOrder->status ?? '—'
-                            )
-                        ) }}
+                        {{ \App\Support\ArabicLabels::status($document->purchaseOrder->status) }}
 
                     </div>
 
@@ -861,13 +849,7 @@
 
             @else
 
-                {{ ucfirst(
-                    str_replace(
-                        '_',
-                        ' ',
-                        $document->payment_type ?? '—'
-                    )
-                ) }}
+                {{ \App\Support\ArabicLabels::paymentType($document->payment_type) }}
 
             @endif
 

@@ -1,16 +1,16 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Material Inventory - ' . config('app.name'))
+@section('title', 'مخزون الخامات - ' . config('app.name'))
 
 @section('content')
     <div class="page-header d-flex flex-wrap justify-content-between align-items-center gap-3">
         <div>
-            <h1 class="h3 mb-1">Material Inventory</h1>
-            <p class="text-muted mb-0">Current stock by raw material</p>
+            <h1 class="h3 mb-1">مخزون الخامات</h1>
+            <p class="text-muted mb-0">الرصيد الحالي حسب الخامة</p>
         </div>
         <div class="d-flex gap-2">
-            <a href="{{ route('material-inventory.opening-stock.create') }}" class="btn btn-outline-primary">Opening Stock</a>
-            <a href="{{ route('material-inventory.adjustments.create') }}" class="btn btn-primary">Stock Adjustment</a>
+            <a href="{{ route('material-inventory.opening-stock.create') }}" class="btn btn-outline-primary">الرصيد الافتتاحي</a>
+            <a href="{{ route('material-inventory.adjustments.create') }}" class="btn btn-primary">تسوية المخزون</a>
         </div>
     </div>
 
@@ -20,12 +20,12 @@
                 <div class="col-md-4">
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-search"></i></span>
-                        <input name="search" class="form-control" value="{{ request('search') }}" placeholder="Code, name...">
+                        <input name="search" class="form-control" value="{{ request('search') }}" placeholder="الكود أو الاسم...">
                     </div>
                 </div>
                 <div class="col-md-3">
                     <select name="category" class="form-select">
-                        <option value="">All Categories</option>
+                        <option value="">كل التصنيفات</option>
                         @foreach (\App\Enums\MaterialCategory::cases() as $category)
                             <option value="{{ $category->value }}" @selected(request('category') === $category->value)>{{ $category->label() }}</option>
                         @endforeach
@@ -33,16 +33,16 @@
                 </div>
                 <div class="col-md-3">
                     <select name="status" class="form-select">
-                        <option value="">All Statuses</option>
+                        <option value="">كل الحالات</option>
                         @foreach (\App\Enums\MaterialStatus::cases() as $status)
                             <option value="{{ $status->value }}" @selected(request('status') === $status->value)>{{ $status->label() }}</option>
                         @endforeach
                     </select>
                 </div>
                 <div class="col-auto">
-                    <button class="btn btn-primary">Filter</button>
+                    <button class="btn btn-primary">تصفية</button>
                     @if(request()->hasAny(['search', 'category', 'status']))
-                        <a href="{{ route('material-inventory.index') }}" class="btn btn-outline-secondary">Clear</a>
+                        <a href="{{ route('material-inventory.index') }}" class="btn btn-outline-secondary">مسح الفلاتر</a>
                     @endif
                 </div>
             </form>
@@ -51,13 +51,13 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead>
                         <tr>
-                            <th>Code</th>
-                            <th>Name</th>
-                            <th>Category</th>
-                            <th>Unit</th>
-                            <th class="text-end">Current Stock</th>
-                            <th class="text-end">Min. Level</th>
-                            <th>Status</th>
+                            <th>الكود</th>
+                            <th>الاسم</th>
+                            <th>التصنيف</th>
+                            <th>الوحدة</th>
+                            <th class="text-end">الرصيد الحالي</th>
+                            <th class="text-end">الحد الأدنى</th>
+                            <th>الحالة</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -80,17 +80,17 @@
                                 <td class="text-end">{{ $material->minimum_stock }}</td>
                                 <td>
                                     @if($isLowStock)
-                                        <span class="badge bg-warning text-dark">Low Stock</span>
+                                        <span class="badge bg-warning text-dark">مخزون منخفض</span>
                                     @elseif(bccomp($material->current_stock, '0', 3) > 0)
-                                        <span class="badge bg-success">In Stock</span>
+                                        <span class="badge bg-success">متوفر</span>
                                     @else
-                                        <span class="badge bg-secondary">Out of Stock</span>
+                                        <span class="badge bg-secondary">غير متوفر</span>
                                     @endif
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="text-center text-muted py-5">No materials found.</td>
+                                <td colspan="7" class="text-center text-muted py-5">لا توجد خامات.</td>
                             </tr>
                         @endforelse
                     </tbody>

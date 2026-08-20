@@ -39,7 +39,7 @@ class CustomerController extends Controller
 
         return redirect()
             ->route('customers.show', $customer)
-            ->with('success', 'Customer created successfully.');
+            ->with('success', 'تم إنشاء العميل بنجاح.');
     }
 
     public function show(Customer $customer, CustomerLedgerService $ledgerService): View
@@ -85,7 +85,7 @@ class CustomerController extends Controller
 
         return redirect()
             ->route('customers.show', $customer)
-            ->with('success', 'Customer updated successfully.');
+            ->with('success', 'تم تحديث العميل بنجاح.');
     }
 
     public function destroy(
@@ -96,6 +96,6 @@ class CustomerController extends Controller
 
         return redirect()
             ->route('customers.index')
-            ->with('success', 'Customer deleted successfully.');
+            ->with('success', 'تم حذف العميل بنجاح.');
     }
 }

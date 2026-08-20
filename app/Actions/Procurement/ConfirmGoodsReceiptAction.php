@@ -24,7 +24,7 @@ class ConfirmGoodsReceiptAction
 
             if ($receipt->status !== 'draft') {
                 throw ValidationException::withMessages([
-                    'status' => 'Only draft receipts can be confirmed.',
+                    'status' => 'لا يمكن تأكيد إلا السندات المسودة.',
                 ]);
             }
 
@@ -59,7 +59,7 @@ PurchaseOrderItem::query()
                     ->exists()
             ) {
                 throw ValidationException::withMessages([
-                    'status' => 'Receipt inventory is already posted.',
+                    'status' => 'تم ترحيل إذن الاستلام إلى المخزون بالفعل.',
                 ]);
             }
 
@@ -76,7 +76,7 @@ PurchaseOrderItem::query()
                     $item->purchaseOrderItem->purchase_order_id !== $receipt->purchase_order_id
                 ) {
                     throw ValidationException::withMessages([
-                        'items' => 'Receipt items must belong to the referenced purchase order.',
+                        'items' => 'يجب أن تتبع بنود الاستلام أمر الشراء المرجعي.',
                     ]);
                 }
 
@@ -85,7 +85,7 @@ PurchaseOrderItem::query()
                     (int) $item->purchaseOrderItem->material_id
                 ) {
                     throw ValidationException::withMessages([
-                        'items' => 'Receipt item material must match the purchase order item.',
+                        'items' => 'يجب أن تطابق خامة بند الاستلام خامة بند أمر الشراء.',
                     ]);
                 }
 
@@ -103,7 +103,7 @@ $ordered = (string) $item->ordered_quantity;
 
 if (bccomp($newAccepted, $ordered, 3) > 0) {
     throw ValidationException::withMessages([
-        'items' => 'Accepted quantity exceeds the remaining PO quantity.'
+        'items' => 'الكمية المقبولة تتجاوز الكمية المتبقية في أمر الشراء.'
     ]);
 }
 
@@ -122,7 +122,7 @@ if (bccomp($newAccepted, $ordered, 3) > 0) {
                     ) !== 0
                 ) {
                     throw ValidationException::withMessages([
-                        'items' => 'Accepted and rejected quantities must equal received quantity.',
+                        'items' => 'يجب أن يساوي مجموع الكمية المقبولة والمرفوضة الكمية المستلمة.',
                     ]);
                 }
             }

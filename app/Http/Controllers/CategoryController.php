@@ -39,7 +39,7 @@ class CategoryController extends Controller
 
         return redirect()
             ->route('categories.show', $category)
-            ->with('success', 'Category created successfully.');
+            ->with('success', 'تم إنشاء التصنيف بنجاح.');
     }
 
     public function show(Category $category): View
@@ -63,7 +63,7 @@ class CategoryController extends Controller
 
         return redirect()
             ->route('categories.show', $category)
-            ->with('success', 'Category updated successfully.');
+            ->with('success', 'تم تحديث التصنيف بنجاح.');
     }
 
     public function destroy(
@@ -74,6 +74,6 @@ class CategoryController extends Controller
 
         return redirect()
             ->route('categories.index')
-            ->with('success', 'Category deleted successfully.');
+            ->with('success', 'تم حذف التصنيف بنجاح.');
     }
 }

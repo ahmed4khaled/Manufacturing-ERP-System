@@ -15,13 +15,13 @@ enum MaterialCategory: string
     public function label(): string
     {
         return match ($this) {
-            self::FABRIC => 'Fabric',
-            self::THREAD => 'Thread',
-            self::ZIPPER => 'Zipper',
-            self::BUTTON => 'Button',
-            self::LINING => 'Lining',
-            self::PACKAGING => 'Packaging',
-            self::OTHER => 'Other',
+            self::FABRIC => 'قماش',
+            self::THREAD => 'خيط',
+            self::ZIPPER => 'سحّاب',
+            self::BUTTON => 'زر',
+            self::LINING => 'بطانة',
+            self::PACKAGING => 'تغليف',
+            self::OTHER => 'أخرى',
         };
     }
 }

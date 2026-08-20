@@ -24,31 +24,31 @@ class ConfirmPaymentReceiptAction
 
             if ($receipt->status === PaymentReceiptStatus::CONFIRMED) {
                 throw ValidationException::withMessages([
-                    'status' => 'This receipt is already confirmed.',
+                    'status' => 'هذا السند مؤكد بالفعل.',
                 ]);
             }
 
             if ($receipt->status === PaymentReceiptStatus::CANCELLED) {
                 throw ValidationException::withMessages([
-                    'status' => 'Cancelled receipts cannot be confirmed.',
+                    'status' => 'لا يمكن تأكيد سند ملغي.',
                 ]);
             }
 
             if ($receipt->status !== PaymentReceiptStatus::DRAFT) {
                 throw ValidationException::withMessages([
-                    'status' => 'Only draft receipts can be confirmed.',
+                    'status' => 'لا يمكن تأكيد إلا السندات المسودة.',
                 ]);
             }
 
             if (! Customer::query()->whereKey($receipt->customer_id)->exists()) {
                 throw ValidationException::withMessages([
-                    'customer_id' => 'The selected customer does not exist.',
+                    'customer_id' => 'العميل المحدد غير موجود.',
                 ]);
             }
 
             if ((float) $receipt->amount <= 0) {
                 throw ValidationException::withMessages([
-                    'amount' => 'Cannot confirm a receipt with zero or negative amount.',
+                    'amount' => 'لا يمكن تأكيد سند بمبلغ صفر أو سالب.',
                 ]);
             }
 
@@ -59,7 +59,7 @@ class ConfirmPaymentReceiptAction
 
             if ($alreadyPosted) {
                 throw ValidationException::withMessages([
-                    'status' => 'A ledger entry already exists for this receipt.',
+                    'status' => 'يوجد قيد حساب مسجل بالفعل لهذا السند.',
                 ]);
             }
 
@@ -71,7 +71,7 @@ class ConfirmPaymentReceiptAction
                 'reference_id' => $receipt->id,
                 'reference_number' => $receipt->receipt_number,
                 'transaction_date' => $receipt->payment_date,
-                'description' => 'Customer Payment Receipt',
+                'description' => 'سند قبض عميل',
                 'debit' => 0,
                 'credit' => $receipt->amount,
                 'created_by' => auth()->id(),

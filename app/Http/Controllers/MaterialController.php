@@ -48,7 +48,7 @@ class MaterialController extends Controller
 
         return redirect()
             ->route('materials.show', $material)
-            ->with('success', 'Material created successfully.');
+            ->with('success', 'تم إنشاء الخامة بنجاح.');
     }
 
     public function show(Material $material): View
@@ -70,7 +70,7 @@ class MaterialController extends Controller
 
         return redirect()
             ->route('materials.show', $material)
-            ->with('success', 'Material updated successfully.');
+            ->with('success', 'تم تحديث الخامة بنجاح.');
     }
 
     public function destroy(
@@ -81,6 +81,6 @@ class MaterialController extends Controller
 
         return redirect()
             ->route('materials.index')
-            ->with('success', 'Material deleted successfully.');
+            ->with('success', 'تم حذف الخامة بنجاح.');
     }
 }

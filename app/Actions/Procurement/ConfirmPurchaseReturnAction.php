@@ -19,14 +19,14 @@ class ConfirmPurchaseReturnAction
         return DB::transaction(function () use ($return) {
             $return = PurchaseReturn::query()->lockForUpdate()->findOrFail($return->id);
             if ($return->status !== 'draft') {
-                throw ValidationException::withMessages(['status' => 'Only draft returns can be confirmed.']);
+                throw ValidationException::withMessages(['status' => 'لا يمكن تأكيد إلا المرتجعات المسودة.']);
             }
 
             if (MaterialStockMovement::query()
                 ->where('reference_type', PurchaseReturn::class)
                 ->where('reference_id', $return->id)
                 ->exists()) {
-                throw ValidationException::withMessages(['status' => 'Return inventory is already posted.']);
+                throw ValidationException::withMessages(['status' => 'تم ترحيل المرتجع إلى المخزون بالفعل.']);
             }
 
             $return->load(['items', 'goodsReceipt.items']);
@@ -50,7 +50,7 @@ class ConfirmPurchaseReturnAction
 
                 if (! $receiptItem) {
                     throw ValidationException::withMessages([
-                        'items' => 'One or more return items do not belong to the referenced goods receipt.',
+                        'items' => 'بند واحد أو أكثر من المرتجع لا يتبع إذن الاستلام المرجعي.',
                     ]);
                 }
 
@@ -59,7 +59,7 @@ class ConfirmPurchaseReturnAction
 
                 if (bccomp($remainingFromReceipt, (string) $item->quantity, 3) < 0) {
                     throw ValidationException::withMessages([
-                        'items' => 'Return quantity exceeds the accepted quantity available from this receipt.',
+                        'items' => 'كمية المرتجع تتجاوز الكمية المقبولة والمتاحة من إذن الاستلام.',
                     ]);
                 }
 
@@ -67,7 +67,7 @@ class ConfirmPurchaseReturnAction
                 $available = $this->materialStock->getCurrentStock($material);
 
                 if (bccomp($available, (string) $item->quantity, 3) < 0) {
-                    throw ValidationException::withMessages(['items' => 'Return quantity exceeds available material stock.']);
+                    throw ValidationException::withMessages(['items' => 'كمية المرتجع تتجاوز الرصيد المتاح من الخامة.']);
                 }
             }
 

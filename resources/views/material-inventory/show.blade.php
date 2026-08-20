@@ -1,6 +1,6 @@
 @extends('layouts.dashboard')
 
-@section('title', $material->code . ' Material Inventory')
+@section('title', $material->code . ' مخزون الخامات')
 
 @section('content')
     <div class="page-header d-flex flex-wrap justify-content-between align-items-center gap-3">
@@ -9,8 +9,8 @@
             <p class="text-muted mb-0">{{ $material->code }} — {{ $material->category->label() }} ({{ $material->unit->label() }})</p>
         </div>
         <div class="d-flex gap-2">
-            <a href="{{ route('material-inventory.opening-stock.create') }}" class="btn btn-outline-primary">Opening Stock</a>
-            <a href="{{ route('material-inventory.adjustments.create') }}" class="btn btn-primary">Adjustment</a>
+            <a href="{{ route('material-inventory.opening-stock.create') }}" class="btn btn-outline-primary">الرصيد الافتتاحي</a>
+            <a href="{{ route('material-inventory.adjustments.create') }}" class="btn btn-primary">التسوية</a>
         </div>
     </div>
 
@@ -18,7 +18,7 @@
         <div class="col-md-4">
             <div class="card h-100">
                 <div class="card-body">
-                    <p class="text-muted small mb-1">Current Stock</p>
+                    <p class="text-muted small mb-1">الرصيد الحالي</p>
                     <p class="mb-0 fw-semibold fs-2 {{ bccomp($currentStock, '0', 3) > 0 ? 'text-success' : 'text-danger' }}">
                         {{ $currentStock }} <span class="fs-6 text-muted">{{ $material->unit->label() }}</span>
                     </p>
@@ -28,7 +28,7 @@
         <div class="col-md-4">
             <div class="card h-100">
                 <div class="card-body">
-                    <p class="text-muted small mb-1">Minimum / Reorder Level</p>
+                    <p class="text-muted small mb-1">الحد الأدنى / حد إعادة الطلب</p>
                     <p class="mb-0 fw-semibold">{{ $material->minimum_stock }} {{ $material->unit->label() }}</p>
                 </div>
             </div>
@@ -36,7 +36,7 @@
         <div class="col-md-4">
             <div class="card h-100">
                 <div class="card-body">
-                    <p class="text-muted small mb-1">Status</p>
+                    <p class="text-muted small mb-1">الحالة</p>
                     <p class="mb-0">
                         <span class="badge bg-{{ $material->status->badgeClass() }}">{{ $material->status->label() }}</span>
                     </p>
@@ -46,25 +46,25 @@
     </div>
 
     <div class="card">
-        <div class="card-header bg-white"><h5 class="card-title mb-0">Stock Movement History</h5></div>
+        <div class="card-header bg-white"><h5 class="card-title mb-0">سجل حركات المخزون</h5></div>
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th>Date</th>
-                            <th>Reference</th>
-                            <th>Type</th>
-                            <th>Direction</th>
-                            <th class="text-end">Quantity</th>
-                            <th>Notes</th>
-                            <th class="text-end">Running Stock</th>
+                            <th>التاريخ</th>
+                            <th>المرجع</th>
+                            <th>النوع</th>
+                            <th>الاتجاه</th>
+                            <th class="text-end">الكمية</th>
+                            <th>ملاحظات</th>
+                            <th class="text-end">الرصيد التراكمي</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($movements as $movement)
                             <tr>
-                                <td>{{ $movement->movement_date->format('M d, Y') }}</td>
+                                <td>{{ $movement->movement_date->format('Y-m-d') }}</td>
                                 <td><code>{{ $movement->reference_number ?? '-' }}</code></td>
                                 <td>{{ $movement->movement_type->label() }}</td>
                                 <td>
@@ -80,7 +80,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="text-center text-muted py-5">No stock movements found.</td>
+                                <td colspan="7" class="text-center text-muted py-5">لا توجد حركات مخزون.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -95,6 +95,6 @@
     </div>
 
     <div class="mt-3">
-        <a href="{{ route('material-inventory.index') }}" class="btn btn-outline-secondary">Back to Material Inventory</a>
+        <a href="{{ route('material-inventory.index') }}" class="btn btn-outline-secondary">العودة إلى مخزون الخامات</a>
     </div>
 @endsection

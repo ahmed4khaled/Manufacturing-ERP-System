@@ -32,7 +32,7 @@ class UpdateSalesInvoiceRequest extends FormRequest
             $products = $this->input('products', []);
 
             if (empty($products)) {
-                $validator->errors()->add('products', 'At least one product must be added to the invoice.');
+                $validator->errors()->add('products', 'يجب إضافة منتج واحد على الأقل إلى الفاتورة.');
 
                 return;
             }
@@ -44,7 +44,7 @@ class UpdateSalesInvoiceRequest extends FormRequest
                 if (! $hasQuantity) {
                     $validator->errors()->add(
                         "products.{$index}.variants",
-                        'Each product must contain at least one variant with quantity greater than zero.'
+                        'يجب أن يحتوي كل منتج على متغير واحد على الأقل بكمية أكبر من صفر.'
                     );
                 }
             }

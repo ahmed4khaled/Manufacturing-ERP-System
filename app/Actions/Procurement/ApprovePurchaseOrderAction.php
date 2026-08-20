@@ -19,39 +19,39 @@ class ApprovePurchaseOrderAction
 
             // Validate status
             if ($po->status === 'cancelled') {
-                throw ValidationException::withMessages(['status' => 'Cancelled purchase orders cannot be approved.']);
+                throw ValidationException::withMessages(['status' => 'لا يمكن اعتماد أمر شراء ملغي.']);
             }
 
             if ($po->status === 'approved') {
-                throw ValidationException::withMessages(['status' => 'This purchase order has already been approved.']);
+                throw ValidationException::withMessages(['status' => 'تم اعتماد أمر الشراء هذا بالفعل.']);
             }
 
             if ($po->status !== 'draft') {
-                throw ValidationException::withMessages(['status' => 'Only draft purchase orders can be approved.']);
+                throw ValidationException::withMessages(['status' => 'لا يمكن اعتماد إلا أوامر الشراء المسودة.']);
             }
 
             // Validate has items
             if ($po->items->isEmpty()) {
-                throw ValidationException::withMessages(['items' => 'Purchase order must have at least one item.']);
+                throw ValidationException::withMessages(['items' => 'يجب أن يحتوي أمر الشراء على بند واحد على الأقل.']);
             }
 
             // Validate supplier
             if (! $po->supplier || $po->supplier->trashed()) {
-                throw ValidationException::withMessages(['supplier_id' => 'Supplier is invalid or has been deleted.']);
+                throw ValidationException::withMessages(['supplier_id' => 'المورد غير صالح أو تم حذفه.']);
             }
 
             // Validate all items have valid active materials
             foreach ($po->items as $item) {
                 if (! $item->material) {
-                    throw ValidationException::withMessages(['items' => 'One or more materials have been deleted.']);
+                    throw ValidationException::withMessages(['items' => 'تم حذف خامة واحدة أو أكثر من البنود.']);
                 }
 
                 if ($item->material->trashed()) {
-                    throw ValidationException::withMessages(['items' => 'Material ' . $item->material->name . ' has been deleted.']);
+                    throw ValidationException::withMessages(['items' => 'تم حذف الخامة «' . $item->material->name . '».']);
                 }
 
                 if ($item->material->status !== MaterialStatus::ACTIVE) {
-                    throw ValidationException::withMessages(['items' => 'Material ' . $item->material->name . ' is not active.']);
+                    throw ValidationException::withMessages(['items' => 'الخامة «' . $item->material->name . '» غير نشطة.']);
                 }
             }
 

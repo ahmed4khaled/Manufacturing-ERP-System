@@ -52,7 +52,7 @@ class DocumentPrinter
     'printing.customer_statement',
             default =>
                 throw new InvalidArgumentException(
-                    "Unsupported printable document type: {$type}"
+                    "نوع المستند غير مدعوم للطباعة: {$type}"
                 ),
         };
     }

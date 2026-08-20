@@ -507,7 +507,7 @@
             <br>
             <strong>01126201412</strong>
             &nbsp; | &nbsp;
-            <strong>WhatsApp / Phone
+            <strong>واتساب / الهاتف
             </strong>
         </div>
 

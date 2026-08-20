@@ -1,9 +1,9 @@
 @extends('layouts.dashboard')
-@section('title', 'Create Goods Receipt')
+@section('title', 'إنشاء إذن استلام')
 @section('content')
 <div class="page-header">
-    <h1 class="h3 mb-1">Create Goods Receipt</h1>
-    <p class="text-muted">Record accepted and rejected material quantities against an approved PO.</p>
+    <h1 class="h3 mb-1">إنشاء إذن استلام</h1>
+    <p class="text-muted">سجّل كميات الخامات المقبولة والمرفوضة مقابل أمر شراء معتمد.</p>
 </div>
 
 <form method="POST" action="{{ route('goods-receipts.store') }}">
@@ -12,9 +12,9 @@
         <div class="card-body">
             <div class="row g-3">
                 <div class="col-md-6">
-                    <label class="form-label">Purchase Order *</label>
+                    <label class="form-label">أمر الشراء *</label>
                     <select name="purchase_order_id" id="po" class="form-select" required>
-                        <option value="">Select order</option>
+                        <option value="">اختر أمر الشراء</option>
                         @foreach($orders as $order)
                             <option value="{{ $order->id }}">
                                 {{ $order->purchase_order_number }} — {{ $order->supplier->name }}
@@ -23,7 +23,7 @@
                     </select>
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label">Received At *</label>
+                    <label class="form-label">تاريخ الاستلام *</label>
                     <input 
                         type="datetime-local" 
                         name="received_at" 
@@ -33,7 +33,7 @@
                     >
                 </div>
                 <div class="col-12">
-                    <label class="form-label">Notes</label>
+                    <label class="form-label">ملاحظات</label>
                     <textarea name="notes" class="form-control"></textarea>
                 </div>
             </div>
@@ -42,12 +42,12 @@
                 <table class="table">
                     <thead>
                         <tr>
-                            <th>Material</th>
-                            <th>Ordered</th>
-                            <th>Received</th>
-                            <th>Accepted</th>
-                            <th>Rejected</th>
-                            <th>Unit Cost</th>
+                            <th>الخامة</th>
+                            <th>المطلوب</th>
+                            <th>المستلم</th>
+                            <th>المقبول</th>
+                            <th>المرفوض</th>
+                            <th>تكلفة الوحدة</th>
                         </tr>
                     </thead>
                     <tbody id="items"></tbody>
@@ -56,7 +56,7 @@
         </div>
     </div>
 
-    <button type="submit" class="btn btn-primary mt-3">Save Receipt Draft</button>
+    <button type="submit" class="btn btn-primary mt-3">حفظ السند كمسودة</button>
 </form>
 
 @push('scripts')
@@ -120,7 +120,7 @@
             tbody.innerHTML = `
                 <tr>
                     <td colspan="6" class="text-center text-muted py-4">
-                        All ordered quantities have been accepted.
+                        تم قبول جميع الكميات المطلوبة.
                     </td>
                 </tr>
             `;
@@ -236,13 +236,13 @@
                 if (total > receivedValue) {
 
                     rejected.setCustomValidity(
-                        'Accepted + Rejected cannot exceed Received.'
+                        'لا يمكن أن يتجاوز مجموع المقبول والمرفوض الكمية المستلمة.'
                     );
 
                 } else if (total < receivedValue) {
 
                     rejected.setCustomValidity(
-                        'Accepted + Rejected must equal Received.'
+                        'يجب أن يساوي مجموع المقبول والمرفوض الكمية المستلمة.'
                     );
 
                 } else {

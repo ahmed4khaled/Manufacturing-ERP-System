@@ -1,6 +1,6 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Supplier Payments')
+@section('title', 'مدفوعات الموردين')
 
 @section('content')
 
@@ -8,11 +8,11 @@
 
         <div>
             <h1 class="h3 mb-1">
-                Supplier Payments
+                مدفوعات الموردين
             </h1>
 
             <p class="text-muted mb-0">
-                Payment history for supplier invoices and advances
+                سجل مدفوعات فواتير الموردين والدفعات المقدمة
             </p>
         </div>
 
@@ -21,7 +21,7 @@
             class="btn btn-primary"
         >
             <i class="bi bi-plus-lg me-1"></i>
-            Record Payment
+            تسجيل دفعة
         </a>
 
     </div>
@@ -40,43 +40,43 @@
                         <tr>
 
                             <th>
-                                Payment No.
+                                رقم الدفعة
                             </th>
 
                             <th>
-                                Date
+                                التاريخ
                             </th>
 
                             <th>
-                                Supplier
+                                المورد
                             </th>
 
                             <th>
-                                Type
+                                النوع
                             </th>
 
                             <th>
-                                Purchase Order
+                                أمر الشراء
                             </th>
 
                             <th>
-                                Invoice
+                                الفاتورة
                             </th>
 
                             <th>
-                                Method
+                                الطريقة
                             </th>
 
                             <th>
-                                Reference
+                                المرجع
                             </th>
 
                             <th class="text-end">
-                                Amount
+                                المبلغ
                             </th>
 
                             <th class="text-end">
-                                Actions
+                                الإجراءات
                             </th>
 
                         </tr>
@@ -111,7 +111,7 @@
                                 </td>
 
 
-                                {{-- Supplier --}}
+                                {{-- المورد --}}
                                 <td>
 
                                     {{ $payment->supplier?->name ?? '—' }}
@@ -125,19 +125,19 @@
                                     @if($payment->payment_type === 'advance')
 
                                         <span class="badge bg-warning text-dark">
-                                            Advance
+                                            دفعة مقدمة
                                         </span>
 
                                     @elseif($payment->payment_type === 'invoice')
 
                                         <span class="badge bg-primary">
-                                            Invoice Payment
+                                            سداد فاتورة
                                         </span>
 
                                     @else
 
                                         <span class="badge bg-secondary">
-                                            {{ ucfirst($payment->payment_type ?? 'Unknown') }}
+                                            {{ \App\Support\ArabicLabels::paymentType($payment->payment_type) }}
                                         </span>
 
                                     @endif
@@ -163,7 +163,7 @@
                                 </td>
 
 
-                                {{-- Supplier Invoice --}}
+                                {{-- فاتورة مورد --}}
                                 <td>
 
                                     @if($payment->invoice)
@@ -173,7 +173,7 @@
                                     @else
 
                                         <span class="text-muted">
-                                            Not linked
+                                            غير مرتبط
                                         </span>
 
                                     @endif
@@ -184,13 +184,7 @@
                                 {{-- Payment Method --}}
                                 <td>
 
-                                    {{ ucfirst(
-                                        str_replace(
-                                            '_',
-                                            ' ',
-                                            $payment->payment_method ?? ''
-                                        )
-                                    ) ?: '—' }}
+                                    {{ \App\Support\ArabicLabels::paymentMethod($payment->payment_method) }}
 
                                 </td>
 
@@ -213,7 +207,7 @@
                                             2
                                         ) }}
 
-                                        EGP
+                                        ج.م
 
                                     </strong>
 
@@ -233,7 +227,7 @@
                                                 $payment
                                             ) }}"
                                             class="btn btn-sm btn-outline-primary"
-                                            title="View Payment"
+                                            title="عرض الدفعة"
                                         >
                                             <i class="bi bi-eye"></i>
                                         </a>
@@ -247,7 +241,7 @@
                                             ) }}"
                                             target="_blank"
                                             class="btn btn-sm btn-outline-dark"
-                                            title="Print Payment"
+                                            title="طباعة الدفعة"
                                         >
                                             <i class="bi bi-printer"></i>
                                         </a>
@@ -266,7 +260,7 @@
                                     colspan="10"
                                     class="text-center text-muted py-5"
                                 >
-                                    No supplier payments yet.
+                                    لا توجد مدفوعات موردين حتى الآن.
                                 </td>
 
                             </tr>

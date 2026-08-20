@@ -38,7 +38,7 @@ class CreateProductVariantAction
 
             if (ProductVariant::query()->where('sku', $sku)->exists()) {
                 throw ValidationException::withMessages([
-                    'size_id' => 'A variant with this SKU combination already exists.',
+                    'size_id' => 'يوجد متغير منتج بالفعل بنفس تركيبة رمز المخزون.',
                 ]);
             }
 

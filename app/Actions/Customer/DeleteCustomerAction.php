@@ -24,7 +24,7 @@ class DeleteCustomerAction
             if ($balance > 0.001) {
                 throw ValidationException::withMessages([
                     'customer' => sprintf(
-                        'Cannot delete this customer because they have an outstanding balance of %.2f EGP.',
+                        'لا يمكن حذف هذا العميل لوجود رصيد مستحق بقيمة %.2f ج.م.',
                         $balance
                     ),
                 ]);

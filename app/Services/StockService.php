@@ -108,7 +108,7 @@ class StockService
 
             if (bccomp($availableStock, (string) $requestedQuantity, 3) < 0) {
                 throw ValidationException::withMessages([
-                    'products' => "Insufficient stock for variant {$variant?->sku}. Available: {$availableStock}. Requested: {$requestedQuantity}.",
+                    'products' => "الرصيد غير كافٍ للمتغير {$variant?->sku}. المتاح: {$availableStock}. المطلوب: {$requestedQuantity}.",
                 ]);
             }
         }
@@ -132,7 +132,7 @@ class StockService
 
             if (bccomp($availableStock, (string) $data['quantity'], 3) < 0) {
                 throw ValidationException::withMessages([
-                    'quantity' => "Insufficient stock. Available: {$availableStock}. Requested: {$data['quantity']}.",
+                    'quantity' => "الرصيد غير كافٍ. المتاح: {$availableStock}. المطلوب: {$data['quantity']}.",
                 ]);
             }
         }
@@ -156,7 +156,7 @@ class StockService
                 'reference_id' => $invoice->id,
                 'reference_number' => $invoice->invoice_number,
                 'movement_date' => $invoice->invoice_date,
-                'notes' => 'Sales Invoice',
+                'notes' => 'فاتورة مبيعات',
                 'user_id' => auth()->id(),
             ]);
         }
@@ -174,7 +174,7 @@ class StockService
                 'reference_id' => $invoice->id,
                 'reference_number' => $invoice->invoice_number,
                 'movement_date' => now()->toDateString(),
-                'notes' => 'Sales Invoice Cancellation',
+                'notes' => 'إلغاء فاتورة مبيعات',
                 'user_id' => auth()->id(),
             ]);
         }
@@ -186,14 +186,14 @@ class StockService
             if (bccomp((string) $item->accepted_quantity, '0', 3) <= 0) {
                 continue;
             }
-            $this->createMovement(['product_variant_id'=>$item->product_variant_id,'movement_type'=>StockMovementType::PURCHASE_RECEIPT,'direction'=>StockMovementDirection::IN,'quantity'=>$item->accepted_quantity,'reference_type'=>GoodsReceipt::class,'reference_id'=>$receipt->id,'reference_number'=>$receipt->receipt_number,'movement_date'=>$receipt->received_at->toDateString(),'notes'=>'Goods Receipt','user_id'=>$receipt->received_by]);
+            $this->createMovement(['product_variant_id'=>$item->product_variant_id,'movement_type'=>StockMovementType::PURCHASE_RECEIPT,'direction'=>StockMovementDirection::IN,'quantity'=>$item->accepted_quantity,'reference_type'=>GoodsReceipt::class,'reference_id'=>$receipt->id,'reference_number'=>$receipt->receipt_number,'movement_date'=>$receipt->received_at->toDateString(),'notes'=>'إذن استلام','user_id'=>$receipt->received_by]);
         }
     }
 
     public function createPurchaseReturnMovements(PurchaseReturn $return): void
     {
         foreach ($return->items as $item) {
-            $this->createMovement(['product_variant_id'=>$item->product_variant_id,'movement_type'=>StockMovementType::PURCHASE_RETURN,'direction'=>StockMovementDirection::OUT,'quantity'=>$item->quantity,'reference_type'=>PurchaseReturn::class,'reference_id'=>$return->id,'reference_number'=>$return->return_number,'movement_date'=>$return->return_date->toDateString(),'notes'=>'Purchase Return','user_id'=>$return->created_by]);
+            $this->createMovement(['product_variant_id'=>$item->product_variant_id,'movement_type'=>StockMovementType::PURCHASE_RETURN,'direction'=>StockMovementDirection::OUT,'quantity'=>$item->quantity,'reference_type'=>PurchaseReturn::class,'reference_id'=>$return->id,'reference_number'=>$return->return_number,'movement_date'=>$return->return_date->toDateString(),'notes'=>'مرتجع مشتريات','user_id'=>$return->created_by]);
         }
     }
 
