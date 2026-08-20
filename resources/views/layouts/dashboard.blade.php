@@ -181,6 +181,10 @@
                 <i class="bi bi-cash-coin"></i>
                 سندات القبض
             </a>
+            <a href="{{ route('sales-returns.index') }}" class="nav-link {{ request()->routeIs('sales-returns.*') ? 'active' : '' }}">
+                <i class="bi bi-arrow-return-right"></i>
+                مرتجعات المبيعات
+            </a>
             <a href="{{ route('customer-ledger.index') }}" class="nav-link {{ request()->routeIs('customer-ledger.*') ? 'active' : '' }}">
                 <i class="bi bi-journal-text"></i>
                 كشف حساب العملاء

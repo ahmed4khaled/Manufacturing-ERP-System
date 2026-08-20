@@ -7,13 +7,14 @@ use App\Http\Controllers\CustomerLedgerController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\MaterialController;
 use App\Http\Controllers\MaterialInventoryController;
+use App\Http\Controllers\PaymentReceiptController;
+use App\Http\Controllers\ProcurementController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductVariantController;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\PaymentReceiptController;
 use App\Http\Controllers\SalesInvoiceController;
+use App\Http\Controllers\SalesReturnController;
 use App\Http\Controllers\SizeController;
-use App\Http\Controllers\ProcurementController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -26,14 +27,14 @@ Route::get('/dashboard', function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get(
-    '/customer-ledger/{customer}/print',
-    [CustomerLedgerController::class, 'print']
-)->name('customer-ledger.print');
+        '/customer-ledger/{customer}/print',
+        [CustomerLedgerController::class, 'print']
+    )->name('customer-ledger.print');
     Route::get('suppliers', [ProcurementController::class, 'suppliers'])->name('suppliers.index');
     Route::get('suppliers/create', [ProcurementController::class, 'createSupplier'])->name('suppliers.create');
     Route::post('suppliers', [ProcurementController::class, 'storeSupplier'])->name('suppliers.store');
     Route::get('suppliers/{supplier}/ledger', [ProcurementController::class, 'supplierLedger'])
-    ->name('suppliers.ledger');
+        ->name('suppliers.ledger');
     Route::get('suppliers/{supplier}', [ProcurementController::class, 'showSupplier'])->name('suppliers.show');
     Route::get('suppliers/{supplier}/edit', [ProcurementController::class, 'editSupplier'])->name('suppliers.edit');
     Route::put('suppliers/{supplier}', [ProcurementController::class, 'updateSupplier'])->name('suppliers.update');
@@ -67,35 +68,41 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('sales-invoices.confirm');
     Route::post('sales-invoices/{sales_invoice}/cancel', [SalesInvoiceController::class, 'cancel'])
         ->name('sales-invoices.cancel');
-Route::get(
-    '/sales-invoices/{salesInvoice}/print',
-    [SalesInvoiceController::class, 'print']
-)->name('sales-invoices.print');
-Route::get(
-    '/payment-receipts/{paymentReceipt}/print',
-    [PaymentReceiptController::class, 'print']
-)->name('payment-receipts.print');
-Route::get(
-    '/supplier-invoices/{supplierInvoice}/print',
-    [ProcurementController::class, 'printSupplierInvoice']
-)->name('supplier-invoices.print');
-Route::get(
-    '/payment-receipts/customer/{customer}/invoices',
-    [PaymentReceiptController::class, 'customerInvoices']
-)->name('payment-receipts.customer-invoices');
-Route::get(
-    '/supplier-invoices/{supplierInvoice}',
-    [ProcurementController::class, 'showSupplierInvoice']
-)->name('supplier-invoices.show');
-Route::get(
-    '/supplier-payments/{supplierPayment}',
-    [ProcurementController::class, 'showSupplierPayment']
-)->name('supplier-payments.show-payment');
+    Route::get(
+        '/sales-invoices/{salesInvoice}/print',
+        [SalesInvoiceController::class, 'print']
+    )->name('sales-invoices.print');
+    Route::post('sales-returns/{salesReturn}/confirm', [SalesReturnController::class, 'confirm'])
+        ->name('sales-returns.confirm');
+    Route::post('sales-returns/{salesReturn}/cancel', [SalesReturnController::class, 'cancel'])
+        ->name('sales-returns.cancel');
+    Route::get('sales-returns/{salesReturn}/print', [SalesReturnController::class, 'print'])
+        ->name('sales-returns.print');
+    Route::get(
+        '/payment-receipts/{paymentReceipt}/print',
+        [PaymentReceiptController::class, 'print']
+    )->name('payment-receipts.print');
+    Route::get(
+        '/supplier-invoices/{supplierInvoice}/print',
+        [ProcurementController::class, 'printSupplierInvoice']
+    )->name('supplier-invoices.print');
+    Route::get(
+        '/payment-receipts/customer/{customer}/invoices',
+        [PaymentReceiptController::class, 'customerInvoices']
+    )->name('payment-receipts.customer-invoices');
+    Route::get(
+        '/supplier-invoices/{supplierInvoice}',
+        [ProcurementController::class, 'showSupplierInvoice']
+    )->name('supplier-invoices.show');
+    Route::get(
+        '/supplier-payments/{supplierPayment}',
+        [ProcurementController::class, 'showSupplierPayment']
+    )->name('supplier-payments.show-payment');
 
-Route::get(
-    '/supplier-payments/{supplierPayment}/print',
-    [ProcurementController::class, 'printSupplierPayment']
-)->name('supplier-payments.print-payment');
+    Route::get(
+        '/supplier-payments/{supplierPayment}/print',
+        [ProcurementController::class, 'printSupplierPayment']
+    )->name('supplier-payments.print-payment');
     Route::post('payment-receipts/{payment_receipt}/confirm', [PaymentReceiptController::class, 'confirm'])
         ->name('payment-receipts.confirm');
     Route::post('payment-receipts/{payment_receipt}/cancel', [PaymentReceiptController::class, 'cancel'])
@@ -128,6 +135,7 @@ Route::get(
     Route::resource('sizes', SizeController::class);
     Route::resource('product-variants', ProductVariantController::class);
     Route::resource('sales-invoices', SalesInvoiceController::class);
+    Route::resource('sales-returns', SalesReturnController::class);
     Route::resource('payment-receipts', PaymentReceiptController::class);
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

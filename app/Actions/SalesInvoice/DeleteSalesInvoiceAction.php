@@ -11,13 +11,17 @@ class DeleteSalesInvoiceAction
 {
     public function handle(SalesInvoice $salesInvoice): void
     {
-        if ($salesInvoice->status !== SalesInvoiceStatus::DRAFT) {
-            throw ValidationException::withMessages([
-                'status' => 'لا يمكن حذف إلا الفواتير المسودة.',
-            ]);
-        }
-
         DB::transaction(function () use ($salesInvoice) {
+            $salesInvoice = SalesInvoice::query()
+                ->lockForUpdate()
+                ->findOrFail($salesInvoice->id);
+
+            if ($salesInvoice->status !== SalesInvoiceStatus::DRAFT) {
+                throw ValidationException::withMessages([
+                    'status' => 'لا يمكن حذف إلا الفواتير المسودة.',
+                ]);
+            }
+
             $salesInvoice->items()->delete();
             $salesInvoice->delete();
         });

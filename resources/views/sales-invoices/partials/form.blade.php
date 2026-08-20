@@ -227,7 +227,7 @@
                 <td class="text-end">${formatMoney(variant.unit_price)} ج.م</td>
                 <td class="text-end ${variant.available_stock > 0 ? 'text-success' : 'text-danger'} fw-semibold">${Number(variant.available_stock).toLocaleString()}</td>
                 <td>
-                    <input type="number" min="0" step="1" class="form-control form-control-sm variant-qty"
+                    <input type="number" min="0" step="0.001" class="form-control form-control-sm variant-qty"
                         data-index="${index}" value="${variant.quantity}">
                 </td>
             </tr>

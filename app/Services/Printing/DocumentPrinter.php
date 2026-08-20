@@ -9,10 +9,6 @@ class DocumentPrinter
 {
     /**
      * Render a printable document.
-     *
-     * @param  mixed  $document
-     * @param  string  $type
-     * @param  array  $data
      */
     public function render(
         mixed $document,
@@ -34,26 +30,21 @@ class DocumentPrinter
     {
         return match ($type) {
 
-            'sales_invoice' =>
-                'printing.sales-invoice',
+            'sales_invoice' => 'printing.sales-invoice',
 
-            'supplier_invoice' =>
-                'printing.supplier-invoice',
+            'supplier_invoice' => 'printing.supplier-invoice',
 
-            'payment_receipt' =>
-                'printing.payment-receipt',
+            'payment_receipt' => 'printing.payment-receipt',
 
-            'purchase_order' =>
-                'printing.purchase-order',
+            'sales_return' => 'printing.sales-return',
 
-            'goods_receipt' =>
-                'printing.goods-receipt',
-'customer_statement' =>
-    'printing.customer_statement',
-            default =>
-                throw new InvalidArgumentException(
-                    "نوع المستند غير مدعوم للطباعة: {$type}"
-                ),
+            'purchase_order' => 'printing.purchase-order',
+
+            'goods_receipt' => 'printing.goods-receipt',
+            'customer_statement' => 'printing.customer_statement',
+            default => throw new InvalidArgumentException(
+                "نوع المستند غير مدعوم للطباعة: {$type}"
+            ),
         };
     }
 }

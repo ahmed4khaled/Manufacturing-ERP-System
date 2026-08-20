@@ -113,6 +113,16 @@
 
             @endif
 
+            @if ($salesInvoice->status === \App\Enums\SalesInvoiceStatus::CONFIRMED)
+                <a
+                    href="{{ route('sales-returns.create', ['sales_invoice_id' => $salesInvoice->id]) }}"
+                    class="btn btn-outline-primary"
+                >
+                    <i class="bi bi-arrow-return-right me-1"></i>
+                    إنشاء مرتجع
+                </a>
+            @endif
+
 
             {{-- Draft Actions --}}
             @if ($salesInvoice->status === \App\Enums\SalesInvoiceStatus::DRAFT)
@@ -291,6 +301,18 @@
                         </div>
 
 
+                        {{-- Returns --}}
+                        @if ($salesInvoice->returned_amount > 0)
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted">مرتجعات مؤكدة</span>
+                                <strong class="text-primary">
+                                    {{ number_format($salesInvoice->returned_amount, 2) }}
+                                    ج.م
+                                </strong>
+                            </div>
+                        @endif
+
+
                         {{-- Paid --}}
                         <div class="d-flex justify-content-between mb-2">
 
@@ -419,7 +441,7 @@
                         </span>
 
                         <strong>
-                            {{ number_format($salesInvoice->total_quantity) }}
+                            {{ number_format($salesInvoice->total_quantity, 3) }}
                             قطعة
                         </strong>
 
@@ -487,7 +509,7 @@
                                 <div class="text-end">
 
                                     <strong>
-                                        {{ number_format($group['total_quantity']) }}
+                                        {{ number_format($group['total_quantity'], 3) }}
                                         قطعة
                                     </strong>
 
@@ -582,7 +604,7 @@
 
                                                 <td class="text-end">
 
-                                                    {{ $item->quantity }}
+                                                    {{ number_format($item->quantity, 3) }}
 
                                                 </td>
 

@@ -88,7 +88,12 @@ class MaterialStockService
 
     public function validateAvailability(Collection $items): void
     {
-        $requestedQuantities = $items->groupBy('material_id')->map->sum('quantity');
+        $requestedQuantities = $items
+            ->groupBy('material_id')
+            ->map(fn (Collection $materialItems) => $materialItems->reduce(
+                fn (string $total, $item) => bcadd($total, (string) $item->quantity, 3),
+                '0.000',
+            ));
         $materials = Material::query()
             ->whereIn('id', $requestedQuantities->keys())
             ->lockForUpdate()
@@ -252,8 +257,26 @@ class MaterialStockService
 
     private function createMovement(array $data): MaterialStockMovement
     {
+        $material = Material::query()
+            ->lockForUpdate()
+            ->findOrFail($data['material_id']);
+
+        $direction = $data['direction'] instanceof StockMovementDirection
+            ? $data['direction']
+            : StockMovementDirection::from($data['direction']);
+
+        if ($direction === StockMovementDirection::OUT) {
+            $availableStock = $this->getCurrentStock($material);
+
+            if (bccomp($availableStock, (string) $data['quantity'], 3) < 0) {
+                throw ValidationException::withMessages([
+                    'quantity' => "الكمية المطلوبة أكبر من الرصيد المتاح. المتاح: {$availableStock}. المطلوب: {$data['quantity']}.",
+                ]);
+            }
+        }
+
         $movement = MaterialStockMovement::create($data);
-        $this->syncLegacyQuantity($movement->material);
+        $this->syncLegacyQuantity($material);
 
         return $movement;
     }

@@ -18,6 +18,12 @@ class UpdatePaymentReceiptRequest extends FormRequest
     {
         return [
             'customer_id' => ['required', Rule::exists('customers', 'id')],
+            'payment_type' => ['required', Rule::in(['invoice', 'advance'])],
+            'sales_invoice_id' => [
+                'nullable',
+                Rule::exists('sales_invoices', 'id'),
+                'required_if:payment_type,invoice',
+            ],
             'payment_date' => ['required', 'date'],
             'amount' => ['required', 'numeric', 'min:0.01'],
             'payment_method' => ['required', Rule::enum(PaymentMethod::class)],

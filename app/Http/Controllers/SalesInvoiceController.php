@@ -5,73 +5,82 @@ namespace App\Http\Controllers;
 use App\Actions\SalesInvoice\CancelSalesInvoiceAction;
 use App\Actions\SalesInvoice\ConfirmSalesInvoiceAction;
 use App\Actions\SalesInvoice\CreateSalesInvoiceAction;
-use App\Actions\SalesInvoice\ValidateCustomerCreditLimitAction;
-use App\Enums\PaymentReceiptStatus;
-
 use App\Actions\SalesInvoice\DeleteSalesInvoiceAction;
 use App\Actions\SalesInvoice\UpdateSalesInvoiceAction;
+use App\Enums\PaymentReceiptStatus;
 use App\Enums\SalesInvoiceStatus;
+use App\Enums\SalesReturnStatus;
 use App\Http\Requests\SalesInvoice\StoreSalesInvoiceRequest;
 use App\Http\Requests\SalesInvoice\UpdateSalesInvoiceRequest;
 use App\Models\Customer;
-use App\Models\Product;
 use App\Models\PaymentReceipt;
-use App\Models\CustomerLedgerEntry;
+use App\Models\Product;
 use App\Models\SalesInvoice;
+use App\Services\Printing\DocumentPrinter;
 use App\Services\StockService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
-use App\Services\Printing\DocumentPrinter;
 
 class SalesInvoiceController extends Controller
 {
-public function print(
-    SalesInvoice $salesInvoice,
-    DocumentPrinter $printer
-): View {
-    $salesInvoice->load([
-        'customer',
-        'items',
-    ]);
-    $paidAmount = PaymentReceipt::query()
-        ->where('sales_invoice_id', $salesInvoice->id)
-        ->where('status', PaymentReceiptStatus::CONFIRMED)
-        ->sum('amount');
-    $invoiceTotal = (float) $salesInvoice->total_amount;
-    $remainingAmount = max(
-        0,
-        $invoiceTotal - (float) $paidAmount
-    );
-    return $printer->render(
-        $salesInvoice,
-        'sales_invoice',
-        [
-            'paidAmount' => (float) $paidAmount,
-            'remainingAmount' => $remainingAmount,
-        ]
-    );
-}
+    public function print(
+        SalesInvoice $salesInvoice,
+        DocumentPrinter $printer
+    ): View {
+        $salesInvoice->load([
+            'customer',
+            'items',
+        ]);
+        $paidAmount = PaymentReceipt::query()
+            ->where('sales_invoice_id', $salesInvoice->id)
+            ->where('status', PaymentReceiptStatus::CONFIRMED)
+            ->sum('amount');
+        $returnedAmount = $salesInvoice->salesReturns()
+            ->where('status', SalesReturnStatus::CONFIRMED)
+            ->sum('total_amount');
+        $invoiceTotal = (float) $salesInvoice->total_amount;
+        $remainingAmount = max(
+            0,
+            $invoiceTotal - (float) $returnedAmount - (float) $paidAmount
+        );
+
+        return $printer->render(
+            $salesInvoice,
+            'sales_invoice',
+            [
+                'paidAmount' => (float) $paidAmount,
+                'returnedAmount' => (float) $returnedAmount,
+                'remainingAmount' => $remainingAmount,
+            ]
+        );
+    }
+
     public function index(Request $request): View
     {
-      $invoices = SalesInvoice::query()
-    ->with('customer')
-    ->withSum([
-        'paymentReceipts as paid_amount' => function ($query) {
-            $query->where(
-                'status',
-                PaymentReceiptStatus::CONFIRMED
-            );
-        },
-    ], 'amount')
-    ->search($request->input('search'))
-    ->filterStatus($request->input('status'))
-    ->filterCustomer($request->input('customer_id'))
-    ->latest('invoice_date')
-    ->latest('id')
-    ->paginate(15)
-    ->withQueryString();
+        $invoices = SalesInvoice::query()
+            ->with('customer')
+            ->withSum([
+                'paymentReceipts as paid_amount' => function ($query) {
+                    $query->where(
+                        'status',
+                        PaymentReceiptStatus::CONFIRMED
+                    );
+                },
+            ], 'amount')
+            ->withSum([
+                'salesReturns as returned_amount' => fn ($query) => $query
+                    ->where('status', SalesReturnStatus::CONFIRMED),
+            ], 'total_amount')
+            ->search($request->input('search'))
+            ->filterStatus($request->input('status'))
+            ->filterCustomer($request->input('customer_id'))
+            ->latest('invoice_date')
+            ->latest('id')
+            ->paginate(15)
+            ->withQueryString();
 
         $customers = Customer::query()->orderBy('name')->get(['id', 'name', 'code']);
 
@@ -80,38 +89,42 @@ public function print(
 
     public function create(): View
     {
-        $customers = Customer::query()->orderBy('name')->get(['id', 'name', 'code','credit_limit']);
+        $customers = Customer::query()->orderBy('name')->get(['id', 'name', 'code', 'credit_limit']);
         $products = Product::query()->orderBy('name')->get(['id', 'name', 'code']);
 
         return view('sales-invoices.create', compact('customers', 'products'));
     }
 
-   public function store(
-    StoreSalesInvoiceRequest $request,
-    CreateSalesInvoiceAction $action,
-): RedirectResponse {
-    $invoice = $action->handle($request->validated());
+    public function store(
+        StoreSalesInvoiceRequest $request,
+        CreateSalesInvoiceAction $action,
+    ): RedirectResponse {
+        $invoice = $action->handle($request->validated());
 
-    return redirect()
-        ->route('sales-invoices.show', $invoice)
-        ->with('success', 'تم إنشاء فاتورة المبيعات بنجاح.');
-}
+        return redirect()
+            ->route('sales-invoices.show', $invoice)
+            ->with('success', 'تم إنشاء فاتورة المبيعات بنجاح.');
+    }
 
     public function show(SalesInvoice $salesInvoice): View
     {
-  $salesInvoice->load([
-        'customer',
-        'items',
-    ]);
+        $salesInvoice->load([
+            'customer',
+            'items',
+        ]);
 
-    $salesInvoice->loadSum([
-        'paymentReceipts as paid_amount' => function ($query) {
-            $query->where(
-                'status',
-                PaymentReceiptStatus::CONFIRMED
-            );
-        },
-    ], 'amount');
+        $salesInvoice->loadSum([
+            'paymentReceipts as paid_amount' => function ($query) {
+                $query->where(
+                    'status',
+                    PaymentReceiptStatus::CONFIRMED
+                );
+            },
+        ], 'amount');
+        $salesInvoice->loadSum([
+            'salesReturns as returned_amount' => fn ($query) => $query
+                ->where('status', SalesReturnStatus::CONFIRMED),
+        ], 'total_amount');
 
         $groupedItems = $salesInvoice->items
             ->groupBy('product_name')
@@ -185,7 +198,7 @@ public function print(
     ): RedirectResponse {
         try {
             $action->handle($salesInvoice);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             return redirect()
                 ->route('sales-invoices.show', $salesInvoice)
                 ->with('error', $e->validator->errors()->first());
@@ -202,7 +215,7 @@ public function print(
     ): RedirectResponse {
         try {
             $action->handle($salesInvoice);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             return redirect()
                 ->route('sales-invoices.show', $salesInvoice)
                 ->with('error', $e->validator->errors()->first());
@@ -219,7 +232,7 @@ public function print(
     ): RedirectResponse {
         try {
             $action->handle($salesInvoice);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             return redirect()
                 ->route('sales-invoices.show', $salesInvoice)
                 ->with('error', $e->validator->errors()->first());
@@ -240,13 +253,13 @@ public function print(
         $currentStocks = $stockService->getCurrentStocks($variants);
 
         $variants = $variants->map(fn ($variant) => [
-                'product_variant_id' => $variant->id,
-                'color' => $variant->color?->name ?? '—',
-                'size' => $variant->size?->name ?? '—',
-                'unit_price' => (float) $variant->default_price,
-                'available_stock' => $currentStocks->get($variant->id, 0),
-                'quantity' => 0,
-            ]);
+            'product_variant_id' => $variant->id,
+            'color' => $variant->color?->name ?? '—',
+            'size' => $variant->size?->name ?? '—',
+            'unit_price' => (float) $variant->default_price,
+            'available_stock' => $currentStocks->get($variant->id, 0),
+            'quantity' => 0,
+        ]);
 
         return response()->json([
             'product_id' => $product->id,

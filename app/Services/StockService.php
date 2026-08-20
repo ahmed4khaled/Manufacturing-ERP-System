@@ -4,13 +4,14 @@ namespace App\Services;
 
 use App\Enums\StockMovementDirection;
 use App\Enums\StockMovementType;
-use App\Models\ProductVariant;
-use App\Models\SalesInvoice;
-use App\Models\StockMovement;
 use App\Models\GoodsReceipt;
+use App\Models\ProductVariant;
 use App\Models\PurchaseReturn;
-use Illuminate\Support\Collection;
+use App\Models\SalesInvoice;
+use App\Models\SalesReturn;
+use App\Models\StockMovement;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
 class StockService
@@ -29,7 +30,7 @@ class StockService
 
     /**
      * @param  Collection<int, ProductVariant>  $variants
-     * @return Collection<int, int>
+     * @return Collection<int, string>
      */
     public function getCurrentStocks(Collection $variants): Collection
     {
@@ -43,7 +44,7 @@ class StockService
             ->pluck('current_stock', 'product_variant_id');
 
         return $variants->mapWithKeys(fn (ProductVariant $variant) => [
-            $variant->id => number_format((float) ($stockByVariant[$variant->id] ?? 0), 3, '.', ''),
+            $variant->id => bcadd((string) ($stockByVariant[$variant->id] ?? '0'), '0', 3),
         ]);
     }
 
@@ -58,7 +59,7 @@ class StockService
             return $movements;
         }
 
-        $stockIn = (int) StockMovement::query()
+        $stockIn = (string) StockMovement::query()
             ->where('product_variant_id', $firstMovement->product_variant_id)
             ->where(function ($query) use ($firstMovement) {
                 $query->where('movement_date', '<', $firstMovement->movement_date)
@@ -69,7 +70,7 @@ class StockService
             })
             ->where('direction', StockMovementDirection::IN)
             ->sum('quantity');
-        $stockOut = (int) StockMovement::query()
+        $stockOut = (string) StockMovement::query()
             ->where('product_variant_id', $firstMovement->product_variant_id)
             ->where(function ($query) use ($firstMovement) {
                 $query->where('movement_date', '<', $firstMovement->movement_date)
@@ -80,12 +81,12 @@ class StockService
             })
             ->where('direction', StockMovementDirection::OUT)
             ->sum('quantity');
-        $runningBalance = $stockIn - $stockOut;
+        $runningBalance = bcsub($stockIn, $stockOut, 3);
 
         foreach ($movements as $movement) {
-            $runningBalance += $movement->direction === StockMovementDirection::IN
-                ? $movement->quantity
-                : -$movement->quantity;
+            $runningBalance = $movement->direction === StockMovementDirection::IN
+                ? bcadd($runningBalance, (string) $movement->quantity, 3)
+                : bcsub($runningBalance, (string) $movement->quantity, 3);
 
             $movement->running_balance = $runningBalance;
         }
@@ -95,7 +96,12 @@ class StockService
 
     public function validateAvailability(Collection $items): void
     {
-        $requestedQuantities = $items->groupBy('product_variant_id')->map->sum('quantity');
+        $requestedQuantities = $items
+            ->groupBy('product_variant_id')
+            ->map(fn (Collection $variantItems) => $variantItems->reduce(
+                fn (string $total, $item) => bcadd($total, (string) $item->quantity, 3),
+                '0.000',
+            ));
         $variants = ProductVariant::query()
             ->whereIn('id', $requestedQuantities->keys())
             ->lockForUpdate()
@@ -146,6 +152,12 @@ class StockService
 
     public function createSalesMovements(SalesInvoice $invoice): void
     {
+        $this->assertReferenceNotPosted(
+            SalesInvoice::class,
+            $invoice->id,
+            StockMovementType::SALE,
+        );
+
         foreach ($invoice->items as $item) {
             $this->createMovement([
                 'product_variant_id' => $item->product_variant_id,
@@ -164,6 +176,12 @@ class StockService
 
     public function createSalesReversals(SalesInvoice $invoice): void
     {
+        $this->assertReferenceNotPosted(
+            SalesInvoice::class,
+            $invoice->id,
+            StockMovementType::SALE_REVERSAL,
+        );
+
         foreach ($invoice->items as $item) {
             $this->createMovement([
                 'product_variant_id' => $item->product_variant_id,
@@ -180,44 +198,115 @@ class StockService
         }
     }
 
+    public function createSalesReturnMovements(SalesReturn $salesReturn): void
+    {
+        $this->assertReferenceNotPosted(
+            SalesReturn::class,
+            $salesReturn->id,
+            StockMovementType::SALES_RETURN,
+        );
+
+        foreach ($salesReturn->items as $item) {
+            $this->createMovement([
+                'product_variant_id' => $item->product_variant_id,
+                'movement_type' => StockMovementType::SALES_RETURN,
+                'direction' => StockMovementDirection::IN,
+                'quantity' => $item->quantity,
+                'reference_type' => SalesReturn::class,
+                'reference_id' => $salesReturn->id,
+                'reference_number' => $salesReturn->return_number,
+                'movement_date' => $salesReturn->return_date,
+                'notes' => 'مرتجع مبيعات',
+                'user_id' => auth()->id(),
+            ]);
+        }
+    }
+
+    public function createSalesReturnReversals(SalesReturn $salesReturn): void
+    {
+        $this->assertReferenceNotPosted(
+            SalesReturn::class,
+            $salesReturn->id,
+            StockMovementType::SALES_RETURN_REVERSAL,
+        );
+
+        foreach ($salesReturn->items as $item) {
+            $this->createMovement([
+                'product_variant_id' => $item->product_variant_id,
+                'movement_type' => StockMovementType::SALES_RETURN_REVERSAL,
+                'direction' => StockMovementDirection::OUT,
+                'quantity' => $item->quantity,
+                'reference_type' => SalesReturn::class,
+                'reference_id' => $salesReturn->id,
+                'reference_number' => $salesReturn->return_number,
+                'movement_date' => now()->toDateString(),
+                'notes' => 'إلغاء مرتجع مبيعات',
+                'user_id' => auth()->id(),
+            ]);
+        }
+    }
+
     public function createPurchaseReceiptMovements(GoodsReceipt $receipt): void
     {
         foreach ($receipt->items as $item) {
             if (bccomp((string) $item->accepted_quantity, '0', 3) <= 0) {
                 continue;
             }
-            $this->createMovement(['product_variant_id'=>$item->product_variant_id,'movement_type'=>StockMovementType::PURCHASE_RECEIPT,'direction'=>StockMovementDirection::IN,'quantity'=>$item->accepted_quantity,'reference_type'=>GoodsReceipt::class,'reference_id'=>$receipt->id,'reference_number'=>$receipt->receipt_number,'movement_date'=>$receipt->received_at->toDateString(),'notes'=>'إذن استلام','user_id'=>$receipt->received_by]);
+            $this->createMovement(['product_variant_id' => $item->product_variant_id, 'movement_type' => StockMovementType::PURCHASE_RECEIPT, 'direction' => StockMovementDirection::IN, 'quantity' => $item->accepted_quantity, 'reference_type' => GoodsReceipt::class, 'reference_id' => $receipt->id, 'reference_number' => $receipt->receipt_number, 'movement_date' => $receipt->received_at->toDateString(), 'notes' => 'إذن استلام', 'user_id' => $receipt->received_by]);
         }
     }
 
     public function createPurchaseReturnMovements(PurchaseReturn $return): void
     {
         foreach ($return->items as $item) {
-            $this->createMovement(['product_variant_id'=>$item->product_variant_id,'movement_type'=>StockMovementType::PURCHASE_RETURN,'direction'=>StockMovementDirection::OUT,'quantity'=>$item->quantity,'reference_type'=>PurchaseReturn::class,'reference_id'=>$return->id,'reference_number'=>$return->return_number,'movement_date'=>$return->return_date->toDateString(),'notes'=>'مرتجع مشتريات','user_id'=>$return->created_by]);
+            $this->createMovement(['product_variant_id' => $item->product_variant_id, 'movement_type' => StockMovementType::PURCHASE_RETURN, 'direction' => StockMovementDirection::OUT, 'quantity' => $item->quantity, 'reference_type' => PurchaseReturn::class, 'reference_id' => $return->id, 'reference_number' => $return->return_number, 'movement_date' => $return->return_date->toDateString(), 'notes' => 'مرتجع مشتريات', 'user_id' => $return->created_by]);
         }
     }
 
     private function createMovement(array $data): StockMovement
     {
+        $variant = ProductVariant::query()
+            ->lockForUpdate()
+            ->findOrFail($data['product_variant_id']);
+
+        $direction = $data['direction'] instanceof StockMovementDirection
+            ? $data['direction']
+            : StockMovementDirection::from($data['direction']);
+
+        if ($direction === StockMovementDirection::OUT) {
+            $availableStock = $this->getCurrentStock($variant);
+
+            if (bccomp($availableStock, (string) $data['quantity'], 3) < 0) {
+                throw ValidationException::withMessages([
+                    'quantity' => "الكمية المطلوبة أكبر من الرصيد المتاح. المتاح: {$availableStock}. المطلوب: {$data['quantity']}.",
+                ]);
+            }
+        }
+
         $movement = StockMovement::create($data);
-        $this->syncLegacyQuantity($movement);
+        $this->syncLegacyQuantity($variant);
 
         return $movement;
     }
 
-    private function syncLegacyQuantity(\App\Models\StockMovement $movement): void
+    private function syncLegacyQuantity(ProductVariant $variant): void
     {
-        $variant = $movement->productVariant->fresh();
+        $variant->update(['quantity' => $this->getCurrentStock($variant)]);
+    }
 
-        $current = (string) ($variant->quantity ?? '0');
-        $delta = (string) $movement->quantity;
-
-        if ($movement->direction === StockMovementDirection::IN) {
-            $new = bcadd($current, $delta, 3);
-        } else {
-            $new = bcsub($current, $delta, 3);
+    private function assertReferenceNotPosted(
+        string $referenceType,
+        int $referenceId,
+        StockMovementType $movementType,
+    ): void {
+        if (StockMovement::query()
+            ->where('reference_type', $referenceType)
+            ->where('reference_id', $referenceId)
+            ->where('movement_type', $movementType)
+            ->exists()) {
+            throw ValidationException::withMessages([
+                'status' => 'تم ترحيل حركة المخزون لهذا المستند بالفعل.',
+            ]);
         }
-
-        $variant->update(['quantity' => $new]);
     }
 }

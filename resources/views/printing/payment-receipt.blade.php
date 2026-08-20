@@ -34,7 +34,13 @@ $invoice = $document->salesInvoice ?? $document->invoice ?? null;
 
 $invoiceTotal = (float) ($invoice?->total_amount ?? 0);
 
+$returnedAmount = (float) ($invoice?->returned_amount ?? 0);
+
 $currentPayment = (float) $document->amount;
+
+$currentPaymentEffect = $document->status === \App\Enums\PaymentReceiptStatus::CANCELLED
+    ? 0
+    : $currentPayment;
 
 $previousPaid = (float) ($previousPaid ?? 0);
 
@@ -42,8 +48,9 @@ $invoiceRemaining = $invoice
     ? max(
         0,
         $invoiceTotal
+        - $returnedAmount
         - $previousPaid
-        - $currentPayment
+        - $currentPaymentEffect
     )
     : null;
 

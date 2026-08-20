@@ -29,7 +29,11 @@ class InventoryController extends Controller
             ->paginate(15)
             ->withQueryString();
         $variants->getCollection()->each(function (ProductVariant $variant) {
-            $variant->current_stock = (int) $variant->stock_in_quantity - (int) $variant->stock_out_quantity;
+            $variant->current_stock = bcsub(
+                (string) ($variant->stock_in_quantity ?? '0'),
+                (string) ($variant->stock_out_quantity ?? '0'),
+                3,
+            );
         });
         $products = Product::query()->orderBy('name')->get(['id', 'name', 'code']);
 

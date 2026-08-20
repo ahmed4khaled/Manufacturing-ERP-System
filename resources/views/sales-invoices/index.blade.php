@@ -81,7 +81,7 @@
                                 <td>{{ $invoice->customer?->name }}</td>
                                 <td>{{ $invoice->invoice_date->format('Y-m-d') }}</td>
                                 <td><span class="badge bg-{{ $invoice->status->badgeClass() }}">{{ $invoice->status->label() }}</span></td>
-                                <td class="text-end">{{ number_format($invoice->total_quantity) }}</td>
+                                <td class="text-end">{{ number_format($invoice->total_quantity, 3) }}</td>
                                 <td class="text-end">{{ number_format($invoice->total_amount, 2) }} ج.م</td>
                              
 

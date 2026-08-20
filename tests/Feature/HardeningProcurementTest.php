@@ -1,13 +1,18 @@
 <?php
 
+use App\Actions\Procurement\ConfirmGoodsReceiptAction;
+use App\Actions\Procurement\ConfirmPurchaseReturnAction;
 use App\Actions\Procurement\CreatePurchaseReturnAction;
+use App\Enums\MaterialStockMovementType;
 use App\Models\GoodsReceipt;
-use App\Models\Product;
-use App\Models\ProductVariant;
+use App\Models\Material;
+use App\Models\MaterialStockMovement;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderItem;
 use App\Models\Supplier;
+use App\Models\User;
 use App\Services\CodeGeneratorService;
+use App\Services\MaterialStockService;
 use Illuminate\Validation\ValidationException;
 
 it('generates unique document numbers across repeated calls', function () {
@@ -22,53 +27,31 @@ it('generates unique document numbers across repeated calls', function () {
         ->and(array_unique($numbers))->toHaveCount(25);
 });
 
-it('blocks purchase returns above accepted receipt quantity', function () {
-    $user = \App\Models\User::factory()->create();
+/** @return array{supplier: Supplier, material: Material, order: PurchaseOrder, receipt: GoodsReceipt} */
+function procurementReturnContext(
+    string $orderedQuantity,
+    string $acceptedQuantity,
+    string $rejectedQuantity,
+): array {
+    $user = User::factory()->create();
+    test()->actingAs($user);
 
     $supplier = Supplier::create([
-        'name' => 'Alpha Supplier',
-        'code' => 'SUP-001',
+        'name' => 'مورد اختبار المرتجعات',
+        'code' => 'SUP-RETURN',
         'status' => 'active',
     ]);
-
-    $category = \App\Models\Category::create([
-        'code' => 'CAT-001',
-        'name' => 'Procurement',
-        'status' => 'active',
-    ]);
-
-    $product = Product::create([
-        'category_id' => $category->id,
-        'name' => 'Test Product',
-        'code' => 'PRD-01',
-        'cost_price' => 10,
-        'status' => 'active',
-    ]);
-
-    $color = \App\Models\Color::create([
-        'name' => 'Black',
-        'code' => 'BLK',
-        'status' => 'active',
-    ]);
-    $size = \App\Models\Size::create([
-        'name' => 'M',
-        'code' => 'M',
-        'status' => 'active',
-    ]);
-
-    $variant = ProductVariant::create([
-        'product_id' => $product->id,
-        'color_id' => $color->id,
-        'size_id' => $size->id,
-        'sku' => 'SKU-001',
-        'barcode' => 'BAR-001',
-        'default_price' => 12.50,
+    $material = Material::create([
+        'code' => 'MAT-RETURN',
+        'name' => 'قماش اختبار المرتجعات',
+        'category' => 'fabric',
+        'unit' => 'meter',
+        'minimum_stock' => 0,
         'quantity' => 0,
         'status' => 'active',
     ]);
-
-    $po = PurchaseOrder::create([
-        'purchase_order_number' => 'PO-TEST-1',
+    $order = PurchaseOrder::create([
+        'purchase_order_number' => 'PO-RETURN',
         'supplier_id' => $supplier->id,
         'order_date' => now()->toDateString(),
         'status' => 'approved',
@@ -77,161 +60,89 @@ it('blocks purchase returns above accepted receipt quantity', function () {
         'tax' => 0,
         'total' => 0,
     ]);
-
-    $poItem = PurchaseOrderItem::create([
-        'purchase_order_id' => $po->id,
-        'product_variant_id' => $variant->id,
-        'quantity' => 10,
-        'unit_price' => 12.50,
+    $orderItem = PurchaseOrderItem::create([
+        'purchase_order_id' => $order->id,
+        'material_id' => $material->id,
+        'quantity' => $orderedQuantity,
+        'unit_price' => '12.50',
         'discount' => 0,
         'tax' => 0,
-        'line_total' => 125.00,
+        'line_total' => bcmul($orderedQuantity, '12.50', 2),
     ]);
-
     $receipt = GoodsReceipt::create([
-        'receipt_number' => 'GR-TEST-1',
-        'purchase_order_id' => $po->id,
+        'receipt_number' => 'GR-RETURN',
+        'purchase_order_id' => $order->id,
         'supplier_id' => $supplier->id,
         'received_at' => now(),
         'received_by' => $user->id,
-        'status' => 'confirmed',
+        'status' => 'draft',
     ]);
-
     $receipt->items()->create([
-        'purchase_order_item_id' => $poItem->id,
-        'product_variant_id' => $variant->id,
-        'ordered_quantity' => 10,
-        'received_quantity' => 10,
-        'accepted_quantity' => 8,
-        'rejected_quantity' => 2,
-        'unit_cost' => 12.50,
+        'purchase_order_item_id' => $orderItem->id,
+        'material_id' => $material->id,
+        'ordered_quantity' => $orderedQuantity,
+        'received_quantity' => bcadd($acceptedQuantity, $rejectedQuantity, 3),
+        'accepted_quantity' => $acceptedQuantity,
+        'rejected_quantity' => $rejectedQuantity,
+        'unit_cost' => '12.50',
     ]);
 
-    $action = app(CreatePurchaseReturnAction::class);
+    app(ConfirmGoodsReceiptAction::class)->handle($receipt);
 
-    expect(fn () => $action->handle([
-        'supplier_id' => $supplier->id,
-        'purchase_order_id' => $po->id,
-        'goods_receipt_id' => $receipt->id,
+    return compact('supplier', 'material', 'order', 'receipt');
+}
+
+function procurementReturnData(array $context, string $quantity): array
+{
+    return [
+        'supplier_id' => $context['supplier']->id,
+        'purchase_order_id' => $context['order']->id,
+        'goods_receipt_id' => $context['receipt']->id,
         'return_date' => now()->toDateString(),
-        'reason' => 'Rejected items',
-        'items' => [
-            [
-                'product_variant_id' => $variant->id,
-                'quantity' => 9,
-                'unit_cost' => 12.50,
-                'reason' => 'Too much',
-            ],
-        ],
-    ]))->toThrow(ValidationException::class);
+        'reason' => 'خامات غير مطابقة',
+        'items' => [[
+            'material_id' => $context['material']->id,
+            'quantity' => $quantity,
+            'unit_cost' => '12.50',
+            'reason' => 'عيب في الخامة',
+        ]],
+    ];
+}
+
+it('blocks purchase returns above accepted material receipt quantity', function () {
+    $context = procurementReturnContext('10.000', '8.000', '2.000');
+
+    expect(app(MaterialStockService::class)->getCurrentStock($context['material']))
+        ->toBe('8.000');
+
+    expect(fn () => app(CreatePurchaseReturnAction::class)
+        ->handle(procurementReturnData($context, '8.001')))
+        ->toThrow(ValidationException::class);
 });
 
-it('confirms a purchase return and reduces stock once', function () {
-    $user = \App\Models\User::factory()->create();
+it('confirms a material purchase return once and rejects invalid repeated quantities', function () {
+    $context = procurementReturnContext('12.000', '12.000', '0.000');
+    $returned = app(CreatePurchaseReturnAction::class)
+        ->handle(procurementReturnData($context, '3.000'));
 
-    $supplier = Supplier::create([
-        'name' => 'Beta Supplier',
-        'code' => 'SUP-002',
-        'status' => 'active',
-    ]);
-
-    $category = \App\Models\Category::create([
-        'code' => 'CAT-002',
-        'name' => 'Returns',
-        'status' => 'active',
-    ]);
-
-    $product = Product::create([
-        'category_id' => $category->id,
-        'name' => 'Return Product',
-        'code' => 'PRD-02',
-        'cost_price' => 9,
-        'status' => 'active',
-    ]);
-
-    $color = \App\Models\Color::create([
-        'name' => 'White',
-        'code' => 'WHT',
-        'status' => 'active',
-    ]);
-    $size = \App\Models\Size::create([
-        'name' => 'L',
-        'code' => 'L',
-        'status' => 'active',
-    ]);
-
-    $variant = ProductVariant::create([
-        'product_id' => $product->id,
-        'color_id' => $color->id,
-        'size_id' => $size->id,
-        'sku' => 'SKU-002',
-        'barcode' => 'BAR-002',
-        'default_price' => 15.00,
-        'quantity' => 12,
-        'status' => 'active',
-    ]);
-
-    $po = PurchaseOrder::create([
-        'purchase_order_number' => 'PO-TEST-2',
-        'supplier_id' => $supplier->id,
-        'order_date' => now()->toDateString(),
-        'status' => 'approved',
-        'subtotal' => 0,
-        'discount' => 0,
-        'tax' => 0,
-        'total' => 0,
-    ]);
-
-    $poItem = PurchaseOrderItem::create([
-        'purchase_order_id' => $po->id,
-        'product_variant_id' => $variant->id,
-        'quantity' => 12,
-        'unit_price' => 15.00,
-        'discount' => 0,
-        'tax' => 0,
-        'line_total' => 180.00,
-    ]);
-
-    $receipt = GoodsReceipt::create([
-        'receipt_number' => 'GR-TEST-2',
-        'purchase_order_id' => $po->id,
-        'supplier_id' => $supplier->id,
-        'received_at' => now(),
-        'received_by' => $user->id,
-        'status' => 'confirmed',
-    ]);
-
-    $receipt->items()->create([
-        'purchase_order_item_id' => $poItem->id,
-        'product_variant_id' => $variant->id,
-        'ordered_quantity' => 12,
-        'received_quantity' => 12,
-        'accepted_quantity' => 12,
-        'rejected_quantity' => 0,
-        'unit_cost' => 15.00,
-    ]);
-
-    $action = app(CreatePurchaseReturnAction::class);
-    $returned = $action->handle([
-        'supplier_id' => $supplier->id,
-        'purchase_order_id' => $po->id,
-        'goods_receipt_id' => $receipt->id,
-        'return_date' => now()->toDateString(),
-        'reason' => 'Damaged shipment',
-        'items' => [
-            [
-                'product_variant_id' => $variant->id,
-                'quantity' => 3,
-                'unit_cost' => 15.00,
-                'reason' => 'Damaged',
-            ],
-        ],
-    ]);
-
-    expect($returned->status)->toBe('draft');
-
-    $confirm = app(\App\Actions\Procurement\ConfirmPurchaseReturnAction::class);
+    $confirm = app(ConfirmPurchaseReturnAction::class);
     $confirmed = $confirm->handle($returned);
+
     expect($confirmed->status)->toBe('confirmed')
-        ->and((string) $variant->fresh()->quantity)->toBe('9.000');
+        ->and(app(MaterialStockService::class)->getCurrentStock($context['material']))->toBe('9.000')
+        ->and((string) $context['material']->fresh()->quantity)->toBe('9.000')
+        ->and(MaterialStockMovement::query()
+            ->where('movement_type', MaterialStockMovementType::PURCHASE_RETURN)
+            ->where('reference_id', $returned->id)
+            ->count())->toBe(1);
+
+    expect(fn () => $confirm->handle($returned))
+        ->toThrow(ValidationException::class);
+
+    expect(fn () => app(CreatePurchaseReturnAction::class)
+        ->handle(procurementReturnData($context, '9.001')))
+        ->toThrow(ValidationException::class);
+
+    expect(app(MaterialStockService::class)->getCurrentStock($context['material']))
+        ->toBe('9.000');
 });

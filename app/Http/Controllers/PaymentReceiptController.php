@@ -10,16 +10,19 @@ use App\Actions\PaymentReceipt\UpdatePaymentReceiptAction;
 use App\Enums\LedgerReferenceType;
 use App\Enums\PaymentReceiptStatus;
 use App\Enums\SalesInvoiceStatus;
+use App\Enums\SalesReturnStatus;
 use App\Http\Requests\PaymentReceipt\StorePaymentReceiptRequest;
 use App\Http\Requests\PaymentReceipt\UpdatePaymentReceiptRequest;
 use App\Models\Customer;
 use App\Models\CustomerLedgerEntry;
 use App\Models\PaymentReceipt;
 use App\Models\SalesInvoice;
+use App\Services\CustomerLedgerService;
 use App\Services\Printing\DocumentPrinter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class PaymentReceiptController extends Controller
@@ -58,7 +61,6 @@ class PaymentReceiptController extends Controller
         );
     }
 
-
     /**
      * Create payment receipt.
      */
@@ -77,7 +79,6 @@ class PaymentReceiptController extends Controller
             compact('customers')
         );
     }
-
 
     /**
      * Get unpaid sales invoices for customer.
@@ -99,6 +100,10 @@ class PaymentReceiptController extends Controller
                     );
                 },
             ], 'amount')
+            ->withSum([
+                'salesReturns as returned_amount' => fn ($query) => $query
+                    ->where('status', SalesReturnStatus::CONFIRMED),
+            ], 'total_amount')
             ->orderByDesc('invoice_date')
             ->orderByDesc('id')
             ->get();
@@ -110,33 +115,27 @@ class PaymentReceiptController extends Controller
 
                 $paid = (float) ($invoice->paid_amount ?? 0);
 
-                $remaining = max(
-                    0,
-                    $total - $paid
-                );
+                $returned = (float) ($invoice->returned_amount ?? 0);
+                $remaining = max(0, $total - $returned - $paid);
 
                 return [
                     'id' => $invoice->id,
 
-                    'invoice_number' =>
-                        $invoice->invoice_number,
+                    'invoice_number' => $invoice->invoice_number,
 
-                    'invoice_date' =>
-                        $invoice->invoice_date?->format('Y-m-d'),
+                    'invoice_date' => $invoice->invoice_date?->format('Y-m-d'),
 
-                    'total_amount' =>
-                        round($total, 2),
+                    'total_amount' => round($total, 2),
 
-                    'paid_amount' =>
-                        round($paid, 2),
+                    'paid_amount' => round($paid, 2),
 
-                    'remaining_amount' =>
-                        round($remaining, 2),
+                    'returned_amount' => round($returned, 2),
+
+                    'remaining_amount' => round($remaining, 2),
                 ];
             })
             ->filter(
-                fn (array $invoice) =>
-                    $invoice['remaining_amount'] > 0
+                fn (array $invoice) => $invoice['remaining_amount'] > 0
             )
             ->values();
 
@@ -144,7 +143,6 @@ class PaymentReceiptController extends Controller
             'invoices' => $invoices,
         ]);
     }
-
 
     /**
      * Store payment receipt.
@@ -167,7 +165,6 @@ class PaymentReceiptController extends Controller
                 'تم إنشاء سند القبض بنجاح.'
             );
     }
-
 
     /**
      * Show payment receipt.
@@ -201,13 +198,13 @@ class PaymentReceiptController extends Controller
         );
     }
 
-
     /**
      * Print payment receipt.
      */
     public function print(
         PaymentReceipt $paymentReceipt,
-        DocumentPrinter $printer
+        DocumentPrinter $printer,
+        CustomerLedgerService $ledgerService,
     ): View {
         $paymentReceipt->load([
             'customer',
@@ -215,12 +212,17 @@ class PaymentReceiptController extends Controller
             'creator',
         ]);
 
-        return $printer->render(
-            $paymentReceipt,
-            'payment_receipt'
-        );
-    }
+        $previousPaid = PaymentReceipt::query()
+            ->where('sales_invoice_id', $paymentReceipt->sales_invoice_id)
+            ->where('status', PaymentReceiptStatus::CONFIRMED)
+            ->whereKeyNot($paymentReceipt->id)
+            ->sum('amount');
 
+        return $printer->render($paymentReceipt, 'payment_receipt', [
+            'previousPaid' => (float) $previousPaid,
+            'customerBalance' => (float) $ledgerService->getBalance($paymentReceipt->customer_id),
+        ]);
+    }
 
     /**
      * Edit payment receipt.
@@ -260,7 +262,6 @@ class PaymentReceiptController extends Controller
         );
     }
 
-
     /**
      * Update payment receipt.
      */
@@ -285,7 +286,6 @@ class PaymentReceiptController extends Controller
             );
     }
 
-
     /**
      * Delete payment receipt.
      */
@@ -299,7 +299,7 @@ class PaymentReceiptController extends Controller
                 $paymentReceipt
             );
 
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
 
             return redirect()
                 ->route(
@@ -324,7 +324,6 @@ class PaymentReceiptController extends Controller
             );
     }
 
-
     /**
      * Confirm payment receipt.
      */
@@ -338,7 +337,7 @@ class PaymentReceiptController extends Controller
                 $paymentReceipt
             );
 
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
 
             return redirect()
                 ->route(
@@ -364,7 +363,6 @@ class PaymentReceiptController extends Controller
             );
     }
 
-
     /**
      * Cancel payment receipt.
      */
@@ -378,7 +376,7 @@ class PaymentReceiptController extends Controller
                 $paymentReceipt
             );
 
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
 
             return redirect()
                 ->route(

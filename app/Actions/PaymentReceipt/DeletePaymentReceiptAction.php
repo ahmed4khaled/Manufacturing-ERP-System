@@ -11,13 +11,17 @@ class DeletePaymentReceiptAction
 {
     public function handle(PaymentReceipt $receipt): void
     {
-        if ($receipt->status !== PaymentReceiptStatus::DRAFT) {
-            throw ValidationException::withMessages([
-                'status' => 'لا يمكن حذف إلا السندات المسودة.',
-            ]);
-        }
-
         DB::transaction(function () use ($receipt) {
+            $receipt = PaymentReceipt::query()
+                ->lockForUpdate()
+                ->findOrFail($receipt->id);
+
+            if ($receipt->status !== PaymentReceiptStatus::DRAFT) {
+                throw ValidationException::withMessages([
+                    'status' => 'لا يمكن حذف إلا السندات المسودة.',
+                ]);
+            }
+
             $receipt->delete();
         });
     }

@@ -21,12 +21,12 @@ class ConfirmSalesInvoiceAction
     public function handle(SalesInvoice $invoice): SalesInvoice
     {
         return DB::transaction(function () use ($invoice) {
-            $invoice->refresh();
+            $invoice = SalesInvoice::query()
+                ->lockForUpdate()
+                ->findOrFail($invoice->id);
 
             if ($invoice->status === SalesInvoiceStatus::CONFIRMED) {
-                throw ValidationException::withMessages([
-                    'status' => 'هذه الفاتورة مؤكدة بالفعل.',
-                ]);
+                return $invoice->load(['customer', 'items']);
             }
 
             if ($invoice->status === SalesInvoiceStatus::CANCELLED) {

@@ -40,7 +40,7 @@
 
 .invoice-payment-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
 
     gap: 8px;
 }
@@ -260,7 +260,7 @@
 
             عدد القطع:
 
-            {{ number_format($document->total_quantity, 0) }}
+            {{ number_format($document->total_quantity, 3) }}
 
         </div>
 
@@ -299,6 +299,28 @@
                 <div class="invoice-payment-value">
 
                     {{ $document->payment_status_label }}
+
+                </div>
+
+            </div>
+
+
+            {{-- Returns --}}
+
+            <div class="invoice-payment-item">
+
+                <div class="invoice-payment-label">
+                    المرتجعات
+                </div>
+
+                <div class="invoice-payment-value">
+
+                    {{ number_format(
+                        $document->returned_amount,
+                        2
+                    ) }}
+
+                    جنيه
 
                 </div>
 
@@ -449,7 +471,7 @@
 
                     {{ number_format(
                         $item->quantity,
-                        0
+                        3
                     ) }}
 
                 </td>
@@ -493,7 +515,7 @@
 
                 {{ number_format(
                     $document->total_quantity,
-                    0
+                    3
                 ) }}
 
             </strong>

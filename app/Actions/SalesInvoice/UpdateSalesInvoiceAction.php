@@ -16,13 +16,17 @@ class UpdateSalesInvoiceAction
 
     public function handle(SalesInvoice $invoice, array $data): SalesInvoice
     {
-        if ($invoice->status !== SalesInvoiceStatus::DRAFT) {
-            throw ValidationException::withMessages([
-                'status' => 'لا يمكن تعديل إلا الفواتير المسودة.',
-            ]);
-        }
-
         return DB::transaction(function () use ($invoice, $data) {
+            $invoice = SalesInvoice::query()
+                ->lockForUpdate()
+                ->findOrFail($invoice->id);
+
+            if ($invoice->status !== SalesInvoiceStatus::DRAFT) {
+                throw ValidationException::withMessages([
+                    'status' => 'لا يمكن تعديل إلا الفواتير المسودة.',
+                ]);
+            }
+
             $products = $data['products'];
             unset($data['products']);
 
