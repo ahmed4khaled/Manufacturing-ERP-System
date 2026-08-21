@@ -51,6 +51,21 @@ class ProductVariant extends Model
         return $this->hasMany(StockMovement::class);
     }
 
+    public function boms(): HasMany
+    {
+        return $this->hasMany(Bom::class);
+    }
+
+    public function productionOrders(): HasMany
+    {
+        return $this->hasMany(ProductionOrder::class);
+    }
+
+    public function productionOutputs(): HasMany
+    {
+        return $this->hasMany(ProductionOutput::class);
+    }
+
     public function scopeSearch(Builder $query, ?string $search): Builder
     {
         if (blank($search)) {

@@ -63,6 +63,22 @@ class PermissionSeeder extends Seeder
             'material_inventory.movements.view',
             'material_inventory.opening_stock',
             'material_inventory.adjustment',
+
+            // Procurement
+            'suppliers.view', 'suppliers.create', 'suppliers.update', 'suppliers.delete',
+            'purchase_orders.view', 'purchase_orders.create', 'purchase_orders.update', 'purchase_orders.approve', 'purchase_orders.cancel',
+            'goods_receipts.view', 'goods_receipts.create', 'goods_receipts.confirm',
+            'supplier_invoices.view', 'supplier_invoices.create',
+            'supplier_payments.view', 'supplier_payments.create',
+            'purchase_returns.view', 'purchase_returns.create', 'purchase_returns.confirm',
+
+            // Manufacturing
+            'workers.view', 'workers.create', 'workers.edit', 'workers.delete',
+            'manufacturing_operations.view', 'manufacturing_operations.create', 'manufacturing_operations.edit',
+            'boms.view', 'boms.create', 'boms.edit', 'boms.activate',
+            'production_orders.view', 'production_orders.create', 'production_orders.confirm',
+            'production_orders.execute', 'production_orders.review', 'production_orders.complete',
+            'production_orders.cancel', 'production_reports.view',
         ];
 
         foreach ($permissions as $permission) {

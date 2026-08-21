@@ -8,7 +8,11 @@ class CodeGeneratorService
 {
     public function generate(string $prefix, int $sequence): string
     {
-        return $prefix . str_pad(
+        $displayPrefix = in_array($prefix, ['MO', 'BOM', 'WRK'], true)
+            ? $prefix.'-'
+            : $prefix;
+
+        return $displayPrefix.str_pad(
             (string) $sequence,
             6,
             '0',
@@ -40,27 +44,39 @@ class CodeGeneratorService
             |--------------------------------------------------------------------------
             */
 
-          $sequenceConfig = [
-    'INV' => [
-        'table' => 'sales_invoices',
-        'column' => 'invoice_number',
-    ],
+            $sequenceConfig = [
+                'INV' => [
+                    'table' => 'sales_invoices',
+                    'column' => 'invoice_number',
+                ],
 
-    'SPAY' => [
-        'table' => 'supplier_payments',
-        'column' => 'payment_number',
-    ],
+                'SPAY' => [
+                    'table' => 'supplier_payments',
+                    'column' => 'payment_number',
+                ],
 
-    'PO' => [
-        'table' => 'purchase_orders',
-        'column' => 'purchase_order_number',
-    ],
+                'PO' => [
+                    'table' => 'purchase_orders',
+                    'column' => 'purchase_order_number',
+                ],
 
-    'RCPT' => [
-        'table' => 'payment_receipts',
-        'column' => 'receipt_number',
-    ],
-];
+                'RCPT' => [
+                    'table' => 'payment_receipts',
+                    'column' => 'receipt_number',
+                ],
+                'MO' => [
+                    'table' => 'production_orders',
+                    'column' => 'order_number',
+                ],
+                'BOM' => [
+                    'table' => 'boms',
+                    'column' => 'bom_number',
+                ],
+                'WRK' => [
+                    'table' => 'workers',
+                    'column' => 'code',
+                ],
+            ];
 
             if (isset($sequenceConfig[$prefix])) {
 

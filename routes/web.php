@@ -1,20 +1,27 @@
 <?php
 
+use App\Http\Controllers\BomController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ColorController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\CustomerLedgerController;
 use App\Http\Controllers\InventoryController;
+use App\Http\Controllers\ManufacturingOperationController;
 use App\Http\Controllers\MaterialController;
 use App\Http\Controllers\MaterialInventoryController;
 use App\Http\Controllers\PaymentReceiptController;
 use App\Http\Controllers\ProcurementController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ProductionDefectController;
+use App\Http\Controllers\ProductionOrderController;
+use App\Http\Controllers\ProductionReportController;
 use App\Http\Controllers\ProductVariantController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SalesInvoiceController;
 use App\Http\Controllers\SalesReturnController;
 use App\Http\Controllers\SizeController;
+use App\Http\Controllers\WorkAssignmentController;
+use App\Http\Controllers\WorkerController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -26,6 +33,35 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    Route::resource('workers', WorkerController::class);
+    Route::resource('manufacturing-operations', ManufacturingOperationController::class)->except(['show', 'destroy']);
+    Route::post('boms/{bom}/activate', [BomController::class, 'activate'])->name('boms.activate');
+    Route::resource('boms', BomController::class)->except('destroy');
+    Route::get('production-orders/{productionOrder}/print', [ProductionOrderController::class, 'print'])->name('production-orders.print');
+    Route::post('production-orders/{productionOrder}/confirm', [ProductionOrderController::class, 'confirm'])->name('production-orders.confirm');
+    Route::post('production-orders/{productionOrder}/hold', [ProductionOrderController::class, 'hold'])->name('production-orders.hold');
+    Route::post('production-orders/{productionOrder}/resume', [ProductionOrderController::class, 'resume'])->name('production-orders.resume');
+    Route::post('production-orders/{productionOrder}/cancel', [ProductionOrderController::class, 'cancel'])->name('production-orders.cancel');
+    Route::post('production-orders/{productionOrder}/complete', [ProductionOrderController::class, 'complete'])->name('production-orders.complete');
+    Route::post('production-orders/{productionOrder}/outputs', [ProductionOrderController::class, 'output'])->name('production-orders.outputs.store');
+    Route::resource('production-orders', ProductionOrderController::class)->only(['index', 'create', 'store', 'show']);
+    Route::get('work-assignments/{workAssignment}', [WorkAssignmentController::class, 'show'])->name('work-assignments.show');
+    Route::post('work-assignments/{workAssignment}/start', [WorkAssignmentController::class, 'start'])->name('work-assignments.start');
+    Route::post('work-assignments/{workAssignment}/complete', [WorkAssignmentController::class, 'complete'])->name('work-assignments.complete');
+    Route::post('work-assignments/{workAssignment}/defects', [WorkAssignmentController::class, 'defect'])->name('work-assignments.defects.store');
+    Route::post('work-assignment-materials/{allocation}/issue', [WorkAssignmentController::class, 'issue'])->name('work-assignment-materials.issue');
+    Route::post('work-assignment-materials/{allocation}/usage', [WorkAssignmentController::class, 'usage'])->name('work-assignment-materials.usage');
+    Route::post('work-assignment-materials/{allocation}/return', [WorkAssignmentController::class, 'returnMaterial'])->name('work-assignment-materials.return');
+    Route::post('work-assignment-materials/{allocation}/waste', [WorkAssignmentController::class, 'waste'])->name('work-assignment-materials.waste');
+    Route::post('production-material-transactions/{transaction}/approve', [WorkAssignmentController::class, 'approveWaste'])->name('production-material-transactions.approve');
+    Route::post('production-material-transactions/{transaction}/reject', [WorkAssignmentController::class, 'rejectWaste'])->name('production-material-transactions.reject');
+    Route::get('production-material-transactions/{transaction}/print', [WorkAssignmentController::class, 'printHandover'])->name('production-material-transactions.print');
+    Route::post('production-defects/{productionDefect}/approve', [ProductionDefectController::class, 'approve'])->name('production-defects.approve');
+    Route::post('production-defects/{productionDefect}/reject', [ProductionDefectController::class, 'reject'])->name('production-defects.reject');
+    Route::post('production-defects/{productionDefect}/rework', [ProductionDefectController::class, 'rework'])->name('production-defects.rework');
+    Route::post('production-reworks/{productionRework}/start', [ProductionDefectController::class, 'startRework'])->name('production-reworks.start');
+    Route::post('production-reworks/{productionRework}/complete', [ProductionDefectController::class, 'completeRework'])->name('production-reworks.complete');
+    Route::get('production-reports/material-variance', [ProductionReportController::class, 'materialVariance'])->name('production-reports.material-variance');
     Route::get(
         '/customer-ledger/{customer}/print',
         [CustomerLedgerController::class, 'print']

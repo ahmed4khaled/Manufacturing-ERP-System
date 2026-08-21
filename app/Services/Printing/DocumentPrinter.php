@@ -42,6 +42,8 @@ class DocumentPrinter
 
             'goods_receipt' => 'printing.goods-receipt',
             'customer_statement' => 'printing.customer_statement',
+            'production_order' => 'printing.production-order',
+            'material_handover' => 'printing.material-handover',
             default => throw new InvalidArgumentException(
                 "نوع المستند غير مدعوم للطباعة: {$type}"
             ),

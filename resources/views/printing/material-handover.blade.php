@@ -1,0 +1,8 @@
+@extends('printing.layout')
+@php($printTitle='إذن تسليم خامة') @php($printNumber=$document->productionOrder->order_number.'-'.$document->id) @php($printDate=$document->occurred_at->format('Y-m-d'))
+@section('print-content')
+<div class="info-grid"><div class="info-box"><div class="info-label">العامل المستلم</div><div class="info-name">{{ $document->worker->name }}</div><div class="info-line">الكود: {{ $document->worker->code }}</div><div class="info-line">التخصص: {{ $document->worker->specialization?:'—' }}</div></div><div class="info-box"><div class="info-label">مرجع الإنتاج</div><div class="info-line">أمر الإنتاج: {{ $document->productionOrder->order_number }}</div><div class="info-line">العملية: {{ $document->workAssignment->operation->operation_name }}</div><div class="info-line">سجل بواسطة: {{ $document->recorder?->name??'—' }}</div><div class="info-line">الوقت: {{ $document->occurred_at->format('Y-m-d H:i') }}</div></div></div>
+<table class="items-table"><thead><tr><th>الخامة</th><th>الكمية</th><th>الوحدة</th><th>نوع الحركة</th></tr></thead><tbody><tr><td>{{ $document->material->name }} ({{ $document->material->code }})</td><td>{{ number_format($document->quantity,3) }}</td><td>{{ $document->material->unit->label() }}</td><td>{{ $document->type->label() }}</td></tr></tbody></table>
+@if($document->notes)<div class="notes"><div class="notes-title">ملاحظات</div><div class="notes-content">{{ $document->notes }}</div></div>@endif
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:60px;margin-top:60px;text-align:center"><div>توقيع العامل المستلم<hr></div><div>توقيع مسؤول المخزن<hr></div></div>
+@endsection

@@ -84,6 +84,18 @@ class RoleSeeder extends Seeder
                 'payment_receipts.cancel',
                 'customer_ledger.view',
             ],
+            'Manufacturing' => [
+                'workers.view', 'manufacturing_operations.view', 'boms.view',
+                'production_orders.view', 'production_orders.create', 'production_orders.execute',
+            ],
+            'Production Supervisor' => [
+                'workers.view', 'workers.create', 'workers.edit',
+                'manufacturing_operations.view', 'manufacturing_operations.create', 'manufacturing_operations.edit',
+                'boms.view', 'boms.create', 'boms.edit', 'boms.activate',
+                'production_orders.view', 'production_orders.create', 'production_orders.confirm',
+                'production_orders.execute', 'production_orders.review', 'production_orders.complete',
+                'production_orders.cancel', 'production_reports.view',
+            ],
         ];
 
         foreach ($roles as $name => $permissionNames) {

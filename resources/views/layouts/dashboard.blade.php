@@ -222,6 +222,13 @@
                 تسويات مخزون الخامات
             </a>
 
+            <div class="nav-section">التصنيع</div>
+            <a href="{{ route('workers.index') }}" class="nav-link sub-link {{ request()->routeIs('workers.*') ? 'active' : '' }}"><i class="bi bi-people"></i>العمال</a>
+            <a href="{{ route('manufacturing-operations.index') }}" class="nav-link sub-link {{ request()->routeIs('manufacturing-operations.*') ? 'active' : '' }}"><i class="bi bi-list-ol"></i>عمليات التصنيع</a>
+            <a href="{{ route('boms.index') }}" class="nav-link sub-link {{ request()->routeIs('boms.*') ? 'active' : '' }}"><i class="bi bi-diagram-3"></i>قوائم المواد BOM</a>
+            <a href="{{ route('production-orders.index') }}" class="nav-link sub-link {{ request()->routeIs('production-orders.*', 'work-assignments.*', 'production-defects.*', 'production-reworks.*') ? 'active' : '' }}"><i class="bi bi-gear-wide-connected"></i>أوامر الإنتاج</a>
+            <a href="{{ route('production-reports.material-variance') }}" class="nav-link sub-link {{ request()->routeIs('production-reports.*') ? 'active' : '' }}"><i class="bi bi-graph-up"></i>انحراف الخامات</a>
+
             <div class="nav-section">مخزون المنتجات</div>
             <a href="{{ route('inventory.index') }}" class="nav-link {{ request()->routeIs('inventory.index', 'inventory.show') ? 'active' : '' }}">
                 <i class="bi bi-boxes"></i>

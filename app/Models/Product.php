@@ -38,6 +38,16 @@ class Product extends Model
         return $this->hasMany(ProductVariant::class);
     }
 
+    public function boms(): HasMany
+    {
+        return $this->hasMany(Bom::class);
+    }
+
+    public function productionOrders(): HasMany
+    {
+        return $this->hasMany(ProductionOrder::class);
+    }
+
     public function scopeSearch(Builder $query, ?string $search): Builder
     {
         if (blank($search)) {

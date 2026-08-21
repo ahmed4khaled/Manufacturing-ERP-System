@@ -39,6 +39,21 @@ class Material extends Model
         return $this->hasMany(MaterialStockMovement::class);
     }
 
+    public function bomItems(): HasMany
+    {
+        return $this->hasMany(BomItem::class);
+    }
+
+    public function productionOrderMaterials(): HasMany
+    {
+        return $this->hasMany(ProductionOrderMaterial::class);
+    }
+
+    public function productionMaterialTransactions(): HasMany
+    {
+        return $this->hasMany(ProductionMaterialTransaction::class);
+    }
+
     public function scopeSearch(Builder $query, ?string $search): Builder
     {
         if (blank($search)) {

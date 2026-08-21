@@ -13,6 +13,7 @@ enum StockMovementType: string
     case ADJUSTMENT_OUT = 'adjustment_out';
     case PURCHASE_RECEIPT = 'purchase_receipt';
     case PURCHASE_RETURN = 'purchase_return';
+    case PRODUCTION_OUTPUT = 'production_output';
 
     public function label(): string
     {
@@ -26,6 +27,7 @@ enum StockMovementType: string
             self::ADJUSTMENT_OUT => 'تسوية خصم',
             self::PURCHASE_RECEIPT => 'استلام مشتريات',
             self::PURCHASE_RETURN => 'مرتجع مشتريات',
+            self::PRODUCTION_OUTPUT => 'إنتاج تام',
         };
     }
 }

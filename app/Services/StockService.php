@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\StockMovementDirection;
 use App\Enums\StockMovementType;
 use App\Models\GoodsReceipt;
+use App\Models\ProductionOutput;
 use App\Models\ProductVariant;
 use App\Models\PurchaseReturn;
 use App\Models\SalesInvoice;
@@ -261,6 +262,24 @@ class StockService
         foreach ($return->items as $item) {
             $this->createMovement(['product_variant_id' => $item->product_variant_id, 'movement_type' => StockMovementType::PURCHASE_RETURN, 'direction' => StockMovementDirection::OUT, 'quantity' => $item->quantity, 'reference_type' => PurchaseReturn::class, 'reference_id' => $return->id, 'reference_number' => $return->return_number, 'movement_date' => $return->return_date->toDateString(), 'notes' => 'مرتجع مشتريات', 'user_id' => $return->created_by]);
         }
+    }
+
+    public function createProductionOutputMovement(ProductionOutput $output): StockMovement
+    {
+        $this->assertReferenceNotPosted(ProductionOutput::class, $output->id, StockMovementType::PRODUCTION_OUTPUT);
+
+        return $this->createMovement([
+            'product_variant_id' => $output->product_variant_id,
+            'movement_type' => StockMovementType::PRODUCTION_OUTPUT,
+            'direction' => StockMovementDirection::IN,
+            'quantity' => $output->quantity,
+            'reference_type' => ProductionOutput::class,
+            'reference_id' => $output->id,
+            'reference_number' => $output->productionOrder->order_number,
+            'movement_date' => $output->output_date,
+            'notes' => 'إنتاج تام',
+            'user_id' => $output->recorded_by,
+        ]);
     }
 
     private function createMovement(array $data): StockMovement

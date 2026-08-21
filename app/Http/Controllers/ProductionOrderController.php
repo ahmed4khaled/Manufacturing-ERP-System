@@ -1,0 +1,161 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Actions\ProductionOrder\CancelProductionOrderAction;
+use App\Actions\ProductionOrder\CompleteProductionOrderAction;
+use App\Actions\ProductionOrder\ConfirmProductionOrderAction;
+use App\Actions\ProductionOrder\CreateProductionOrderAction;
+use App\Actions\ProductionOrder\HoldProductionOrderAction;
+use App\Actions\ProductionOrder\RecordProductionOutputAction;
+use App\Actions\ProductionOrder\ResumeProductionOrderAction;
+use App\Enums\BomStatus;
+use App\Enums\WorkerStatus;
+use App\Http\Requests\ProductionOrder\RecordProductionOutputRequest;
+use App\Http\Requests\ProductionOrder\StoreProductionOrderRequest;
+use App\Models\Bom;
+use App\Models\ProductionOrder;
+use App\Models\Worker;
+use App\Services\MaterialStockService;
+use App\Services\Printing\DocumentPrinter;
+use App\Services\ProductionSummaryService;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
+
+class ProductionOrderController extends Controller
+{
+    public function index(Request $request): View
+    {
+        $orders = ProductionOrder::query()->with(['productVariant.color', 'productVariant.size'])->withSum('outputs', 'quantity')->search($request->input('search'))->filterStatus($request->input('status'))->latest('planned_start_date')->latest('id')->paginate(15)->withQueryString();
+
+        return view('production-orders.index', compact('orders'));
+    }
+
+    public function create(MaterialStockService $stock): View
+    {
+        $boms = Bom::query()->where('status', BomStatus::ACTIVE)->with(['product', 'productVariant.color', 'productVariant.size', 'items.material', 'operations'])->orderBy('bom_number')->get();
+        $stocks = $stock->getCurrentStocks($boms->flatMap->items->pluck('material')->filter()->unique('id')->values());
+        $workers = Worker::query()->where('status', WorkerStatus::ACTIVE)->orderBy('name')->get();
+
+        $bomWizardData = $boms->map(function (Bom $bom) use ($stocks): array {
+            $variant = $bom->productVariant;
+            $variantParts = array_values(array_filter([
+                $variant?->color?->name,
+                $variant?->size?->name,
+            ]));
+            $variantLabel = implode(' / ', $variantParts);
+
+            if (filled($variant?->sku)) {
+                $variantLabel = trim($variantLabel.' ('.$variant->sku.')');
+            }
+
+            return [
+                'id' => $bom->id,
+                'number' => $bom->bom_number,
+                'version' => $bom->version,
+                'product_id' => $bom->product_id,
+                'product' => $bom->product?->name ?? '',
+                'variant_id' => $bom->product_variant_id,
+                'variant' => $variantLabel,
+                'basis' => (float) $bom->basis_quantity,
+                'items' => $bom->items->map(fn ($item): array => [
+                    'id' => $item->id,
+                    'name' => $item->material_name,
+                    'unit' => $item->unit,
+                    'quantity' => (float) $item->quantity,
+                    'available' => (float) ($stocks[$item->material_id] ?? 0),
+                ])->values()->all(),
+                'operations' => $bom->operations->map(fn ($operation): array => [
+                    'id' => $operation->id,
+                    'name' => $operation->operation_name,
+                    'sequence' => $operation->sequence,
+                ])->values()->all(),
+            ];
+        })->values()->all();
+
+        $workerWizardData = $workers->map(fn (Worker $worker): array => [
+            'id' => $worker->id,
+            'name' => $worker->name,
+            'code' => $worker->code,
+        ])->values()->all();
+
+        return view('production-orders.create', compact(
+            'boms',
+            'stocks',
+            'workers',
+            'bomWizardData',
+            'workerWizardData',
+        ));
+    }
+
+    public function store(StoreProductionOrderRequest $request, CreateProductionOrderAction $action): RedirectResponse
+    {
+        $order = $action->handle($request->validated());
+
+        return redirect()->route('production-orders.show', $order)->with('success', 'تم إنشاء أمر الإنتاج بنجاح.');
+    }
+
+    public function show(ProductionOrder $productionOrder, ProductionSummaryService $summary): View
+    {
+        $productionOrder->load(['creator', 'materials.material', 'operations', 'workAssignments.worker', 'workAssignments.operation', 'workAssignments.materials.productionOrderMaterial', 'materialTransactions.worker', 'materialTransactions.material', 'materialTransactions.recorder', 'materialTransactions.reviewer', 'outputs.recorder', 'defects.worker', 'defects.operation', 'defects.recorder', 'defects.reviewer', 'reworks.worker', 'reworks.operation', 'activities.user']);
+        $orderSummary = $summary->orderSummary($productionOrder);
+        foreach ($productionOrder->workAssignments as $assignment) {
+            foreach ($assignment->materials as $allocation) {
+                $allocation->accountability = $summary->materialTotals($allocation);
+            }
+        }
+        $workers = Worker::query()->where('status', WorkerStatus::ACTIVE)->orderBy('name')->get();
+
+        return view('production-orders.show', compact('productionOrder', 'orderSummary', 'workers'));
+    }
+
+    public function confirm(ProductionOrder $productionOrder, ConfirmProductionOrderAction $action): RedirectResponse
+    {
+        return $this->run(fn () => $action->handle($productionOrder), 'تم تأكيد أمر الإنتاج.');
+    }
+
+    public function hold(ProductionOrder $productionOrder, HoldProductionOrderAction $action): RedirectResponse
+    {
+        return $this->run(fn () => $action->handle($productionOrder), 'تم تعليق أمر الإنتاج.');
+    }
+
+    public function resume(ProductionOrder $productionOrder, ResumeProductionOrderAction $action): RedirectResponse
+    {
+        return $this->run(fn () => $action->handle($productionOrder), 'تم استئناف أمر الإنتاج.');
+    }
+
+    public function cancel(ProductionOrder $productionOrder, CancelProductionOrderAction $action): RedirectResponse
+    {
+        return $this->run(fn () => $action->handle($productionOrder), 'تم إلغاء أمر الإنتاج.');
+    }
+
+    public function complete(ProductionOrder $productionOrder, CompleteProductionOrderAction $action): RedirectResponse
+    {
+        return $this->run(fn () => $action->handle($productionOrder), 'تم إغلاق أمر الإنتاج.');
+    }
+
+    public function output(RecordProductionOutputRequest $request, ProductionOrder $productionOrder, RecordProductionOutputAction $action): RedirectResponse
+    {
+        return $this->run(fn () => $action->handle($productionOrder, $request->validated()), 'تم ترحيل الإنتاج التام إلى المخزون.');
+    }
+
+    public function print(ProductionOrder $productionOrder, DocumentPrinter $printer): View
+    {
+        $productionOrder->load(['materials', 'operations', 'workAssignments.worker', 'workAssignments.operation']);
+
+        return $printer->render($productionOrder, 'production_order');
+    }
+
+    private function run(callable $callback, string $message): RedirectResponse
+    {
+        try {
+            $callback();
+        } catch (ValidationException $e) {
+            return back()->with('error', $e->validator->errors()->first());
+        }
+
+        return back()->with('success', $message);
+    }
+}

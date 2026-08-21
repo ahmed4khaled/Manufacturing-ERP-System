@@ -7,6 +7,7 @@ use App\Enums\StockMovementDirection;
 use App\Models\GoodsReceipt;
 use App\Models\Material;
 use App\Models\MaterialStockMovement;
+use App\Models\ProductionMaterialTransaction;
 use App\Models\PurchaseReturn;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -230,6 +231,42 @@ class MaterialStockService
         return $this->createMovement($data + [
             'movement_type' => MaterialStockMovementType::PURCHASE_RETURN,
             'direction' => StockMovementDirection::OUT,
+        ]);
+    }
+
+    public function createProductionIssueMovement(ProductionMaterialTransaction $transaction): MaterialStockMovement
+    {
+        $this->assertReferenceNotPosted(ProductionMaterialTransaction::class, $transaction->id, $transaction->material_id);
+
+        return $this->createMovement([
+            'material_id' => $transaction->material_id,
+            'movement_type' => MaterialStockMovementType::PRODUCTION_ISSUE,
+            'direction' => StockMovementDirection::OUT,
+            'quantity' => $transaction->quantity,
+            'reference_type' => ProductionMaterialTransaction::class,
+            'reference_id' => $transaction->id,
+            'reference_number' => $transaction->productionOrder->order_number,
+            'movement_date' => $transaction->occurred_at->toDateString(),
+            'notes' => 'صرف خامة للعامل '.$transaction->worker->name,
+            'user_id' => $transaction->recorded_by,
+        ]);
+    }
+
+    public function createProductionReturnMovement(ProductionMaterialTransaction $transaction): MaterialStockMovement
+    {
+        $this->assertReferenceNotPosted(ProductionMaterialTransaction::class, $transaction->id, $transaction->material_id);
+
+        return $this->createMovement([
+            'material_id' => $transaction->material_id,
+            'movement_type' => MaterialStockMovementType::PRODUCTION_RETURN,
+            'direction' => StockMovementDirection::IN,
+            'quantity' => $transaction->quantity,
+            'reference_type' => ProductionMaterialTransaction::class,
+            'reference_id' => $transaction->id,
+            'reference_number' => $transaction->productionOrder->order_number,
+            'movement_date' => $transaction->occurred_at->toDateString(),
+            'notes' => 'مرتجع خامة من العامل '.$transaction->worker->name,
+            'user_id' => $transaction->recorded_by,
         ]);
     }
 
