@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -101,11 +100,6 @@ class RoleSeeder extends Seeder
         foreach ($roles as $name => $permissionNames) {
             $role = Role::firstOrCreate(['name' => $name, 'guard_name' => 'web']);
             $role->syncPermissions($permissionNames);
-        }
-
-        $adminUser = User::where('email', 'test@example.com')->first();
-        if ($adminUser) {
-            $adminUser->syncRoles(['Admin']);
         }
     }
 }

@@ -49,12 +49,12 @@ use Illuminate\Validation\ValidationException;
 function manufacturingFixture(): array
 {
     $category = Category::create(['code' => 'MFG-CAT', 'name' => 'Manufacturing', 'status' => 'active']);
-    $product = Product::create(['category_id' => $category->id, 'name' => 'Abaya Model A', 'code' => 'MFG-P', 'cost_price' => 0, 'status' => 'active']);
+    $product = Product::create(['category_id' => $category->id, 'name' => 'Abaya Model A', 'code' => 'MFG-P', 'base_cost_price' => 100, 'cost_price' => 100, 'status' => 'active']);
     $color = Color::create(['name' => 'Black MFG', 'code' => 'MFG-BLK', 'status' => 'active']);
     $size = Size::create(['name' => 'Large MFG', 'code' => 'MFG-L', 'status' => 'active']);
     $variant = ProductVariant::create(['product_id' => $product->id, 'color_id' => $color->id, 'size_id' => $size->id, 'sku' => 'MFG-SKU', 'barcode' => 'MFG-BAR', 'default_price' => 0, 'quantity' => 0, 'status' => 'active']);
     $material = Material::create(['code' => 'MAT-FAB', 'name' => 'Fabric', 'category' => 'fabric', 'unit' => 'meter', 'minimum_stock' => 0, 'quantity' => 0, 'status' => 'active']);
-    $operation = ManufacturingOperation::create(['name' => 'Cutting MFG', 'status' => 'active']);
+    $operation = ManufacturingOperation::create(['name' => 'Cutting MFG', 'default_unit_cost' => 10, 'status' => 'active']);
     $worker = Worker::create(['code' => 'WRK-TEST', 'name' => 'Ahmed Worker', 'status' => 'active']);
 
     return compact('product', 'variant', 'material', 'operation', 'worker');
@@ -104,6 +104,25 @@ it('rolls back invalid assignment and allocation totals', function () {
     expect(ProductionOrder::count())->toBe(0);
 });
 
+it('snapshots operation costs and adds them to the production order cost', function () {
+    $f = manufacturingFixture();
+    $bom = manufacturingBom($f);
+    $order = manufacturingOrder($f, $bom);
+
+    expect((string) $bom->operations->first()->unit_cost)->toBe('10.00')
+        ->and((string) $f['product']->fresh()->cost_price)->toBe('110.00')
+        ->and((string) $order->base_unit_cost)->toBe('100.00')
+        ->and((string) $order->operations_unit_cost)->toBe('10.00')
+        ->and((string) $order->estimated_unit_cost)->toBe('110.00')
+        ->and((string) $order->estimated_total_cost)->toBe('1100.00')
+        ->and((string) $order->operations->first()->total_cost)->toBe('100.00');
+
+    $f['operation']->update(['default_unit_cost' => 25]);
+
+    expect((string) $bom->fresh()->operations->first()->unit_cost)->toBe('10.00')
+        ->and((string) $order->fresh()->estimated_unit_cost)->toBe('110.00');
+});
+
 it('runs material accountability and finished goods posting without double deduction', function () {
     $f = manufacturingFixture();
     $bom = manufacturingBom($f);
@@ -134,6 +153,11 @@ it('runs material accountability and finished goods posting without double deduc
         ->and(app(StockService::class)->getCurrentStock($f['variant']))->toBe('9.000')
         ->and(StockMovement::where('movement_type', StockMovementType::PRODUCTION_OUTPUT)->count())->toBe(1)
         ->and($order->fresh()->status)->toBe(ProductionOrderStatus::COMPLETED)
+        ->and((string) $order->fresh()->final_total_cost)->toBe('1100.00')
+        ->and((string) $order->fresh()->final_unit_cost)->toBe('122.22')
+        ->and((string) $order->outputs()->first()->unit_cost)->toBe('122.22')
+        ->and((string) $f['product']->fresh()->cost_price)->toBe('122.22')
+        ->and((string) $f['product']->fresh()->base_cost_price)->toBe('100.00')
         ->and($assignment->fresh()->worker_id)->toBe($f['worker']->id)
         ->and($waste->fresh()->recorded_by)->toBe(auth()->id())
         ->and($waste->fresh()->reviewed_by)->toBe(auth()->id());

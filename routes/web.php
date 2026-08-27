@@ -20,6 +20,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SalesInvoiceController;
 use App\Http\Controllers\SalesReturnController;
 use App\Http\Controllers\SizeController;
+use App\Http\Controllers\StatisticsController;
 use App\Http\Controllers\WorkAssignmentController;
 use App\Http\Controllers\WorkerController;
 use Illuminate\Support\Facades\Route;
@@ -33,6 +34,19 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    Route::prefix('statistics')->name('statistics.')->middleware('permission:statistics.view')->group(function () {
+        Route::get('/', [StatisticsController::class, 'dashboard'])->name('dashboard');
+        Route::get('sales', [StatisticsController::class, 'sales'])->name('sales');
+        Route::get('customers', [StatisticsController::class, 'customers'])->name('customers');
+        Route::get('collections', [StatisticsController::class, 'collections'])->name('collections');
+        Route::get('purchases', [StatisticsController::class, 'purchases'])->name('purchases');
+        Route::get('inventory', [StatisticsController::class, 'inventory'])->name('inventory');
+        Route::get('materials', [StatisticsController::class, 'materials'])->name('materials');
+        Route::get('manufacturing', [StatisticsController::class, 'manufacturing'])->name('manufacturing');
+        Route::get('workers', [StatisticsController::class, 'workers'])->name('workers');
+        Route::get('defects', [StatisticsController::class, 'defects'])->name('defects');
+        Route::get('returns', [StatisticsController::class, 'returns'])->name('returns');
+    });
     Route::resource('workers', WorkerController::class);
     Route::resource('manufacturing-operations', ManufacturingOperationController::class)->except(['show', 'destroy']);
     Route::post('boms/{bom}/activate', [BomController::class, 'activate'])->name('boms.activate');

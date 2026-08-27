@@ -35,7 +35,7 @@ class ProductionOrderController extends Controller
 
     public function create(MaterialStockService $stock): View
     {
-        $boms = Bom::query()->where('status', BomStatus::ACTIVE)->with(['product', 'productVariant.color', 'productVariant.size', 'items.material', 'operations'])->orderBy('bom_number')->get();
+        $boms = Bom::query()->where('status', BomStatus::ACTIVE)->with(['product', 'productVariant.color', 'productVariant.size', 'items.material', 'items.operationAllocations', 'operations'])->orderBy('bom_number')->get();
         $stocks = $stock->getCurrentStocks($boms->flatMap->items->pluck('material')->filter()->unique('id')->values());
         $workers = Worker::query()->where('status', WorkerStatus::ACTIVE)->orderBy('name')->get();
 
@@ -60,17 +60,35 @@ class ProductionOrderController extends Controller
                 'variant_id' => $bom->product_variant_id,
                 'variant' => $variantLabel,
                 'basis' => (float) $bom->basis_quantity,
-                'items' => $bom->items->map(fn ($item): array => [
-                    'id' => $item->id,
-                    'name' => $item->material_name,
-                    'unit' => $item->unit,
-                    'quantity' => (float) $item->quantity,
-                    'available' => (float) ($stocks[$item->material_id] ?? 0),
-                ])->values()->all(),
+                'items' => $bom->items->map(function ($item) use ($bom, $stocks): array {
+                    $operationAllocations = $item->operationAllocations
+                        ->sortBy(fn ($allocation) => $bom->operations->firstWhere('id', $allocation->bom_operation_id)?->sequence)
+                        ->map(fn ($allocation): array => [
+                            'bom_operation_id' => $allocation->bom_operation_id,
+                            'quantity' => (float) $allocation->quantity,
+                        ]);
+
+                    if ($operationAllocations->isEmpty() && $bom->operations->isNotEmpty()) {
+                        $operationAllocations->push([
+                            'bom_operation_id' => $bom->operations->sortBy('sequence')->first()->id,
+                            'quantity' => (float) $item->quantity,
+                        ]);
+                    }
+
+                    return [
+                        'id' => $item->id,
+                        'name' => $item->material_name,
+                        'unit' => $item->unit,
+                        'quantity' => (float) $item->quantity,
+                        'available' => (float) ($stocks[$item->material_id] ?? 0),
+                        'operations' => $operationAllocations->values()->all(),
+                    ];
+                })->values()->all(),
                 'operations' => $bom->operations->map(fn ($operation): array => [
                     'id' => $operation->id,
                     'name' => $operation->operation_name,
                     'sequence' => $operation->sequence,
+                    'unit_cost' => (float) $operation->unit_cost,
                 ])->values()->all(),
             ];
         })->values()->all();
@@ -99,7 +117,7 @@ class ProductionOrderController extends Controller
 
     public function show(ProductionOrder $productionOrder, ProductionSummaryService $summary): View
     {
-        $productionOrder->load(['creator', 'materials.material', 'operations', 'workAssignments.worker', 'workAssignments.operation', 'workAssignments.materials.productionOrderMaterial', 'materialTransactions.worker', 'materialTransactions.material', 'materialTransactions.recorder', 'materialTransactions.reviewer', 'outputs.recorder', 'defects.worker', 'defects.operation', 'defects.recorder', 'defects.reviewer', 'reworks.worker', 'reworks.operation', 'activities.user']);
+        $productionOrder->load(['creator', 'materials.material', 'materials.operationRequirements.productionOrderOperation', 'operations', 'workAssignments.worker', 'workAssignments.operation', 'workAssignments.materials.productionOrderMaterial', 'workAssignments.materials.operationRequirement', 'materialTransactions.worker', 'materialTransactions.material', 'materialTransactions.recorder', 'materialTransactions.reviewer', 'outputs.recorder', 'defects.worker', 'defects.operation', 'defects.recorder', 'defects.reviewer', 'reworks.worker', 'reworks.operation', 'activities.user']);
         $orderSummary = $summary->orderSummary($productionOrder);
         foreach ($productionOrder->workAssignments as $assignment) {
             foreach ($assignment->materials as $allocation) {

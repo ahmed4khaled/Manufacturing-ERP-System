@@ -31,4 +31,9 @@ class ProductionOrderMaterial extends Model
     {
         return $this->hasMany(WorkAssignmentMaterial::class);
     }
+
+    public function operationRequirements(): HasMany
+    {
+        return $this->hasMany(ProductionOrderMaterialOperation::class);
+    }
 }

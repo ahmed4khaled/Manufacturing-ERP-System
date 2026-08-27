@@ -25,7 +25,7 @@ class UpdateBomAction
                 $bom->update(['product_id' => $variant->product_id, 'product_variant_id' => $variant->id, 'basis_quantity' => $data['basis_quantity'], 'notes' => $data['notes'] ?? null]);
                 $this->creator->replaceDetails($bom, $data);
 
-                return $bom->fresh(['items', 'operations']);
+                return $bom->fresh(['items.operationAllocations', 'operations']);
             }
             if ($bom->status !== BomStatus::ACTIVE) {
                 throw ValidationException::withMessages(['status' => 'لا يمكن تعديل إصدار BOM متوقف.']);
@@ -35,7 +35,7 @@ class UpdateBomAction
             $next = Bom::create(['bom_number' => $bom->bom_number, 'version' => $version, 'product_id' => $variant->product_id, 'product_variant_id' => $variant->id, 'basis_quantity' => $data['basis_quantity'], 'notes' => $data['notes'] ?? null, 'status' => BomStatus::DRAFT, 'created_by' => auth()->id()]);
             $this->creator->replaceDetails($next, $data);
 
-            return $next->fresh(['items', 'operations']);
+            return $next->fresh(['items.operationAllocations', 'operations']);
         });
     }
 }

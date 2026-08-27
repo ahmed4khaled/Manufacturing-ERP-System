@@ -27,7 +27,7 @@ class RecordProductionOutputAction
             if (bccomp($newTotal, $summary['good'], 3) > 0 || bccomp($newTotal, (string) $order->planned_quantity, 3) > 0) {
                 throw ValidationException::withMessages(['quantity' => 'الإنتاج المرحل يتجاوز الإنتاج الجيد المتاح.']);
             }
-            $output = ProductionOutput::create(['production_order_id' => $order->id, 'product_variant_id' => $order->product_variant_id, 'quantity' => $data['quantity'], 'output_date' => $data['output_date'], 'notes' => $data['notes'] ?? null, 'recorded_by' => auth()->id()]);
+            $output = ProductionOutput::create(['production_order_id' => $order->id, 'product_variant_id' => $order->product_variant_id, 'quantity' => $data['quantity'], 'unit_cost' => $order->estimated_unit_cost, 'total_cost' => bcmul((string) $order->estimated_unit_cost, (string) $data['quantity'], 2), 'output_date' => $data['output_date'], 'notes' => $data['notes'] ?? null, 'recorded_by' => auth()->id()]);
             $output->load('productionOrder');
             $this->stock->createProductionOutputMovement($output);
             $output->update(['posted_at' => now()]);

@@ -79,6 +79,9 @@ class PermissionSeeder extends Seeder
             'production_orders.view', 'production_orders.create', 'production_orders.confirm',
             'production_orders.execute', 'production_orders.review', 'production_orders.complete',
             'production_orders.cancel', 'production_reports.view',
+
+            // Management
+            'statistics.view',
         ];
 
         foreach ($permissions as $permission) {

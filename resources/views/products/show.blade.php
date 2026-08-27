@@ -44,6 +44,7 @@
                         <div class="col-md-6">
                             <label class="form-label text-muted small mb-1">سعر التكلفة</label>
                             <p class="mb-0 fw-semibold">{{ number_format($product->cost_price, 2) }} ج.م</p>
+                            <small class="text-muted">أساسية قبل التشغيل: {{ number_format($product->base_cost_price, 2) }} ج.م</small>
                         </div>
                     </div>
                 </div>

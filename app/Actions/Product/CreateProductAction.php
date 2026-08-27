@@ -17,6 +17,8 @@ class CreateProductAction
     {
         return DB::transaction(function () use ($data) {
             $data['status'] = ProductStatus::ACTIVE;
+            $data['base_cost_price'] = $data['base_cost_price'] ?? $data['cost_price'] ?? 0;
+            $data['cost_price'] = $data['base_cost_price'];
 
             $product = Product::create($data);
 

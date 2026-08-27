@@ -30,6 +30,20 @@ class CustomerLedgerService
         return bcsub($debit, $credit, 2);
     }
 
+    /**
+     * @param  Collection<int, int>|null  $customerIds
+     * @return Collection<int, string>
+     */
+    public function getBalances(?Collection $customerIds = null): Collection
+    {
+        return CustomerLedgerEntry::query()
+            ->selectRaw('customer_id, SUM(debit) - SUM(credit) AS balance')
+            ->when($customerIds !== null, fn ($query) => $query->whereIn('customer_id', $customerIds))
+            ->groupBy('customer_id')
+            ->pluck('balance', 'customer_id')
+            ->map(fn ($balance) => bcadd((string) $balance, '0', 2));
+    }
+
     public function getAvailableCredit(string $creditLimit, string $balance): string
     {
         return bcsub($creditLimit, $balance, 2);

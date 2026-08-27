@@ -15,6 +15,6 @@ class StoreManufacturingOperationRequest extends FormRequest
 
     public function rules(): array
     {
-        return ['name' => ['required', 'string', 'max:255', Rule::unique('manufacturing_operations', 'name')->ignore($this->route('manufacturing_operation'))], 'description' => ['nullable', 'string', 'max:5000'], 'status' => ['required', Rule::enum(ManufacturingOperationStatus::class)]];
+        return ['name' => ['required', 'string', 'max:255', Rule::unique('manufacturing_operations', 'name')->ignore($this->route('manufacturing_operation'))], 'description' => ['nullable', 'string', 'max:5000'], 'default_unit_cost' => ['required', 'numeric', 'min:0'], 'status' => ['required', Rule::enum(ManufacturingOperationStatus::class)]];
     }
 }

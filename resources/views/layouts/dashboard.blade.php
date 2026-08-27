@@ -82,6 +82,22 @@
             font-size: 0.875rem;
         }
 
+        .erp-sidebar .nav-link.nav-toggle {
+            width: 100%;
+            border: 0;
+            background: transparent;
+            text-align: right;
+        }
+
+        .erp-sidebar .nav-link.nav-toggle .toggle-icon {
+            margin-right: auto;
+            transition: transform 0.2s ease;
+        }
+
+        .erp-sidebar .nav-link.nav-toggle[aria-expanded="true"] .toggle-icon {
+            transform: rotate(180deg);
+        }
+
         .erp-navbar {
             position: fixed;
             top: 0;
@@ -269,6 +285,39 @@
             </a>
 
            
+
+            @can('statistics.view')
+                <div class="nav-section">الإحصائيات</div>
+                <button class="nav-link nav-toggle {{ request()->routeIs('statistics.*') ? 'active' : '' }}"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#statistics-nav"
+                        aria-expanded="{{ request()->routeIs('statistics.*') ? 'true' : 'false' }}"
+                        aria-controls="statistics-nav">
+                    <i class="bi bi-bar-chart-line"></i>
+                    الإحصائيات
+                    <i class="bi bi-chevron-down toggle-icon"></i>
+                </button>
+                <div class="collapse {{ request()->routeIs('statistics.*') ? 'show' : '' }}" id="statistics-nav">
+                    @foreach([
+                        ['statistics.dashboard', 'bi-speedometer2', 'لوحة الإحصائيات'],
+                        ['statistics.sales', 'bi-receipt', 'إحصائيات المبيعات'],
+                        ['statistics.customers', 'bi-people', 'إحصائيات العملاء'],
+                        ['statistics.collections', 'bi-cash-coin', 'إحصائيات التحصيلات'],
+                        ['statistics.purchases', 'bi-cart-check', 'إحصائيات المشتريات'],
+                        ['statistics.inventory', 'bi-boxes', 'إحصائيات المخزون'],
+                        ['statistics.materials', 'bi-box-seam', 'إحصائيات الخامات'],
+                        ['statistics.manufacturing', 'bi-gear-wide-connected', 'إحصائيات التصنيع'],
+                        ['statistics.workers', 'bi-person-workspace', 'إحصائيات العمال'],
+                        ['statistics.defects', 'bi-bandaid', 'العيوب والهالك'],
+                        ['statistics.returns', 'bi-arrow-return-right', 'إحصائيات المرتجعات'],
+                    ] as [$statisticsRoute, $statisticsIcon, $statisticsLabel])
+                        <a href="{{ route($statisticsRoute) }}" class="nav-link sub-link {{ request()->routeIs($statisticsRoute) ? 'active' : '' }}">
+                            <i class="bi {{ $statisticsIcon }}"></i>{{ $statisticsLabel }}
+                        </a>
+                    @endforeach
+                </div>
+            @endcan
 
             <div class="nav-section">قريبًا</div>
             <span class="nav-link text-muted pe-none">

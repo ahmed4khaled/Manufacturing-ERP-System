@@ -8,9 +8,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ProductionOrderOperation extends Model
 {
-    protected $fillable = ['production_order_id', 'bom_operation_id', 'manufacturing_operation_id', 'operation_name', 'sequence', 'notes'];
+    protected $fillable = ['production_order_id', 'bom_operation_id', 'manufacturing_operation_id', 'operation_name', 'unit_cost', 'total_cost', 'sequence', 'notes'];
 
-    protected $casts = ['sequence' => 'integer'];
+    protected $casts = ['unit_cost' => 'decimal:2', 'total_cost' => 'decimal:2', 'sequence' => 'integer'];
 
     public function productionOrder(): BelongsTo
     {
@@ -35,5 +35,10 @@ class ProductionOrderOperation extends Model
     public function reworks(): HasMany
     {
         return $this->hasMany(ProductionRework::class);
+    }
+
+    public function materialRequirements(): HasMany
+    {
+        return $this->hasMany(ProductionOrderMaterialOperation::class);
     }
 }

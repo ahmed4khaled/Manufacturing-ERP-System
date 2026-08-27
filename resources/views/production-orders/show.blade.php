@@ -10,6 +10,26 @@
 </div></div>
 <div class="row g-3 mb-4">@foreach(['المخطط'=>'planned','المسند'=>'assigned','المنتج'=>'produced','الجيد'=>'good','المعيب'=>'defective','المتبقي'=>'remaining','المرحل للمخزون'=>'output'] as $label=>$key)<div class="col-6 col-md"><div class="card text-center h-100"><div class="card-body py-3"><small class="text-muted">{{ $label }}</small><div class="fs-5 fw-bold">{{ number_format((float)$orderSummary[$key],3) }}</div></div></div></div>@endforeach</div>
 <ul class="nav nav-tabs mb-3" role="tablist">@foreach(['overview'=>'نظرة عامة','materials'=>'الخامات','assignments'=>'تكليفات العمل','transactions'=>'العهد والحركات','outputs'=>'الإنتاج التام','defects'=>'العيوب والهالك','reworks'=>'إعادة التشغيل','history'=>'السجل'] as $id=>$label)<li class="nav-item"><button class="nav-link {{ $loop->first?'active':'' }}" data-bs-toggle="tab" data-bs-target="#{{ $id }}">{{ $label }}</button></li>@endforeach</ul>
+<div class="card mb-4">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <strong>تكلفة أمر الإنتاج</strong>
+        <span class="badge bg-{{ $productionOrder->final_unit_cost !== null ? 'success' : 'secondary' }}">{{ $productionOrder->final_unit_cost !== null ? 'نهائية' : 'تقديرية' }}</span>
+    </div>
+    <div class="card-body">
+        <div class="row g-3 text-center">
+            <div class="col-6 col-lg-3"><small class="text-muted d-block">التكلفة الأساسية / عباية</small><strong>{{ number_format($productionOrder->base_unit_cost, 2) }} ج.م</strong></div>
+            <div class="col-6 col-lg-3"><small class="text-muted d-block">تكلفة العمليات / عباية</small><strong>{{ number_format($productionOrder->operations_unit_cost, 2) }} ج.م</strong></div>
+            <div class="col-6 col-lg-3"><small class="text-muted d-block">التكلفة الحالية / عباية</small><strong>{{ number_format($productionOrder->final_unit_cost ?? $productionOrder->estimated_unit_cost, 2) }} ج.م</strong></div>
+            <div class="col-6 col-lg-3"><small class="text-muted d-block">إجمالي الأمر</small><strong>{{ number_format($productionOrder->final_total_cost ?? $productionOrder->estimated_total_cost, 2) }} ج.م</strong></div>
+        </div>
+        <hr>
+        <div class="d-flex flex-wrap gap-3">
+            @foreach($productionOrder->operations->sortBy('sequence') as $operation)
+                <span><strong>{{ $operation->operation_name }}:</strong> {{ number_format($operation->unit_cost, 2) }} ج.م / عباية</span>
+            @endforeach
+        </div>
+    </div>
+</div>
 <div class="tab-content">
 <div class="tab-pane fade show active" id="overview"><div class="card"><div class="card-body"><div class="row"><div class="col-md-4"><strong>البدء المخطط:</strong> {{ $productionOrder->planned_start_date->format('Y-m-d') }}</div><div class="col-md-4"><strong>الإكمال المخطط:</strong> {{ $productionOrder->planned_completion_date?->format('Y-m-d')??'—' }}</div><div class="col-md-4"><strong>أنشأه:</strong> {{ $productionOrder->creator?->name??'—' }}</div></div>@if($productionOrder->notes)<hr>{{ $productionOrder->notes }}@endif</div></div></div>
 <div class="tab-pane fade" id="materials"><div class="card"><div class="table-responsive"><table class="table mb-0"><thead><tr><th>الخامة</th><th>الوحدة</th><th>القياسي</th><th>المطلوب</th><th>التخصيص</th><th>الانحراف</th></tr></thead><tbody>@foreach($productionOrder->materials as $m)<tr><td>{{ $m->material_name }} <small class="text-muted">{{ $m->material_code }}</small></td><td>{{ \App\Enums\MaterialUnit::tryFrom($m->unit)?->label()??$m->unit }}</td><td>{{ number_format($m->standard_quantity,3) }}</td><td>{{ number_format($m->required_quantity,3) }} @if($m->is_overridden)<span class="badge bg-warning">معدل</span>@endif</td><td>{{ number_format($m->assignmentMaterials->sum('allocated_quantity'),3) }}</td><td>{{ number_format((float)bcsub((string)$m->required_quantity,(string)$m->standard_quantity,3),3) }}</td></tr>@endforeach</tbody></table></div></div></div>

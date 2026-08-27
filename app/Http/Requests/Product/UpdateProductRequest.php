@@ -19,7 +19,7 @@ class UpdateProductRequest extends FormRequest
             'category_id' => ['required', Rule::exists('categories', 'id')],
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'cost_price' => ['nullable', 'numeric', 'min:0'],
+            'base_cost_price' => ['nullable', 'numeric', 'min:0'],
             'status' => ['required', Rule::enum(ProductStatus::class)],
         ];
     }

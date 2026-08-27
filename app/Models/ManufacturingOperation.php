@@ -12,9 +12,9 @@ class ManufacturingOperation extends Model
 {
     use SoftDeletes;
 
-    protected $fillable = ['name', 'description', 'status'];
+    protected $fillable = ['name', 'description', 'default_unit_cost', 'status'];
 
-    protected $casts = ['status' => ManufacturingOperationStatus::class];
+    protected $casts = ['default_unit_cost' => 'decimal:2', 'status' => ManufacturingOperationStatus::class];
 
     public function bomOperations(): HasMany
     {

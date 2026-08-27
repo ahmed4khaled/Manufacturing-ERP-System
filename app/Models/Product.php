@@ -20,11 +20,13 @@ class Product extends Model
         'name',
         'description',
         'cost_price',
+        'base_cost_price',
         'status',
     ];
 
     protected $casts = [
         'cost_price' => 'decimal:2',
+        'base_cost_price' => 'decimal:2',
         'status' => ProductStatus::class,
     ];
 

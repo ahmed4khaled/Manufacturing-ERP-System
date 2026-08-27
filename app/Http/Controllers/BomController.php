@@ -41,14 +41,14 @@ class BomController extends Controller
 
     public function show(Bom $bom): View
     {
-        $bom->load(['product', 'productVariant.color', 'productVariant.size', 'items.material', 'operations.manufacturingOperation', 'creator', 'activator']);
+        $bom->load(['product', 'productVariant.color', 'productVariant.size', 'items.material', 'items.operationAllocations.bomOperation', 'operations.manufacturingOperation', 'creator', 'activator']);
 
         return view('boms.show', compact('bom'));
     }
 
     public function edit(Bom $bom): View
     {
-        $bom->load(['items', 'operations']);
+        $bom->load(['items.operationAllocations.bomOperation', 'operations']);
 
         return view('boms.edit', ['bom' => $bom] + $this->formData());
     }

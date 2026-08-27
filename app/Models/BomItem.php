@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class BomItem extends Model
 {
@@ -19,5 +20,10 @@ class BomItem extends Model
     public function material(): BelongsTo
     {
         return $this->belongsTo(Material::class);
+    }
+
+    public function operationAllocations(): HasMany
+    {
+        return $this->hasMany(BomItemOperation::class);
     }
 }

@@ -7,6 +7,7 @@ use App\Enums\ProductionMaterialTransactionStatus;
 use App\Enums\ProductionOrderStatus;
 use App\Enums\ProductionReworkStatus;
 use App\Enums\WorkAssignmentStatus;
+use App\Models\Product;
 use App\Models\ProductionOrder;
 use App\Services\ProductionActivityService;
 use App\Services\ProductionSummaryService;
@@ -20,7 +21,7 @@ class CompleteProductionOrderAction
     public function handle(ProductionOrder $order): ProductionOrder
     {
         return DB::transaction(function () use ($order) {
-            $order = ProductionOrder::query()->with(['workAssignments.materials', 'operations'])->lockForUpdate()->findOrFail($order->id);
+            $order = ProductionOrder::query()->with(['workAssignments.materials', 'operations', 'outputs'])->lockForUpdate()->findOrFail($order->id);
             if ($order->status === ProductionOrderStatus::COMPLETED) {
                 return $order;
             }
@@ -39,14 +40,38 @@ class CompleteProductionOrderAction
             if ($order->materialTransactions()->where('status', ProductionMaterialTransactionStatus::PENDING_REVIEW)->exists()) {
                 throw ValidationException::withMessages(['materials' => 'توجد حركات خامات بانتظار المراجعة.']);
             }
+
             $summary = $this->summary->orderSummary($order);
             if (bccomp($summary['output'], $summary['good'], 3) !== 0) {
                 throw ValidationException::withMessages(['outputs' => 'يجب ترحيل كل الإنتاج الجيد إلى المخزون قبل الإغلاق.']);
             }
-            $order->update(['status' => ProductionOrderStatus::COMPLETED, 'closed_by' => auth()->id(), 'closed_at' => now()]);
-            $this->activity->record($order, 'completed', 'تم إغلاق أمر الإنتاج.');
+            if (bccomp($summary['output'], '0', 3) <= 0) {
+                throw ValidationException::withMessages(['outputs' => 'لا يمكن حساب التكلفة النهائية بدون إنتاج تام.']);
+            }
 
-            return $order;
+            $finalTotalCost = (string) $order->estimated_total_cost;
+            $finalUnitCost = bcdiv($finalTotalCost, $summary['output'], 2);
+            $order->update([
+                'status' => ProductionOrderStatus::COMPLETED,
+                'final_unit_cost' => $finalUnitCost,
+                'final_total_cost' => $finalTotalCost,
+                'closed_by' => auth()->id(),
+                'closed_at' => now(),
+            ]);
+
+            foreach ($order->outputs as $output) {
+                $output->update([
+                    'unit_cost' => $finalUnitCost,
+                    'total_cost' => bcmul($finalUnitCost, (string) $output->quantity, 2),
+                ]);
+            }
+            Product::query()->lockForUpdate()->whereKey($order->product_id)->update(['cost_price' => $finalUnitCost]);
+            $this->activity->record($order, 'completed', 'تم إغلاق أمر الإنتاج وحساب تكلفة الوحدة النهائية.', [
+                'final_unit_cost' => $finalUnitCost,
+                'final_total_cost' => $finalTotalCost,
+            ]);
+
+            return $order->fresh(['operations', 'outputs']);
         });
     }
 }
