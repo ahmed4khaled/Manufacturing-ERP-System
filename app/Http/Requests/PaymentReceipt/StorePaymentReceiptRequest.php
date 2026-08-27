@@ -23,7 +23,7 @@ class StorePaymentReceiptRequest extends FormRequest
             */
             'customer_id' => [
                 'required',
-                Rule::exists('customers', 'id'),
+                Rule::exists('customers', 'id')->whereNull('deleted_at'),
             ],
 
             /*
@@ -46,9 +46,17 @@ class StorePaymentReceiptRequest extends FormRequest
             */
             'sales_invoice_id' => [
                 'nullable',
-                Rule::exists('sales_invoices', 'id'),
-                'required_if:payment_type,invoice',
+                Rule::exists('sales_invoices', 'id')->whereNull('deleted_at'),
             ],
+
+            'allocations' => ['required_if:payment_type,invoice', 'array', 'min:1'],
+            'allocations.*.sales_invoice_id' => [
+                'required',
+                'integer',
+                'distinct',
+                Rule::exists('sales_invoices', 'id')->whereNull('deleted_at'),
+            ],
+            'allocations.*.amount' => ['required', 'numeric', 'gt:0'],
 
             /*
             |--------------------------------------------------------------------------

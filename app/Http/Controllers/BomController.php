@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\Bom\ActivateBomAction;
 use App\Actions\Bom\CreateBomAction;
+use App\Actions\Bom\DeleteBomAction;
 use App\Actions\Bom\UpdateBomAction;
 use App\Enums\ManufacturingOperationStatus;
 use App\Enums\MaterialStatus;
@@ -69,6 +70,17 @@ class BomController extends Controller
         }
 
         return back()->with('success', 'تم تفعيل إصدار BOM.');
+    }
+
+    public function destroy(Bom $bom, DeleteBomAction $action): RedirectResponse
+    {
+        try {
+            $action->handle($bom);
+        } catch (ValidationException $e) {
+            return back()->with('error', $e->validator->errors()->first());
+        }
+
+        return redirect()->route('boms.index')->with('success', 'تم حذف BOM مع الاحتفاظ بسجلاته التاريخية.');
     }
 
     private function formData(): array

@@ -206,6 +206,14 @@
 
                 </form>
 
+            @elseif ($salesInvoice->status === \App\Enums\SalesInvoiceStatus::CANCELLED)
+
+                <form action="{{ route('sales-invoices.destroy', $salesInvoice) }}" method="POST" onsubmit="return confirm('هل أنت متأكد من حذف هذا السجل؟ سيتم إخفاؤه من السجلات النشطة مع الاحتفاظ بتاريخه.')">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn btn-outline-danger"><i class="bi bi-trash me-1"></i> حذف</button>
+                </form>
+
             @endif
 
         </div>
@@ -447,6 +455,22 @@
 
                     </div>
 
+
+                    <div class="d-flex justify-content-between mb-2">
+
+                        <span class="text-muted">المجموع الفرعي</span>
+
+                        <strong>{{ number_format($salesInvoice->subtotal, 2) }} ج.م</strong>
+
+                    </div>
+
+                    <div class="d-flex justify-content-between mb-2">
+
+                        <span class="text-muted">الخصم</span>
+
+                        <strong class="text-danger">- {{ number_format($salesInvoice->discount, 2) }} ج.م</strong>
+
+                    </div>
 
                     <div class="d-flex justify-content-between">
 

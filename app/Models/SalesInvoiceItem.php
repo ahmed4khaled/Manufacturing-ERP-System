@@ -38,7 +38,7 @@ class SalesInvoiceItem extends Model
 
     public function productVariant(): BelongsTo
     {
-        return $this->belongsTo(ProductVariant::class);
+        return $this->belongsTo(ProductVariant::class)->withTrashed();
     }
 
     public function salesReturnItems(): HasMany

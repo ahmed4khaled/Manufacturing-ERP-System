@@ -4,9 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class SupplierPayment extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
         'payment_number',
         'supplier_id',
@@ -36,7 +39,7 @@ class SupplierPayment extends Model
         return $this->belongsTo(
             Supplier::class,
             'supplier_id'
-        );
+        )->withTrashed();
     }
 
     /*
@@ -50,7 +53,7 @@ class SupplierPayment extends Model
         return $this->belongsTo(
             PurchaseOrder::class,
             'purchase_order_id'
-        );
+        )->withTrashed();
     }
 
     /*
@@ -64,6 +67,6 @@ class SupplierPayment extends Model
         return $this->belongsTo(
             SupplierInvoice::class,
             'supplier_invoice_id'
-        );
+        )->withTrashed();
     }
 }

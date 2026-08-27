@@ -39,6 +39,6 @@ class GoodsReceiptItem extends Model
 
     public function material(): BelongsTo
     {
-        return $this->belongsTo(Material::class);
+        return $this->belongsTo(Material::class)->withTrashed();
     }
 }

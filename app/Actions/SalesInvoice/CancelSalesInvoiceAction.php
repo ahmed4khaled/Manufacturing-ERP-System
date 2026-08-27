@@ -4,12 +4,11 @@ namespace App\Actions\SalesInvoice;
 
 use App\Actions\CustomerLedger\CreateCustomerLedgerEntryAction;
 use App\Enums\LedgerReferenceType;
-use App\Enums\PaymentReceiptStatus;
 use App\Enums\SalesInvoiceStatus;
 use App\Enums\SalesReturnStatus;
 use App\Models\CustomerLedgerEntry;
-use App\Models\PaymentReceipt;
 use App\Models\SalesInvoice;
+use App\Services\PaymentReceiptAllocationService;
 use App\Services\StockService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -19,6 +18,7 @@ class CancelSalesInvoiceAction
     public function __construct(
         private readonly CreateCustomerLedgerEntryAction $ledger,
         private readonly StockService $stock,
+        private readonly PaymentReceiptAllocationService $allocationService,
     ) {}
 
     public function handle(SalesInvoice $invoice): SalesInvoice
@@ -38,11 +38,7 @@ class CancelSalesInvoiceAction
                 ]);
             }
 
-            if (PaymentReceipt::query()
-                ->where('sales_invoice_id', $invoice->id)
-                ->where('status', PaymentReceiptStatus::CONFIRMED)
-                ->lockForUpdate()
-                ->exists()) {
+            if (bccomp($this->allocationService->paidAmountForInvoice($invoice->id), '0.00', 2) > 0) {
                 throw ValidationException::withMessages([
                     'status' => 'لا يمكن إلغاء فاتورة عليها سندات قبض مؤكدة. ألغِ السندات أولًا.',
                 ]);

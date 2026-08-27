@@ -7,11 +7,10 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class CustomerLedgerEntry extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory;
 
     protected $fillable = [
         'customer_id',
@@ -35,7 +34,7 @@ class CustomerLedgerEntry extends Model
 
     public function customer(): BelongsTo
     {
-        return $this->belongsTo(Customer::class);
+        return $this->belongsTo(Customer::class)->withTrashed();
     }
 
     public function creator(): BelongsTo

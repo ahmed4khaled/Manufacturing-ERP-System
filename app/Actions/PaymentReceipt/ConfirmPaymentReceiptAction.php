@@ -8,7 +8,7 @@ use App\Enums\PaymentReceiptStatus;
 use App\Models\Customer;
 use App\Models\CustomerLedgerEntry;
 use App\Models\PaymentReceipt;
-use App\Services\PaymentReceiptInvoiceService;
+use App\Services\PaymentReceiptAllocationService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -16,7 +16,7 @@ class ConfirmPaymentReceiptAction
 {
     public function __construct(
         private readonly CreateCustomerLedgerEntryAction $createLedgerEntry,
-        private readonly PaymentReceiptInvoiceService $invoiceService,
+        private readonly PaymentReceiptAllocationService $allocationService,
     ) {}
 
     public function handle(PaymentReceipt $receipt): PaymentReceipt
@@ -27,7 +27,7 @@ class ConfirmPaymentReceiptAction
                 ->findOrFail($receipt->id);
 
             if ($receipt->status === PaymentReceiptStatus::CONFIRMED) {
-                return $receipt->load(['customer', 'invoice', 'creator']);
+                return $receipt->load(['customer', 'invoice', 'allocations.salesInvoice', 'creator']);
             }
 
             if ($receipt->status === PaymentReceiptStatus::CANCELLED) {
@@ -54,12 +54,7 @@ class ConfirmPaymentReceiptAction
                 ]);
             }
 
-            $this->invoiceService->validate($receipt->only([
-                'customer_id',
-                'sales_invoice_id',
-                'payment_type',
-                'amount',
-            ]), $receipt->id);
+            $this->allocationService->validateReceipt($receipt);
 
             $alreadyPosted = CustomerLedgerEntry::query()
                 ->where('reference_type', LedgerReferenceType::PAYMENT_RECEIPT)
@@ -86,7 +81,7 @@ class ConfirmPaymentReceiptAction
                 'created_by' => auth()->id(),
             ]);
 
-            return $receipt->fresh(['customer', 'invoice', 'creator']);
+            return $receipt->fresh(['customer', 'invoice', 'allocations.salesInvoice', 'creator']);
         });
     }
 }

@@ -4,7 +4,7 @@
 <div class="d-flex justify-content-between mb-3"><h4>عمليات التصنيع</h4><a class="btn btn-primary" href="{{ route('manufacturing-operations.create') }}">عملية جديدة</a></div>
 <div class="card"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead><tr><th>العملية</th><th>الوصف</th><th>تكلفة العباية</th><th>الحالة</th><th></th></tr></thead><tbody>
     @forelse ($operations as $operation)
-        <tr><td>{{ $operation->name }}</td><td>{{ $operation->description ?: '-' }}</td><td>{{ number_format($operation->default_unit_cost, 2) }} ج.م</td><td><span class="badge bg-{{ $operation->status->badgeClass() }}">{{ $operation->status->label() }}</span></td><td><a class="btn btn-sm btn-outline-primary" href="{{ route('manufacturing-operations.edit', $operation) }}">تعديل</a></td></tr>
+        <tr><td>{{ $operation->name }}</td><td>{{ $operation->description ?: '-' }}</td><td>{{ number_format($operation->default_unit_cost, 2) }} ج.م</td><td><span class="badge bg-{{ $operation->status->badgeClass() }}">{{ $operation->status->label() }}</span></td><td><a class="btn btn-sm btn-outline-primary" href="{{ route('manufacturing-operations.edit', $operation) }}">تعديل</a> <form method="POST" class="d-inline" action="{{ route('manufacturing-operations.destroy', $operation) }}" onsubmit="return confirm('هل أنت متأكد من حذف هذا السجل؟ سيتم إخفاؤه من السجلات النشطة مع الاحتفاظ بتاريخه.')">@csrf @method('DELETE')<button class="btn btn-sm btn-outline-danger">حذف</button></form></td></tr>
     @empty
         <tr><td colspan="5" class="text-center text-muted py-5">لا توجد عمليات معرفة.</td></tr>
     @endforelse

@@ -20,7 +20,7 @@
     </a>
 
     <form method="POST" action="{{ route('suppliers.destroy', $supplier) }}"
-        onsubmit="return confirm('هل تريد حذف هذا المورد؟')">
+        onsubmit="return confirm('هل أنت متأكد من حذف هذا السجل؟ سيتم إخفاؤه من السجلات النشطة مع الاحتفاظ بتاريخه.')">
         @csrf
         @method('DELETE')
         <button class="btn btn-outline-danger">

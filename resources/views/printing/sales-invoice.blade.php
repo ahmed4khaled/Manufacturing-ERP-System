@@ -543,6 +543,26 @@
         </div>
 
 
+        <div class="summary-row">
+
+            <span>
+                الخصم
+            </span>
+
+            <strong>
+
+                - {{ number_format(
+                    $document->discount,
+                    2
+                ) }}
+
+                جنيه
+
+            </strong>
+
+        </div>
+
+
         <div class="summary-row total">
 
             <span>

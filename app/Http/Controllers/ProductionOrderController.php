@@ -6,6 +6,7 @@ use App\Actions\ProductionOrder\CancelProductionOrderAction;
 use App\Actions\ProductionOrder\CompleteProductionOrderAction;
 use App\Actions\ProductionOrder\ConfirmProductionOrderAction;
 use App\Actions\ProductionOrder\CreateProductionOrderAction;
+use App\Actions\ProductionOrder\DeleteProductionOrderAction;
 use App\Actions\ProductionOrder\HoldProductionOrderAction;
 use App\Actions\ProductionOrder\RecordProductionOutputAction;
 use App\Actions\ProductionOrder\ResumeProductionOrderAction;
@@ -157,6 +158,17 @@ class ProductionOrderController extends Controller
     public function output(RecordProductionOutputRequest $request, ProductionOrder $productionOrder, RecordProductionOutputAction $action): RedirectResponse
     {
         return $this->run(fn () => $action->handle($productionOrder, $request->validated()), 'تم ترحيل الإنتاج التام إلى المخزون.');
+    }
+
+    public function destroy(ProductionOrder $productionOrder, DeleteProductionOrderAction $action): RedirectResponse
+    {
+        try {
+            $action->handle($productionOrder);
+        } catch (ValidationException $e) {
+            return back()->with('error', $e->validator->errors()->first());
+        }
+
+        return redirect()->route('production-orders.index')->with('success', 'تم حذف أمر الإنتاج مع الاحتفاظ بسجلاته التاريخية.');
     }
 
     public function print(ProductionOrder $productionOrder, DocumentPrinter $printer): View

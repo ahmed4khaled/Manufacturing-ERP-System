@@ -8,11 +8,10 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class StockMovement extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory;
 
     protected $fillable = [
         'product_variant_id',
@@ -36,7 +35,7 @@ class StockMovement extends Model
 
     public function productVariant(): BelongsTo
     {
-        return $this->belongsTo(ProductVariant::class);
+        return $this->belongsTo(ProductVariant::class)->withTrashed();
     }
 
     public function user(): BelongsTo

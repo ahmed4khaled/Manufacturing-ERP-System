@@ -16,6 +16,8 @@
                 <form method="POST" action="{{ route('sales-returns.destroy', $salesReturn) }}" onsubmit="return confirm('هل تريد حذف مسودة المرتجع؟')">@csrf @method('DELETE')<button class="btn btn-outline-danger">حذف</button></form>
             @elseif ($salesReturn->status === \App\Enums\SalesReturnStatus::CONFIRMED)
                 <form method="POST" action="{{ route('sales-returns.cancel', $salesReturn) }}" onsubmit="return confirm('هل تريد إلغاء المرتجع وعكس أثره؟')">@csrf<button class="btn btn-outline-danger">إلغاء المرتجع</button></form>
+            @elseif ($salesReturn->status === \App\Enums\SalesReturnStatus::CANCELLED)
+                <form method="POST" action="{{ route('sales-returns.destroy', $salesReturn) }}" onsubmit="return confirm('هل أنت متأكد من حذف هذا السجل؟ سيتم إخفاؤه من السجلات النشطة مع الاحتفاظ بتاريخه.')">@csrf @method('DELETE')<button class="btn btn-outline-danger">حذف</button></form>
             @endif
         </div>
     </div>

@@ -24,7 +24,7 @@ class CancelPaymentReceiptAction
                 ->findOrFail($receipt->id);
 
             if ($receipt->status === PaymentReceiptStatus::CANCELLED) {
-                return $receipt->load(['customer', 'invoice', 'creator']);
+                return $receipt->load(['customer', 'invoice', 'allocations.salesInvoice', 'creator']);
             }
 
             if ($receipt->status !== PaymentReceiptStatus::CONFIRMED) {
@@ -56,7 +56,7 @@ class CancelPaymentReceiptAction
                 'created_by' => auth()->id(),
             ]);
 
-            return $receipt->fresh(['customer', 'invoice', 'creator']);
+            return $receipt->fresh(['customer', 'invoice', 'allocations.salesInvoice', 'creator']);
         });
     }
 }

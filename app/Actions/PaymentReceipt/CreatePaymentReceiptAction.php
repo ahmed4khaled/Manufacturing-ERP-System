@@ -5,14 +5,14 @@ namespace App\Actions\PaymentReceipt;
 use App\Enums\PaymentReceiptStatus;
 use App\Models\PaymentReceipt;
 use App\Services\CodeGeneratorService;
-use App\Services\PaymentReceiptInvoiceService;
+use App\Services\PaymentReceiptAllocationService;
 use Illuminate\Support\Facades\DB;
 
 class CreatePaymentReceiptAction
 {
     public function __construct(
         private readonly CodeGeneratorService $codeGenerator,
-        private readonly PaymentReceiptInvoiceService $invoiceService,
+        private readonly PaymentReceiptAllocationService $allocationService,
     ) {}
 
     public function handle(array $data): PaymentReceipt
@@ -26,7 +26,11 @@ class CreatePaymentReceiptAction
                 $data['sales_invoice_id'] = null;
             }
 
-            $this->invoiceService->validate($data);
+            $allocations = $this->allocationService->validate($data);
+            $attributes = collect($data)->except('allocations')->all();
+            $attributes['sales_invoice_id'] = count($allocations) === 1
+                ? $allocations[0]['sales_invoice_id']
+                : null;
 
             /*
             |--------------------------------------------------------------------------
@@ -34,7 +38,9 @@ class CreatePaymentReceiptAction
             |--------------------------------------------------------------------------
             */
 
-            $receipt = PaymentReceipt::create($data);
+            $receipt = PaymentReceipt::create($attributes);
+
+            $this->allocationService->persist($receipt, $allocations);
 
             /*
             |--------------------------------------------------------------------------
@@ -49,6 +55,7 @@ class CreatePaymentReceiptAction
             return $receipt->fresh([
                 'customer',
                 'invoice',
+                'allocations.salesInvoice',
                 'creator',
             ]);
         });

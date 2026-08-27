@@ -9,15 +9,13 @@ use App\Actions\PaymentReceipt\DeletePaymentReceiptAction;
 use App\Actions\PaymentReceipt\UpdatePaymentReceiptAction;
 use App\Enums\LedgerReferenceType;
 use App\Enums\PaymentReceiptStatus;
-use App\Enums\SalesInvoiceStatus;
-use App\Enums\SalesReturnStatus;
 use App\Http\Requests\PaymentReceipt\StorePaymentReceiptRequest;
 use App\Http\Requests\PaymentReceipt\UpdatePaymentReceiptRequest;
 use App\Models\Customer;
 use App\Models\CustomerLedgerEntry;
 use App\Models\PaymentReceipt;
-use App\Models\SalesInvoice;
 use App\Services\CustomerLedgerService;
+use App\Services\PaymentReceiptAllocationService;
 use App\Services\Printing\DocumentPrinter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -84,63 +82,21 @@ class PaymentReceiptController extends Controller
      * Get unpaid sales invoices for customer.
      */
     public function customerInvoices(
-        Customer $customer
+        Request $request,
+        Customer $customer,
+        PaymentReceiptAllocationService $allocationService,
     ): JsonResponse {
-        $invoices = SalesInvoice::query()
-            ->where('customer_id', $customer->id)
-            ->where(
-                'status',
-                SalesInvoiceStatus::CONFIRMED
-            )
-            ->withSum([
-                'paymentReceipts as paid_amount' => function ($query) {
-                    $query->where(
-                        'status',
-                        PaymentReceiptStatus::CONFIRMED
-                    );
-                },
-            ], 'amount')
-            ->withSum([
-                'salesReturns as returned_amount' => fn ($query) => $query
-                    ->where('status', SalesReturnStatus::CONFIRMED),
-            ], 'total_amount')
-            ->orderByDesc('invoice_date')
-            ->orderByDesc('id')
-            ->get();
-
-        $invoices = $invoices
-            ->map(function (SalesInvoice $invoice) {
-
-                $total = (float) $invoice->total_amount;
-
-                $paid = (float) ($invoice->paid_amount ?? 0);
-
-                $returned = (float) ($invoice->returned_amount ?? 0);
-                $remaining = max(0, $total - $returned - $paid);
-
-                return [
-                    'id' => $invoice->id,
-
-                    'invoice_number' => $invoice->invoice_number,
-
-                    'invoice_date' => $invoice->invoice_date?->format('Y-m-d'),
-
-                    'total_amount' => round($total, 2),
-
-                    'paid_amount' => round($paid, 2),
-
-                    'returned_amount' => round($returned, 2),
-
-                    'remaining_amount' => round($remaining, 2),
-                ];
-            })
-            ->filter(
-                fn (array $invoice) => $invoice['remaining_amount'] > 0
-            )
-            ->values();
+        $excludeReceiptId = null;
+        if ($request->filled('exclude_receipt_id')) {
+            $excludeReceiptId = PaymentReceipt::query()
+                ->whereKey($request->integer('exclude_receipt_id'))
+                ->where('customer_id', $customer->id)
+                ->where('status', PaymentReceiptStatus::DRAFT)
+                ->value('id');
+        }
 
         return response()->json([
-            'invoices' => $invoices,
+            'invoices' => $allocationService->availableInvoices($customer->id, $excludeReceiptId),
         ]);
     }
 
@@ -170,13 +126,16 @@ class PaymentReceiptController extends Controller
      * Show payment receipt.
      */
     public function show(
-        PaymentReceipt $paymentReceipt
+        PaymentReceipt $paymentReceipt,
+        PaymentReceiptAllocationService $allocationService,
     ): View {
         $paymentReceipt->load([
             'customer',
             'invoice',
+            'allocations.salesInvoice',
             'creator',
         ]);
+        $allocationBreakdown = $allocationService->breakdown($paymentReceipt);
 
         $ledgerEntry = CustomerLedgerEntry::query()
             ->where(
@@ -193,7 +152,8 @@ class PaymentReceiptController extends Controller
             'payment-receipts.show',
             compact(
                 'paymentReceipt',
-                'ledgerEntry'
+                'ledgerEntry',
+                'allocationBreakdown',
             )
         );
     }
@@ -205,21 +165,19 @@ class PaymentReceiptController extends Controller
         PaymentReceipt $paymentReceipt,
         DocumentPrinter $printer,
         CustomerLedgerService $ledgerService,
+        PaymentReceiptAllocationService $allocationService,
     ): View {
         $paymentReceipt->load([
             'customer',
             'invoice',
+            'allocations.salesInvoice',
             'creator',
         ]);
 
-        $previousPaid = PaymentReceipt::query()
-            ->where('sales_invoice_id', $paymentReceipt->sales_invoice_id)
-            ->where('status', PaymentReceiptStatus::CONFIRMED)
-            ->whereKeyNot($paymentReceipt->id)
-            ->sum('amount');
+        $allocationBreakdown = $allocationService->breakdown($paymentReceipt);
 
         return $printer->render($paymentReceipt, 'payment_receipt', [
-            'previousPaid' => (float) $previousPaid,
+            'allocationBreakdown' => $allocationBreakdown,
             'customerBalance' => (float) $ledgerService->getBalance($paymentReceipt->customer_id),
         ]);
     }
@@ -252,6 +210,7 @@ class PaymentReceiptController extends Controller
                 'name',
                 'code',
             ]);
+        $paymentReceipt->load('allocations.salesInvoice');
 
         return view(
             'payment-receipts.edit',

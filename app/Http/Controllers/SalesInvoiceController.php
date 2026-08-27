@@ -7,15 +7,14 @@ use App\Actions\SalesInvoice\ConfirmSalesInvoiceAction;
 use App\Actions\SalesInvoice\CreateSalesInvoiceAction;
 use App\Actions\SalesInvoice\DeleteSalesInvoiceAction;
 use App\Actions\SalesInvoice\UpdateSalesInvoiceAction;
-use App\Enums\PaymentReceiptStatus;
 use App\Enums\SalesInvoiceStatus;
 use App\Enums\SalesReturnStatus;
 use App\Http\Requests\SalesInvoice\StoreSalesInvoiceRequest;
 use App\Http\Requests\SalesInvoice\UpdateSalesInvoiceRequest;
 use App\Models\Customer;
-use App\Models\PaymentReceipt;
 use App\Models\Product;
 use App\Models\SalesInvoice;
+use App\Services\PaymentReceiptAllocationService;
 use App\Services\Printing\DocumentPrinter;
 use App\Services\StockService;
 use Illuminate\Http\JsonResponse;
@@ -28,16 +27,14 @@ class SalesInvoiceController extends Controller
 {
     public function print(
         SalesInvoice $salesInvoice,
-        DocumentPrinter $printer
+        DocumentPrinter $printer,
+        PaymentReceiptAllocationService $allocationService,
     ): View {
         $salesInvoice->load([
             'customer',
             'items',
         ]);
-        $paidAmount = PaymentReceipt::query()
-            ->where('sales_invoice_id', $salesInvoice->id)
-            ->where('status', PaymentReceiptStatus::CONFIRMED)
-            ->sum('amount');
+        $paidAmount = $allocationService->paidAmountForInvoice($salesInvoice->id);
         $returnedAmount = $salesInvoice->salesReturns()
             ->where('status', SalesReturnStatus::CONFIRMED)
             ->sum('total_amount');
@@ -62,14 +59,6 @@ class SalesInvoiceController extends Controller
     {
         $invoices = SalesInvoice::query()
             ->with('customer')
-            ->withSum([
-                'paymentReceipts as paid_amount' => function ($query) {
-                    $query->where(
-                        'status',
-                        PaymentReceiptStatus::CONFIRMED
-                    );
-                },
-            ], 'amount')
             ->withSum([
                 'salesReturns as returned_amount' => fn ($query) => $query
                     ->where('status', SalesReturnStatus::CONFIRMED),
@@ -113,14 +102,6 @@ class SalesInvoiceController extends Controller
             'items',
         ]);
 
-        $salesInvoice->loadSum([
-            'paymentReceipts as paid_amount' => function ($query) {
-                $query->where(
-                    'status',
-                    PaymentReceiptStatus::CONFIRMED
-                );
-            },
-        ], 'amount');
         $salesInvoice->loadSum([
             'salesReturns as returned_amount' => fn ($query) => $query
                 ->where('status', SalesReturnStatus::CONFIRMED),

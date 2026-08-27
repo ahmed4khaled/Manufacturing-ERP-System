@@ -108,6 +108,11 @@
                                                 @csrf @method('DELETE')
                                                 <button type="submit" class="btn btn-outline-danger" title="حذف"><i class="bi bi-trash"></i></button>
                                             </form>
+                                        @elseif ($receipt->status === \App\Enums\PaymentReceiptStatus::CANCELLED)
+                                            <form action="{{ route('payment-receipts.destroy', $receipt) }}" method="POST" class="d-inline" onsubmit="return confirm('هل أنت متأكد من حذف هذا السجل؟ سيتم إخفاؤه من السجلات النشطة مع الاحتفاظ بتاريخه.')">
+                                                @csrf @method('DELETE')
+                                                <button type="submit" class="btn btn-outline-danger" title="حذف"><i class="bi bi-trash"></i></button>
+                                            </form>
                                         @endif
                                     </div>
                                 </td>

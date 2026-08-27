@@ -19,7 +19,7 @@ class BomOperation extends Model
 
     public function manufacturingOperation(): BelongsTo
     {
-        return $this->belongsTo(ManufacturingOperation::class);
+        return $this->belongsTo(ManufacturingOperation::class)->withTrashed();
     }
 
     public function materialAllocations(): HasMany

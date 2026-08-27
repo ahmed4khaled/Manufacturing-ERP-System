@@ -18,6 +18,7 @@ class StoreSalesInvoiceRequest extends FormRequest
             'customer_id' => ['required', Rule::exists('customers', 'id')],
             'invoice_date' => ['required', 'date'],
             'notes' => ['nullable', 'string'],
+            'discount' => ['nullable', 'numeric', 'min:0'],
             'products' => ['required', 'array', 'min:1'],
             'products.*.product_id' => ['required', Rule::exists('products', 'id')],
             'products.*.variants' => ['required', 'array', 'min:1'],

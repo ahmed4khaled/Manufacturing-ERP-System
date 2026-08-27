@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
-use App\Enums\PaymentReceiptStatus;
 use App\Enums\SalesInvoiceStatus;
 use App\Enums\SalesReturnStatus;
+use App\Services\PaymentReceiptAllocationService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -24,6 +24,7 @@ class SalesInvoice extends Model
         'status',
         'total_quantity',
         'subtotal',
+        'discount',
         'total_amount',
     ];
 
@@ -31,6 +32,7 @@ class SalesInvoice extends Model
         'invoice_date' => 'date',
         'status' => SalesInvoiceStatus::class,
         'subtotal' => 'decimal:2',
+        'discount' => 'decimal:2',
         'total_amount' => 'decimal:2',
         'total_quantity' => 'decimal:3',
     ];
@@ -41,6 +43,11 @@ class SalesInvoice extends Model
             PaymentReceipt::class,
             'sales_invoice_id'
         );
+    }
+
+    public function paymentAllocations(): HasMany
+    {
+        return $this->hasMany(PaymentReceiptAllocation::class);
     }
 
     public function salesReturns(): HasMany
@@ -54,12 +61,8 @@ class SalesInvoice extends Model
             return (float) ($this->attributes['paid_amount'] ?? 0);
         }
 
-        return (float) $this->paymentReceipts()
-            ->where(
-                'status',
-                PaymentReceiptStatus::CONFIRMED
-            )
-            ->sum('amount');
+        return (float) app(PaymentReceiptAllocationService::class)
+            ->paidAmountForInvoice($this->id);
     }
 
     public function getRemainingAmountAttribute(): float
@@ -119,7 +122,7 @@ class SalesInvoice extends Model
 
     public function customer(): BelongsTo
     {
-        return $this->belongsTo(Customer::class);
+        return $this->belongsTo(Customer::class)->withTrashed();
     }
 
     public function items(): HasMany

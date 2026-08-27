@@ -8,8 +8,9 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Models\SalesInvoice;
+
 class PaymentReceipt extends Model
 {
     use HasFactory, SoftDeletes;
@@ -25,7 +26,7 @@ class PaymentReceipt extends Model
         'status',
         'created_by',
         'sales_invoice_id',
-'payment_type',
+        'payment_type',
     ];
 
     protected $casts = [
@@ -37,7 +38,7 @@ class PaymentReceipt extends Model
 
     public function customer(): BelongsTo
     {
-        return $this->belongsTo(Customer::class);
+        return $this->belongsTo(Customer::class)->withTrashed();
     }
 
     public function creator(): BelongsTo
@@ -58,13 +59,20 @@ class PaymentReceipt extends Model
                     ->orWhere('code', 'like', "%{$search}%"));
         });
     }
-public function invoice(): BelongsTo
-{
-    return $this->belongsTo(
-        SalesInvoice::class,
-        'sales_invoice_id'
-    );
-}
+
+    public function invoice(): BelongsTo
+    {
+        return $this->belongsTo(
+            SalesInvoice::class,
+            'sales_invoice_id'
+        )->withTrashed();
+    }
+
+    public function allocations(): HasMany
+    {
+        return $this->hasMany(PaymentReceiptAllocation::class);
+    }
+
     public function scopeFilterStatus(Builder $query, ?string $status): Builder
     {
         if (blank($status)) {

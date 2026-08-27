@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\ManufacturingOperation\DeleteManufacturingOperationAction;
 use App\Actions\ManufacturingOperation\SaveManufacturingOperationAction;
 use App\Http\Requests\ManufacturingOperation\StoreManufacturingOperationRequest;
 use App\Models\ManufacturingOperation;
@@ -40,5 +41,12 @@ class ManufacturingOperationController extends Controller
         $action->handle($request->validated(), $manufacturingOperation);
 
         return redirect()->route('manufacturing-operations.index')->with('success', 'تم تحديث العملية بنجاح.');
+    }
+
+    public function destroy(ManufacturingOperation $manufacturingOperation, DeleteManufacturingOperationAction $action): RedirectResponse
+    {
+        $action->handle($manufacturingOperation);
+
+        return redirect()->route('manufacturing-operations.index')->with('success', 'تم حذف العملية مع الاحتفاظ بالسجلات التاريخية.');
     }
 }

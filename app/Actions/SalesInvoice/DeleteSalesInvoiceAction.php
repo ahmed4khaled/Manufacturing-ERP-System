@@ -16,13 +16,12 @@ class DeleteSalesInvoiceAction
                 ->lockForUpdate()
                 ->findOrFail($salesInvoice->id);
 
-            if ($salesInvoice->status !== SalesInvoiceStatus::DRAFT) {
+            if (! in_array($salesInvoice->status, [SalesInvoiceStatus::DRAFT, SalesInvoiceStatus::CANCELLED], true)) {
                 throw ValidationException::withMessages([
-                    'status' => 'لا يمكن حذف إلا الفواتير المسودة.',
+                    'status' => 'لا يمكن حذف الفاتورة المؤكدة مباشرة. ألغِ الفاتورة واعكس أثرها أولاً.',
                 ]);
             }
 
-            $salesInvoice->items()->delete();
             $salesInvoice->delete();
         });
     }

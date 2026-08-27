@@ -16,9 +16,9 @@ class DeleteSalesReturnAction
                 ->lockForUpdate()
                 ->findOrFail($salesReturn->id);
 
-            if ($salesReturn->status !== SalesReturnStatus::DRAFT) {
+            if (! in_array($salesReturn->status, [SalesReturnStatus::DRAFT, SalesReturnStatus::CANCELLED], true)) {
                 throw ValidationException::withMessages([
-                    'status' => 'لا يمكن حذف إلا مرتجعات المبيعات المسودة.',
+                    'status' => 'لا يمكن حذف مرتجع مؤكد مباشرة. ألغِ المرتجع واعكس أثره أولاً.',
                 ]);
             }
 

@@ -45,6 +45,11 @@
                     @csrf
                     <button type="submit" class="btn btn-outline-danger"><i class="bi bi-x-circle me-1"></i> إلغاء السند</button>
                 </form>
+            @elseif ($paymentReceipt->status === \App\Enums\PaymentReceiptStatus::CANCELLED)
+                <form action="{{ route('payment-receipts.destroy', $paymentReceipt) }}" method="POST" onsubmit="return confirm('هل أنت متأكد من حذف هذا السجل؟ سيتم إخفاؤه من السجلات النشطة مع الاحتفاظ بتاريخه.')">
+                    @csrf @method('DELETE')
+                    <button type="submit" class="btn btn-outline-danger"><i class="bi bi-trash me-1"></i> حذف</button>
+                </form>
             @endif
         </div>
     </div>
@@ -118,6 +123,34 @@
                             <p class="mb-0 fw-semibold">{{ $paymentReceipt->created_at->format('Y-m-d H:i') }}</p>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <div class="card mt-4">
+                <div class="card-header bg-white"><h5 class="card-title mb-0">تفاصيل توزيع الدفعة</h5></div>
+                <div class="card-body">
+                    <div class="text-muted small">إجمالي المبلغ المستلم</div>
+                    <div class="display-6 fw-bold text-success mb-3">{{ number_format($paymentReceipt->amount, 2) }} جنيه</div>
+                </div>
+                @if ($allocationBreakdown->isNotEmpty())
+                    <div class="table-responsive"><table class="table align-middle mb-0">
+                        <thead class="table-light"><tr><th>الفاتورة</th><th class="text-end">إجمالي الفاتورة</th><th class="text-end">المدفوع سابقًا</th><th class="text-end">هذه الدفعة</th><th class="text-end">المتبقي</th></tr></thead>
+                        <tbody>@foreach ($allocationBreakdown as $row)<tr>
+                            <td><a href="{{ route('sales-invoices.show', $row['invoice']) }}">{{ $row['invoice']->invoice_number }}</a></td>
+                            <td class="text-end">{{ number_format((float) $row['invoice_total'], 2) }}</td>
+                            <td class="text-end">{{ number_format((float) $row['previous_paid'], 2) }}</td>
+                            <td class="text-end fw-bold">{{ number_format((float) $row['allocation_amount'], 2) }}</td>
+                            <td class="text-end">{{ number_format((float) $row['remaining'], 2) }}</td>
+                        </tr>@endforeach</tbody>
+                    </table></div>
+                @else
+                    <div class="card-body pt-0 text-muted">دفعة مقدمة غير موزعة على فواتير.</div>
+                @endif
+                @php($allocatedTotal = $allocationBreakdown->sum(fn ($row) => (float) $row['allocation_amount']))
+                <div class="card-footer bg-white d-flex flex-wrap justify-content-end gap-4">
+                    <span>إجمالي السند: <strong>{{ number_format($paymentReceipt->amount, 2) }}</strong></span>
+                    <span>إجمالي التوزيع: <strong>{{ number_format($allocatedTotal, 2) }}</strong></span>
+                    <span>غير موزع: <strong>{{ number_format(max(0, (float) $paymentReceipt->amount - $allocatedTotal), 2) }}</strong></span>
                 </div>
             </div>
 

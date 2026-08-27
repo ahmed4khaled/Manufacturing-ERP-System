@@ -48,9 +48,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('returns', [StatisticsController::class, 'returns'])->name('returns');
     });
     Route::resource('workers', WorkerController::class);
-    Route::resource('manufacturing-operations', ManufacturingOperationController::class)->except(['show', 'destroy']);
+    Route::resource('manufacturing-operations', ManufacturingOperationController::class)->except('show');
     Route::post('boms/{bom}/activate', [BomController::class, 'activate'])->name('boms.activate');
-    Route::resource('boms', BomController::class)->except('destroy');
+    Route::resource('boms', BomController::class);
     Route::get('production-orders/{productionOrder}/print', [ProductionOrderController::class, 'print'])->name('production-orders.print');
     Route::post('production-orders/{productionOrder}/confirm', [ProductionOrderController::class, 'confirm'])->name('production-orders.confirm');
     Route::post('production-orders/{productionOrder}/hold', [ProductionOrderController::class, 'hold'])->name('production-orders.hold');
@@ -58,7 +58,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('production-orders/{productionOrder}/cancel', [ProductionOrderController::class, 'cancel'])->name('production-orders.cancel');
     Route::post('production-orders/{productionOrder}/complete', [ProductionOrderController::class, 'complete'])->name('production-orders.complete');
     Route::post('production-orders/{productionOrder}/outputs', [ProductionOrderController::class, 'output'])->name('production-orders.outputs.store');
-    Route::resource('production-orders', ProductionOrderController::class)->only(['index', 'create', 'store', 'show']);
+    Route::resource('production-orders', ProductionOrderController::class)->only(['index', 'create', 'store', 'show', 'destroy']);
     Route::get('work-assignments/{workAssignment}', [WorkAssignmentController::class, 'show'])->name('work-assignments.show');
     Route::post('work-assignments/{workAssignment}/start', [WorkAssignmentController::class, 'start'])->name('work-assignments.start');
     Route::post('work-assignments/{workAssignment}/complete', [WorkAssignmentController::class, 'complete'])->name('work-assignments.complete');

@@ -10,6 +10,7 @@ class DeleteProductAction
     public function handle(Product $product): void
     {
         DB::transaction(function () use ($product) {
+            $product->variants()->delete();
             $product->delete();
         });
     }

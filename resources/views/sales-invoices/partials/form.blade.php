@@ -135,9 +135,27 @@
                             <tbody id="summaryTableBody"></tbody>
                             <tfoot class="table-light">
                                 <tr>
-                                    <th>إجمالي الفاتورة</th>
+                                    <th>المجموع الفرعي</th>
                                     <th class="text-end" id="grandTotalQty">0</th>
                                     <th class="text-end" id="grandTotalAmount">0.00 ج.م</th>
+                                    <th></th>
+                                </tr>
+                                <tr>
+                                    <th colspan="2"><label for="discount" class="mb-0">الخصم</label></th>
+                                    <th>
+                                        <div class="input-group input-group-sm">
+                                            <input type="number" name="discount" id="discount" min="0" step="0.01"
+                                                value="{{ old('discount', $salesInvoice?->discount ?? 0) }}"
+                                                class="form-control text-end @error('discount') is-invalid @enderror">
+                                            <span class="input-group-text">ج.م</span>
+                                        </div>
+                                        @error('discount')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                                    </th>
+                                    <th></th>
+                                </tr>
+                                <tr class="table-primary">
+                                    <th colspan="2">الإجمالي بعد الخصم</th>
+                                    <th class="text-end" id="netTotalAmount">0.00 ج.م</th>
                                     <th></th>
                                 </tr>
                             </tfoot>
@@ -181,10 +199,14 @@
     const emptySummary = document.getElementById('emptySummary');
     const grandTotalQty = document.getElementById('grandTotalQty');
     const grandTotalAmount = document.getElementById('grandTotalAmount');
+    const discountInput = document.getElementById('discount');
+    const netTotalAmount = document.getElementById('netTotalAmount');
     const summaryProductCount = document.getElementById('summaryProductCount');
     const hiddenProductsContainer = document.getElementById('hiddenProductsContainer');
     const saveInvoiceBtn = document.getElementById('saveInvoiceBtn');
     const invoiceForm = document.getElementById('invoiceForm');
+
+    discountInput?.addEventListener('input', () => updateNetTotal());
 
     productSelector?.addEventListener('change', () => {
         loadVariantsBtn.disabled = !productSelector.value;
@@ -298,6 +320,8 @@
             summaryTableWrapper.classList.add('d-none');
             saveInvoiceBtn.disabled = true;
             summaryProductCount.textContent = '0 منتجات';
+            grandTotalAmount.textContent = formatMoney(0) + ' ج.م';
+            updateNetTotal(0);
             return;
         }
 
@@ -335,7 +359,18 @@
 
         grandTotalQty.textContent = grandQty.toLocaleString();
         grandTotalAmount.textContent = formatMoney(grandAmount) + ' ج.م';
+        updateNetTotal(grandAmount);
         summaryProductCount.textContent = `${addedProducts.length} منتج`;
+    }
+
+    function updateNetTotal(subtotal = null) {
+        if (subtotal === null) {
+            subtotal = addedProducts.reduce((sum, product) => sum + Number(product.total_amount || 0), 0);
+        }
+
+        const discount = Math.max(0, Number(discountInput?.value || 0));
+        netTotalAmount.textContent = formatMoney(Math.max(0, subtotal - discount)) + ' ج.م';
+        discountInput?.setCustomValidity(discount > subtotal ? 'قيمة الخصم لا يمكن أن تتجاوز المجموع الفرعي.' : '');
     }
 
     function buildHiddenInputs() {

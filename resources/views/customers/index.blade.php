@@ -81,7 +81,7 @@
                                         <a href="{{ route('customers.edit', $customer) }}" class="btn btn-outline-primary" title="تعديل">
                                             <i class="bi bi-pencil"></i>
                                         </a>
-                                        <form action="{{ route('customers.destroy', $customer) }}" method="POST" class="d-inline" onsubmit="return confirm('هل أنت متأكد من حذف هذا العميل؟')">
+                                        <form action="{{ route('customers.destroy', $customer) }}" method="POST" class="d-inline" onsubmit="return confirm('هل أنت متأكد من حذف هذا السجل؟ سيتم إخفاؤه من السجلات النشطة مع الاحتفاظ بتاريخه.')">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="btn btn-outline-danger" title="حذف">

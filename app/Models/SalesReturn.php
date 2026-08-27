@@ -35,12 +35,12 @@ class SalesReturn extends Model
 
     public function salesInvoice(): BelongsTo
     {
-        return $this->belongsTo(SalesInvoice::class);
+        return $this->belongsTo(SalesInvoice::class)->withTrashed();
     }
 
     public function customer(): BelongsTo
     {
-        return $this->belongsTo(Customer::class);
+        return $this->belongsTo(Customer::class)->withTrashed();
     }
 
     public function creator(): BelongsTo

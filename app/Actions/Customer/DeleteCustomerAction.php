@@ -12,6 +12,7 @@ class DeleteCustomerAction
     {
 
         DB::transaction(function () use ($customer) {
+            $customer = Customer::query()->lockForUpdate()->findOrFail($customer->id);
 
             $balance = $customer->ledgerEntries()
                 ->selectRaw(
@@ -21,12 +22,9 @@ class DeleteCustomerAction
 
             $balance = (float) $balance;
 
-            if ($balance > 0.001) {
+            if (abs($balance) > 0.001) {
                 throw ValidationException::withMessages([
-                    'customer' => sprintf(
-                        'لا يمكن حذف هذا العميل لوجود رصيد مستحق بقيمة %.2f ج.م.',
-                        $balance
-                    ),
+                    'customer' => 'لا يمكن حذف العميل لأنه عليه رصيد مستحق.',
                 ]);
             }
             $customer->delete();

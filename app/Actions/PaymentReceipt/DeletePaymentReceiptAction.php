@@ -16,9 +16,9 @@ class DeletePaymentReceiptAction
                 ->lockForUpdate()
                 ->findOrFail($receipt->id);
 
-            if ($receipt->status !== PaymentReceiptStatus::DRAFT) {
+            if (! in_array($receipt->status, [PaymentReceiptStatus::DRAFT, PaymentReceiptStatus::CANCELLED], true)) {
                 throw ValidationException::withMessages([
-                    'status' => 'لا يمكن حذف إلا السندات المسودة.',
+                    'status' => 'لا يمكن حذف سند قبض مؤكد مباشرة. ألغِ السند واعكس أثره أولاً.',
                 ]);
             }
 

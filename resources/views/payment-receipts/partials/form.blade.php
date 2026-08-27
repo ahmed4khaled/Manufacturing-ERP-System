@@ -6,1290 +6,186 @@
     'submitLabel' => 'حفظ السند',
 ])
 
+@php
+    $initialAllocations = collect(old('allocations', $paymentReceipt?->allocations?->map(fn ($allocation) => [
+        'sales_invoice_id' => $allocation->sales_invoice_id,
+        'amount' => (string) $allocation->amount,
+    ])->all() ?? []))->keyBy('sales_invoice_id');
+@endphp
+
 <form method="POST" action="{{ $formAction }}" id="paymentReceiptForm">
-
     @csrf
-
-    @if ($formMethod !== 'POST')
-        @method($formMethod)
-    @endif
-
+    @if ($formMethod !== 'POST') @method($formMethod) @endif
 
     <div class="row g-4">
-
-        {{-- =====================================================
-             MAIN
-        ====================================================== --}}
-
         <div class="col-lg-8">
-
             <div class="card">
-
-                <div class="card-header bg-white">
-
-                    <h5 class="card-title mb-0">
-                        تفاصيل السند
-                    </h5>
-
-                </div>
-
-
-                <div class="card-body">
-
-                    <div class="row g-3">
-
-
-                        {{-- =====================================================
-                             CUSTOMER
-                        ====================================================== --}}
-
-                        <div class="col-md-6">
-
-                            <label
-                                for="customer_id"
-                                class="form-label"
-                            >
-                                العميل
-                                <span class="text-danger">*</span>
-                            </label>
-
-
-                            <select
-                                name="customer_id"
-                                id="customer_id"
-                                class="form-select @error('customer_id') is-invalid @enderror"
-                                required
-                            >
-
-                                <option value="">
-                                    اختر العميل
-                                </option>
-
-
-                                @foreach ($customers as $customer)
-
-                                    <option
-                                        value="{{ $customer->id }}"
-                                        @selected(
-                                            old(
-                                                'customer_id',
-                                                $paymentReceipt?->customer_id
-                                            ) == $customer->id
-                                        )
-                                    >
-
-                                        {{ $customer->code }}
-                                        —
-                                        {{ $customer->name }}
-
-                                    </option>
-
-                                @endforeach
-
-                            </select>
-
-
-                            @error('customer_id')
-
-                                <div class="invalid-feedback">
-                                    {{ $message }}
-                                </div>
-
-                            @enderror
-
-                        </div>
-
-
-                        {{-- =====================================================
-                             PAYMENT DATE
-                        ====================================================== --}}
-
-                        <div class="col-md-6">
-
-                            <label
-                                for="payment_date"
-                                class="form-label"
-                            >
-                                تاريخ السداد
-                                <span class="text-danger">*</span>
-                            </label>
-
-
-                            <input
-                                type="date"
-                                name="payment_date"
-                                id="payment_date"
-                                class="form-control @error('payment_date') is-invalid @enderror"
-                                value="{{ old(
-                                    'payment_date',
-                                    $paymentReceipt?->payment_date?->format('Y-m-d')
-                                    ?? now()->format('Y-m-d')
-                                ) }}"
-                                required
-                            >
-
-
-                            @error('payment_date')
-
-                                <div class="invalid-feedback">
-                                    {{ $message }}
-                                </div>
-
-                            @enderror
-
-                        </div>
-
-
-                        {{-- =====================================================
-                             PAYMENT TYPE
-                        ====================================================== --}}
-
-                        <div class="col-md-6">
-
-                            <label
-                                for="payment_type"
-                                class="form-label"
-                            >
-                                نوع السداد
-                                <span class="text-danger">*</span>
-                            </label>
-
-
-                            <select
-                                name="payment_type"
-                                id="payment_type"
-                                class="form-select @error('payment_type') is-invalid @enderror"
-                                required
-                            >
-
-                                <option
-                                    value="invoice"
-                                    @selected(
-                                        old(
-                                            'payment_type',
-                                            $paymentReceipt?->payment_type ?? 'invoice'
-                                        ) === 'invoice'
-                                    )
-                                >
-                                    سداد فاتورة
-                                </option>
-
-
-                                <option
-                                    value="advance"
-                                    @selected(
-                                        old(
-                                            'payment_type',
-                                            $paymentReceipt?->payment_type
-                                        ) === 'advance'
-                                    )
-                                >
-                                    دفعة مقدمة
-                                </option>
-
-                            </select>
-
-
-                            @error('payment_type')
-
-                                <div class="invalid-feedback">
-                                    {{ $message }}
-                                </div>
-
-                            @enderror
-
-                        </div>
-
-
-                        {{-- =====================================================
-                             SALES INVOICE
-                        ====================================================== --}}
-
-                        <div
-                            class="col-md-6"
-                            id="invoiceWrapper"
-                        >
-
-                            <label
-                                for="sales_invoice_id"
-                                class="form-label"
-                            >
-                                فاتورة مبيعات
-                                <span class="text-danger">*</span>
-                            </label>
-
-
-                            <select
-                                name="sales_invoice_id"
-                                id="sales_invoice_id"
-                                class="form-select @error('sales_invoice_id') is-invalid @enderror"
-                            >
-
-                                <option value="">
-                                    اختر الفاتورة
-                                </option>
-
-                            </select>
-
-
-                            <div
-                                id="invoiceLoading"
-                                class="form-text d-none"
-                            >
-                                جارٍ تحميل الفواتير...
-                            </div>
-
-
-                            <div
-                                id="invoiceEmpty"
-                                class="form-text text-muted d-none"
-                            >
-                                لا توجد فواتير غير مسددة لهذا العميل.
-                            </div>
-
-
-                            @error('sales_invoice_id')
-
-                                <div class="invalid-feedback">
-                                    {{ $message }}
-                                </div>
-
-                            @enderror
-
-                        </div>
-
-
-                        {{-- =====================================================
-                             INVOICE SUMMARY
-                        ====================================================== --}}
-
-                        <div
-                            class="col-12 d-none"
-                            id="invoiceSummaryWrapper"
-                        >
-
-                            <div class="card border bg-light">
-
-                                <div class="card-body">
-
-                                    <div class="row g-3">
-
-
-                                        <div class="col-md-4">
-
-                                            <div class="text-muted small">
-                                                إجمالي الفاتورة
-                                            </div>
-
-                                            <div
-                                                class="fw-bold"
-                                                id="invoiceTotal"
-                                            >
-                                                0.00 ج.م
-                                            </div>
-
-                                        </div>
-
-
-                                        <div class="col-md-4">
-
-                                            <div class="text-muted small">
-                                                المبلغ المدفوع
-                                            </div>
-
-                                            <div
-                                                class="fw-bold text-success"
-                                                id="invoicePaid"
-                                            >
-                                                0.00 ج.م
-                                            </div>
-
-                                        </div>
-
-
-                                        <div class="col-md-4">
-
-                                            <div class="text-muted small">
-                                                المتبقي
-                                            </div>
-
-                                            <div
-                                                class="fw-bold text-danger"
-                                                id="invoiceRemaining"
-                                            >
-                                                0.00 ج.م
-                                            </div>
-
-                                        </div>
-
-                                    </div>
-
-                                </div>
-
-                            </div>
-
-                        </div>
-
-
-                        {{-- =====================================================
-                             AMOUNT
-                        ====================================================== --}}
-
-                        <div class="col-md-6">
-
-                            <label
-                                for="amount"
-                                class="form-label"
-                            >
-                                المبلغ (ج.م)
-                                <span class="text-danger">*</span>
-                            </label>
-
-
-                            <input
-                                type="number"
-                                name="amount"
-                                id="amount"
-                                step="0.01"
-                                min="0.01"
-                                class="form-control @error('amount') is-invalid @enderror"
-                                value="{{ old(
-                                    'amount',
-                                    $paymentReceipt?->amount
-                                ) }}"
-                                required
-                            >
-
-
-                            <div
-                                id="amountHelp"
-                                class="form-text"
-                            >
-                                أدخل المبلغ المستلم من العميل.
-                            </div>
-
-
-                            @error('amount')
-
-                                <div class="invalid-feedback">
-                                    {{ $message }}
-                                </div>
-
-                            @enderror
-
-                        </div>
-
-
-                        {{-- =====================================================
-                             PAYMENT STATUS
-                        ====================================================== --}}
-
-                        <div class="col-md-6">
-
-                            <label class="form-label">
-                                حالة السداد
-                            </label>
-
-
-                            <div
-                                class="form-control bg-light"
-                                id="paymentStatus"
-                            >
-                                —
-                            </div>
-
-                        </div>
-
-
-                        {{-- =====================================================
-                             PAYMENT METHOD
-                        ====================================================== --}}
-
-                        <div class="col-md-6">
-
-                            <label
-                                for="payment_method"
-                                class="form-label"
-                            >
-                                طريقة الدفع
-                                <span class="text-danger">*</span>
-                            </label>
-
-
-                            <select
-                                name="payment_method"
-                                id="payment_method"
-                                class="form-select @error('payment_method') is-invalid @enderror"
-                                required
-                            >
-
-                                <option value="">
-                                    اختر طريقة الدفع
-                                </option>
-
-
-                                @foreach (\App\Enums\PaymentMethod::cases() as $method)
-
-                                    <option
-                                        value="{{ $method->value }}"
-                                        @selected(
-                                            old(
-                                                'payment_method',
-                                                $paymentReceipt?->payment_method?->value
-                                            ) === $method->value
-                                        )
-                                    >
-
-                                        {{ $method->label() }}
-
-                                    </option>
-
-                                @endforeach
-
-                            </select>
-
-
-                            @error('payment_method')
-
-                                <div class="invalid-feedback">
-                                    {{ $message }}
-                                </div>
-
-                            @enderror
-
-                        </div>
-
-
-                        {{-- =====================================================
-                             REFERENCE
-                        ====================================================== --}}
-
-                        <div class="col-md-6">
-
-                            <label
-                                for="reference_number"
-                                class="form-label"
-                            >
-                                رقم المرجع
-                            </label>
-
-
-                            <input
-                                type="text"
-                                name="reference_number"
-                                id="reference_number"
-                                class="form-control @error('reference_number') is-invalid @enderror"
-                                value="{{ old(
-                                    'reference_number',
-                                    $paymentReceipt?->reference_number
-                                ) }}"
-                                placeholder="رقم الشيك أو مرجع التحويل..."
-                            >
-
-
-                            @error('reference_number')
-
-                                <div class="invalid-feedback">
-                                    {{ $message }}
-                                </div>
-
-                            @enderror
-
-                        </div>
-
-
-                        {{-- =====================================================
-                             NOTES
-                        ====================================================== --}}
-
-                        <div class="col-12">
-
-                            <label
-                                for="notes"
-                                class="form-label"
-                            >
-                                ملاحظات
-                            </label>
-
-
-                            <textarea
-                                name="notes"
-                                id="notes"
-                                rows="3"
-                                class="form-control @error('notes') is-invalid @enderror"
-                            >{{ old(
-                                'notes',
-                                $paymentReceipt?->notes
-                            ) }}</textarea>
-
-
-                            @error('notes')
-
-                                <div class="invalid-feedback">
-                                    {{ $message }}
-                                </div>
-
-                            @enderror
-
-                        </div>
-
-
+                <div class="card-header bg-white"><h5 class="card-title mb-0">تفاصيل سند القبض</h5></div>
+                <div class="card-body"><div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="customer_id" class="form-label">العميل <span class="text-danger">*</span></label>
+                        <select name="customer_id" id="customer_id" class="form-select @error('customer_id') is-invalid @enderror" required>
+                            <option value="">اختر العميل</option>
+                            @foreach ($customers as $customer)<option value="{{ $customer->id }}" @selected(old('customer_id', $paymentReceipt?->customer_id) == $customer->id)>{{ $customer->code }} — {{ $customer->name }}</option>@endforeach
+                        </select>
+                        @error('customer_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
-
-                </div>
-
+                    <div class="col-md-6">
+                        <label for="payment_date" class="form-label">تاريخ السداد <span class="text-danger">*</span></label>
+                        <input type="date" name="payment_date" id="payment_date" class="form-control @error('payment_date') is-invalid @enderror" value="{{ old('payment_date', $paymentReceipt?->payment_date?->format('Y-m-d') ?? now()->format('Y-m-d')) }}" required>
+                        @error('payment_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="col-md-6">
+                        <label for="payment_type" class="form-label">نوع السداد <span class="text-danger">*</span></label>
+                        <select name="payment_type" id="payment_type" class="form-select @error('payment_type') is-invalid @enderror" required>
+                            <option value="invoice" @selected(old('payment_type', $paymentReceipt?->payment_type ?? 'invoice') === 'invoice')>سداد فواتير</option>
+                            <option value="advance" @selected(old('payment_type', $paymentReceipt?->payment_type) === 'advance')>دفعة مقدمة غير موزعة</option>
+                        </select>
+                        @error('payment_type')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="col-md-6">
+                        <label for="amount" class="form-label">إجمالي مبلغ السند (ج.م) <span class="text-danger">*</span></label>
+                        <input type="number" name="amount" id="amount" step="0.01" min="0.01" class="form-control @error('amount') is-invalid @enderror" value="{{ old('amount', $paymentReceipt?->amount) }}" required>
+                        @error('amount')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="col-md-6">
+                        <label for="payment_method" class="form-label">طريقة الدفع <span class="text-danger">*</span></label>
+                        <select name="payment_method" id="payment_method" class="form-select @error('payment_method') is-invalid @enderror" required>
+                            <option value="">اختر طريقة الدفع</option>
+                            @foreach (\App\Enums\PaymentMethod::cases() as $method)<option value="{{ $method->value }}" @selected(old('payment_method', $paymentReceipt?->payment_method?->value) === $method->value)>{{ $method->label() }}</option>@endforeach
+                        </select>
+                        @error('payment_method')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="col-md-6">
+                        <label for="reference_number" class="form-label">رقم المرجع</label>
+                        <input type="text" name="reference_number" id="reference_number" class="form-control @error('reference_number') is-invalid @enderror" value="{{ old('reference_number', $paymentReceipt?->reference_number) }}">
+                        @error('reference_number')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="col-12">
+                        <label for="notes" class="form-label">ملاحظات</label>
+                        <textarea name="notes" id="notes" rows="3" class="form-control @error('notes') is-invalid @enderror">{{ old('notes', $paymentReceipt?->notes) }}</textarea>
+                        @error('notes')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                </div></div>
             </div>
 
+            <div class="card mt-4" id="allocationCard">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center gap-2">
+                    <div><h5 class="card-title mb-0">توزيع الدفعة على الفواتير</h5><small class="text-muted">الفواتير مرتبة من الأقدم إلى الأحدث.</small></div>
+                    <button type="button" class="btn btn-outline-primary" id="autoAllocate">توزيع تلقائي</button>
+                </div>
+                <div class="card-body p-0">
+                    @error('allocations')<div class="alert alert-danger m-3">{{ $message }}</div>@enderror
+                    <div id="invoiceLoading" class="text-center text-muted p-4 d-none">جارٍ تحميل الفواتير...</div>
+                    <div id="invoiceEmpty" class="text-center text-muted p-4 d-none">لا توجد فواتير مستحقة لهذا العميل.</div>
+                    <div class="table-responsive"><table class="table align-middle mb-0">
+                        <thead class="table-light"><tr><th></th><th>الفاتورة</th><th>التاريخ</th><th class="text-end">الإجمالي</th><th class="text-end">المدفوع سابقًا</th><th class="text-end">المتبقي</th><th style="min-width:150px">التوزيع</th></tr></thead>
+                        <tbody id="allocationRows"></tbody>
+                    </table></div>
+                </div>
+            </div>
         </div>
 
-
-        {{-- =====================================================
-             SIDE INFORMATION
-        ====================================================== --}}
-
-        <div class="col-lg-4">
-
-            <div class="card">
-
-                <div class="card-header bg-white">
-
-                    <h5 class="card-title mb-0">
-                        البيانات
-                    </h5>
-
-                </div>
-
-
-                <div class="card-body">
-
-                    @if ($paymentReceipt)
-
-                        <div class="mb-3">
-
-                            <label class="form-label text-muted small mb-1">
-                                رقم السند
-                            </label>
-
-                            <p class="mb-0 fw-semibold">
-                                {{ $paymentReceipt->receipt_number }}
-                            </p>
-
-                        </div>
-
-
-                        <div class="mb-3">
-
-                            <label class="form-label text-muted small mb-1">
-                                الحالة
-                            </label>
-
-                            <p class="mb-0">
-
-                                <span
-                                    class="badge bg-{{ $paymentReceipt->status->badgeClass() }}"
-                                >
-                                    {{ $paymentReceipt->status->label() }}
-                                </span>
-
-                            </p>
-
-                            <div class="form-text">
-
-                                استخدم إجراءات التأكيد أو الإلغاء
-                                من صفحة السند لتغيير حالته.
-
-                            </div>
-
-                        </div>
-
-                    @else
-
-                        <p class="text-muted small mb-0">
-
-                            <i class="bi bi-info-circle me-1"></i>
-
-                            سيُنشأ رقم السند تلقائيًا
-                            (مثال: RCPT000001) عند الحفظ.
-
-                        </p>
-
-                    @endif
-
-
-                </div>
-
+        <div class="col-lg-4"><div class="card sticky-top" style="top: 1rem">
+            <div class="card-header bg-white"><h5 class="card-title mb-0">ملخص التوزيع</h5></div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-2"><span>إجمالي السند</span><strong id="receiptTotal">0.00</strong></div>
+                <div class="d-flex justify-content-between mb-2"><span>إجمالي التوزيع</span><strong id="allocatedTotal" class="text-success">0.00</strong></div><hr>
+                <div class="d-flex justify-content-between"><span>غير موزع</span><strong id="unallocatedTotal" class="text-danger">0.00</strong></div>
             </div>
-
-
-            {{-- =====================================================
-                 ACTIONS
-            ====================================================== --}}
-
-            <div class="d-flex gap-2 mt-4">
-
-                <button
-                    type="submit"
-                    class="btn btn-primary btn-lg"
-                    id="submitButton"
-                >
-
-                    <i class="bi bi-check-lg me-1"></i>
-
-                    {{ $submitLabel }}
-
-                </button>
-
-
-                <a
-                    href="{{
-                        $paymentReceipt
-                            ? route('payment-receipts.show', $paymentReceipt)
-                            : route('payment-receipts.index')
-                    }}"
-                    class="btn btn-outline-secondary btn-lg"
-                >
-                    إلغاء
-                </a>
-
-            </div>
-
-        </div>
-
+            <div class="card-footer bg-white d-grid gap-2"><button type="submit" class="btn btn-primary">{{ $submitLabel }}</button><a href="{{ route('payment-receipts.index') }}" class="btn btn-outline-secondary">إلغاء</a></div>
+        </div></div>
     </div>
-
 </form>
 
-
-{{-- =========================================================
-     JAVASCRIPT
-========================================================= --}}
-
+@push('scripts')
 <script>
-
-document.addEventListener('DOMContentLoaded', function () {
-
-    const customerSelect =
-        document.getElementById('customer_id');
-
-    const paymentTypeSelect =
-        document.getElementById('payment_type');
-
-    const invoiceWrapper =
-        document.getElementById('invoiceWrapper');
-
-    const invoiceSelect =
-        document.getElementById('sales_invoice_id');
-
-    const invoiceLoading =
-        document.getElementById('invoiceLoading');
-
-    const invoiceEmpty =
-        document.getElementById('invoiceEmpty');
-
-    const invoiceSummaryWrapper =
-        document.getElementById('invoiceSummaryWrapper');
-
-    const invoiceTotal =
-        document.getElementById('invoiceTotal');
-
-    const invoicePaid =
-        document.getElementById('invoicePaid');
-
-    const invoiceRemaining =
-        document.getElementById('invoiceRemaining');
-
-    const amountInput =
-        document.getElementById('amount');
-
-    const amountHelp =
-        document.getElementById('amountHelp');
-
-    const paymentStatus =
-        document.getElementById('paymentStatus');
-
-    const form =
-        document.getElementById('paymentReceiptForm');
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Existing Invoice
-    |--------------------------------------------------------------------------
-    */
-
-    const existingInvoiceId =
-        @json(
-            old(
-                'sales_invoice_id',
-                $paymentReceipt?->sales_invoice_id
-            )
-        );
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Invoice Data
-    |--------------------------------------------------------------------------
-    */
-
+document.addEventListener('DOMContentLoaded', () => {
+    const customer = document.getElementById('customer_id');
+    const paymentType = document.getElementById('payment_type');
+    const amount = document.getElementById('amount');
+    const card = document.getElementById('allocationCard');
+    const rows = document.getElementById('allocationRows');
+    const loading = document.getElementById('invoiceLoading');
+    const empty = document.getElementById('invoiceEmpty');
+    const initial = @json($initialAllocations);
+    const excludeReceiptId = @json($paymentReceipt?->id);
     let invoices = [];
+    const money = value => Number(value || 0).toLocaleString('ar-EG', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 
-    let selectedInvoice = null;
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Format Money
-    |--------------------------------------------------------------------------
-    */
-
-    function money(value) {
-
-        return Number(value || 0)
-            .toLocaleString('ar-EG', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            });
-
+    function totals() {
+        const receipt = Number(amount.value || 0);
+        let allocated = 0;
+        rows.querySelectorAll('.allocation-amount:not(:disabled)').forEach(input => allocated += Number(input.value || 0));
+        document.getElementById('receiptTotal').textContent = money(receipt);
+        document.getElementById('allocatedTotal').textContent = money(allocated);
+        const unallocated = receipt - allocated;
+        const output = document.getElementById('unallocatedTotal');
+        output.textContent = money(unallocated);
+        output.className = Math.abs(unallocated) < 0.005 ? 'text-success' : 'text-danger';
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | Update Payment Status
-    |--------------------------------------------------------------------------
-    */
-
-    function updatePaymentStatus() {
-
-        const amount =
-            Number(amountInput.value || 0);
-
-
-        if (
-            paymentTypeSelect.value === 'advance'
-        ) {
-
-            paymentStatus.innerHTML =
-                '<span class="badge bg-warning text-dark">دفعة مقدمة</span>';
-
-            amountInput.removeAttribute('max');
-
-            amountHelp.textContent =
-                'ستُسجل هذه الدفعة كدفعة مقدمة.';
-
-            return;
-        }
-
-
-        if (!selectedInvoice) {
-
-            paymentStatus.textContent = '—';
-
-            amountInput.removeAttribute('max');
-
-            amountHelp.textContent =
-                'اختر فاتورة أولًا.';
-
-            return;
-        }
-
-
-        const remaining =
-            Number(
-                selectedInvoice.remaining_amount || 0
-            );
-
-
-        amountInput.max =
-            remaining.toFixed(2);
-
-
-        if (amount <= 0) {
-
-            paymentStatus.textContent = '—';
-
-            amountHelp.textContent =
-                `الحد الأقصى للدفعة: ${money(remaining)} ج.م`;
-
-            return;
-        }
-
-
-        if (amount > remaining) {
-
-            paymentStatus.innerHTML =
-                '<span class="badge bg-danger">المبلغ يتجاوز الرصيد المتبقي</span>';
-
-            amountHelp.textContent =
-                `الحد الأقصى المسموح: ${money(remaining)} ج.م`;
-
-            return;
-        }
-
-
-        if (
-            Math.abs(amount - remaining) < 0.01
-        ) {
-
-            paymentStatus.innerHTML =
-                '<span class="badge bg-success">سداد كامل</span>';
-
-            amountHelp.textContent =
-                'ستؤدي هذه الدفعة إلى سداد الفاتورة بالكامل.';
-
-            return;
-        }
-
-
-        paymentStatus.innerHTML =
-            '<span class="badge bg-warning text-dark">سداد جزئي</span>';
-
-        amountHelp.textContent =
-            `المتبقي بعد الدفعة: ${money(
-                remaining - amount
-            )} ج.م`;
-
+    function setSelected(row, selected) {
+        row.querySelector('.allocation-check').checked = selected;
+        row.querySelector('.invoice-id').disabled = !selected;
+        const allocation = row.querySelector('.allocation-amount');
+        allocation.disabled = !selected;
+        if (!selected) allocation.value = '';
+        totals();
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | Render Invoice Options
-    |--------------------------------------------------------------------------
-    */
-
-    function renderInvoices() {
-
-        invoiceSelect.innerHTML =
-            '<option value="">اختر الفاتورة</option>';
-
-
-        if (!invoices.length) {
-
-            invoiceEmpty.classList.remove('d-none');
-
-            invoiceSummaryWrapper.classList.add('d-none');
-
-            selectedInvoice = null;
-
-            return;
-        }
-
-
-        invoiceEmpty.classList.add('d-none');
-
-
-        invoices.forEach(function (invoice) {
-
-            const option =
-                document.createElement('option');
-
-            option.value =
-                invoice.id;
-
-            option.textContent =
-                `${invoice.invoice_number} — متبقي ${money(invoice.remaining_amount)} ج.م`;
-
-            option.dataset.invoiceId =
-                invoice.id;
-
-            invoiceSelect.appendChild(option);
-
+    function render() {
+        rows.innerHTML = '';
+        invoices.forEach((invoice, index) => {
+            const saved = initial[invoice.id] || null;
+            const tr = document.createElement('tr');
+            tr.dataset.outstanding = invoice.remaining_amount;
+            tr.innerHTML = `<td><input type="checkbox" class="form-check-input allocation-check"></td><td><a href="/sales-invoices/${invoice.id}" target="_blank">${invoice.invoice_number}</a></td><td>${invoice.invoice_date}</td><td class="text-end">${money(invoice.total_amount)}</td><td class="text-end">${money(invoice.paid_amount)}</td><td class="text-end fw-semibold">${money(invoice.remaining_amount)}</td><td><input type="hidden" class="invoice-id" name="allocations[${index}][sales_invoice_id]" value="${invoice.id}" disabled><input type="number" class="form-control allocation-amount" name="allocations[${index}][amount]" step="0.01" min="0.01" max="${invoice.remaining_amount}" disabled></td>`;
+            rows.appendChild(tr);
+            const checkbox = tr.querySelector('.allocation-check');
+            const allocation = tr.querySelector('.allocation-amount');
+            checkbox.addEventListener('change', () => setSelected(tr, checkbox.checked));
+            allocation.addEventListener('input', totals);
+            if (saved) { setSelected(tr, true); allocation.value = saved.amount; }
         });
-
-
-        if (existingInvoiceId) {
-
-            const exists =
-                invoices.some(function (invoice) {
-
-                    return String(invoice.id) ===
-                        String(existingInvoiceId);
-
-                });
-
-
-            if (exists) {
-
-                invoiceSelect.value =
-                    existingInvoiceId;
-
-                selectInvoice();
-
-            }
-
-        }
-
+        empty.classList.toggle('d-none', invoices.length !== 0);
+        totals();
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | Select Invoice
-    |--------------------------------------------------------------------------
-    */
-
-    function selectInvoice() {
-
-        const invoiceId =
-            invoiceSelect.value;
-
-
-        selectedInvoice =
-            invoices.find(function (invoice) {
-
-                return String(invoice.id) ===
-                    String(invoiceId);
-
-            }) || null;
-
-
-        if (!selectedInvoice) {
-
-            invoiceSummaryWrapper
-                .classList
-                .add('d-none');
-
-            updatePaymentStatus();
-
-            return;
-        }
-
-
-        invoiceSummaryWrapper
-            .classList
-            .remove('d-none');
-
-
-        invoiceTotal.textContent =
-            `${money(selectedInvoice.total_amount)} ج.م`;
-
-
-        invoicePaid.textContent =
-            `${money(selectedInvoice.paid_amount)} ج.م`;
-
-
-        invoiceRemaining.textContent =
-            `${money(selectedInvoice.remaining_amount)} ج.م`;
-
-
-        amountInput.max =
-            Number(
-                selectedInvoice.remaining_amount
-            ).toFixed(2);
-
-
-        updatePaymentStatus();
-
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Load Customer Invoices
-    |--------------------------------------------------------------------------
-    */
-
-    async function loadCustomerInvoices(
-        customerId,
-        preserveSelection = false
-    ) {
-
-        invoices = [];
-
-        selectedInvoice = null;
-
-        invoiceSelect.innerHTML =
-            '<option value="">اختر الفاتورة</option>';
-
-        invoiceSummaryWrapper
-            .classList
-            .add('d-none');
-
-
-        if (!customerId) {
-
-            invoiceEmpty.classList.add('d-none');
-
-            invoiceLoading.classList.add('d-none');
-
-            return;
-        }
-
-
-        invoiceLoading.classList.remove('d-none');
-
-        invoiceEmpty.classList.add('d-none');
-
-
+    async function loadInvoices() {
+        rows.innerHTML = ''; invoices = [];
+        if (!customer.value || paymentType.value !== 'invoice') return totals();
+        loading.classList.remove('d-none'); empty.classList.add('d-none');
+        const query = excludeReceiptId ? `?exclude_receipt_id=${excludeReceiptId}` : '';
         try {
-
-            const url =
-                @json(
-                    route(
-                        'payment-receipts.customer-invoices',
-                        ['customer' => '__CUSTOMER__']
-                    )
-                )
-                .replace(
-                    '__CUSTOMER__',
-                    customerId
-                );
-
-
-            const response =
-                await fetch(url, {
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                });
-
-
-            if (!response.ok) {
-
-                throw new Error(
-                    'تعذر تحميل فواتير العميل.'
-                );
-
-            }
-
-
-            const data =
-                await response.json();
-
-
-            invoices =
-                Array.isArray(data.invoices)
-                    ? data.invoices
-                    : [];
-
-
-            renderInvoices();
-
-
+            const response = await fetch(`/payment-receipts/customer/${customer.value}/invoices${query}`, {headers: {'Accept': 'application/json'}});
+            if (!response.ok) throw new Error('load failed');
+            invoices = (await response.json()).invoices || []; render();
         } catch (error) {
-
-            console.error(error);
-
-            invoiceSelect.innerHTML =
-                '<option value="">تعذر تحميل الفواتير</option>';
-
-        } finally {
-
-            invoiceLoading.classList.add('d-none');
-
-        }
-
+            empty.textContent = 'تعذر تحميل الفواتير. أعد المحاولة.'; empty.classList.remove('d-none');
+        } finally { loading.classList.add('d-none'); }
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | Toggle Payment Type
-    |--------------------------------------------------------------------------
-    */
-
-    function togglePaymentType() {
-
-        const type =
-            paymentTypeSelect.value;
-
-
-        if (type === 'advance') {
-
-            invoiceWrapper
-                .classList
-                .add('d-none');
-
-
-            invoiceSelect.value = '';
-
-            selectedInvoice = null;
-
-            invoiceSummaryWrapper
-                .classList
-                .add('d-none');
-
-
-            amountInput.removeAttribute('max');
-
-            updatePaymentStatus();
-
-            return;
-        }
-
-
-        invoiceWrapper
-            .classList
-            .remove('d-none');
-
-
-        updatePaymentStatus();
-
+    function toggleType() {
+        const invoicePayment = paymentType.value === 'invoice';
+        card.classList.toggle('d-none', !invoicePayment);
+        if (invoicePayment) loadInvoices(); else { rows.innerHTML = ''; totals(); }
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | Customer Change
-    |--------------------------------------------------------------------------
-    */
-
-    customerSelect.addEventListener(
-        'change',
-        function () {
-
-            loadCustomerInvoices(
-                this.value
-            );
-
-        }
-    );
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Payment Type Change
-    |--------------------------------------------------------------------------
-    */
-
-    paymentTypeSelect.addEventListener(
-        'change',
-        function () {
-
-            togglePaymentType();
-
-        }
-    );
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Invoice Change
-    |--------------------------------------------------------------------------
-    */
-
-    invoiceSelect.addEventListener(
-        'change',
-        function () {
-
-            selectInvoice();
-
-        }
-    );
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Amount Change
-    |--------------------------------------------------------------------------
-    */
-
-    amountInput.addEventListener(
-        'input',
-        function () {
-
-            updatePaymentStatus();
-
-        }
-    );
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Prevent Overpayment From UI
-    |--------------------------------------------------------------------------
-    */
-
-    form.addEventListener(
-        'submit',
-        function (event) {
-
-            if (
-                paymentTypeSelect.value !==
-                'invoice'
-            ) {
-                return;
-            }
-
-
-            if (!selectedInvoice) {
-
-                event.preventDefault();
-
-                alert(
-                    'يرجى اختيار فاتورة مبيعات.'
-                );
-
-                return;
-            }
-
-
-            const amount =
-                Number(
-                    amountInput.value || 0
-                );
-
-
-            const remaining =
-                Number(
-                    selectedInvoice.remaining_amount || 0
-                );
-
-
-            if (amount > remaining) {
-
-                event.preventDefault();
-
-                alert(
-                    `لا يمكن أن تتجاوز الدفعة الرصيد المتبقي وقدره ${money(remaining)} ج.م.`
-                );
-
-                amountInput.focus();
-
-                return;
-            }
-
-        }
-    );
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Initial State
-    |--------------------------------------------------------------------------
-    */
-
-    togglePaymentType();
-
-
-    const initialCustomer =
-        customerSelect.value;
-
-
-    if (
-        initialCustomer &&
-        paymentTypeSelect.value === 'invoice'
-    ) {
-
-        loadCustomerInvoices(
-            initialCustomer,
-            true
-        );
-
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | If Validation Error Returned
-    |--------------------------------------------------------------------------
-    */
-
-    updatePaymentStatus();
-
+    document.getElementById('autoAllocate').addEventListener('click', () => {
+        let remaining = Number(amount.value || 0);
+        rows.querySelectorAll('tr').forEach(row => {
+            const allocation = row.querySelector('.allocation-amount');
+            const value = Math.min(remaining, Number(row.dataset.outstanding));
+            setSelected(row, value > 0);
+            if (value > 0) allocation.value = value.toFixed(2);
+            remaining -= value;
+        }); totals();
+    });
+    customer.addEventListener('change', loadInvoices);
+    paymentType.addEventListener('change', toggleType);
+    amount.addEventListener('input', totals);
+    toggleType();
 });
-
 </script>
+@endpush

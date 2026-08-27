@@ -24,7 +24,7 @@ class ProductionOrderOperation extends Model
 
     public function manufacturingOperation(): BelongsTo
     {
-        return $this->belongsTo(ManufacturingOperation::class);
+        return $this->belongsTo(ManufacturingOperation::class)->withTrashed();
     }
 
     public function workAssignments(): HasMany

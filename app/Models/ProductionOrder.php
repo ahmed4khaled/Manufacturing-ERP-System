@@ -19,17 +19,17 @@ class ProductionOrder extends Model
 
     public function product(): BelongsTo
     {
-        return $this->belongsTo(Product::class);
+        return $this->belongsTo(Product::class)->withTrashed();
     }
 
     public function productVariant(): BelongsTo
     {
-        return $this->belongsTo(ProductVariant::class);
+        return $this->belongsTo(ProductVariant::class)->withTrashed();
     }
 
     public function bom(): BelongsTo
     {
-        return $this->belongsTo(Bom::class);
+        return $this->belongsTo(Bom::class)->withTrashed();
     }
 
     public function creator(): BelongsTo

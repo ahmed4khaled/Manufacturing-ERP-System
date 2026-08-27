@@ -4,14 +4,14 @@ namespace App\Actions\PaymentReceipt;
 
 use App\Enums\PaymentReceiptStatus;
 use App\Models\PaymentReceipt;
-use App\Services\PaymentReceiptInvoiceService;
+use App\Services\PaymentReceiptAllocationService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class UpdatePaymentReceiptAction
 {
     public function __construct(
-        private readonly PaymentReceiptInvoiceService $invoiceService,
+        private readonly PaymentReceiptAllocationService $allocationService,
     ) {}
 
     public function handle(PaymentReceipt $receipt, array $data): PaymentReceipt
@@ -31,10 +31,11 @@ class UpdatePaymentReceiptAction
                 $data['sales_invoice_id'] = null;
             }
 
-            $this->invoiceService->validate($data, $receipt->id);
-            $receipt->update($data);
+            $allocations = $this->allocationService->validate($data, $receipt->id);
+            $receipt->update(collect($data)->except(['allocations', 'sales_invoice_id'])->all());
+            $this->allocationService->persist($receipt, $allocations);
 
-            return $receipt->fresh(['customer', 'invoice', 'creator']);
+            return $receipt->fresh(['customer', 'invoice', 'allocations.salesInvoice', 'creator']);
         });
     }
 }

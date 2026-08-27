@@ -8,7 +8,7 @@ use App\Actions\Procurement\ConfirmPurchaseReturnAction;
 use App\Actions\Procurement\CreateGoodsReceiptAction;
 use App\Actions\Procurement\CreatePurchaseOrderAction;
 use App\Actions\Procurement\CreatePurchaseReturnAction;
-use App\Actions\Procurement\RecordSupplierPaymentAction;
+use App\Actions\Supplier\DeleteSupplierAction;
 use App\Http\Requests\Procurement\ApprovePurchaseOrderRequest;
 use App\Http\Requests\Procurement\StoreGoodsReceiptRequest;
 use App\Http\Requests\Procurement\StorePurchaseOrderRequest;
@@ -25,79 +25,79 @@ use App\Models\SupplierContact;
 use App\Models\SupplierInvoice;
 use App\Models\SupplierPayment;
 use App\Services\CodeGeneratorService;
+use App\Services\Printing\DocumentPrinter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
-use App\Services\Printing\DocumentPrinter;
 
 class ProcurementController extends Controller
 {
-public function showSupplierPayment(
-    SupplierPayment $supplierPayment
-): View {
-    $supplierPayment->load([
-        'supplier',
-        'purchaseOrder',
-        'invoice',
-    ]);
+    public function showSupplierPayment(
+        SupplierPayment $supplierPayment
+    ): View {
+        $supplierPayment->load([
+            'supplier',
+            'purchaseOrder',
+            'invoice',
+        ]);
 
-    return view(
-        'procurement.payments.show',
-        compact('supplierPayment')
-    );
-}
+        return view(
+            'procurement.payments.show',
+            compact('supplierPayment')
+        );
+    }
 
-public function printSupplierPayment(
-    SupplierPayment $supplierPayment
-): View {
-    $supplierPayment->load([
-        'supplier',
-        'purchaseOrder',
-        'invoice',
-    ]);
+    public function printSupplierPayment(
+        SupplierPayment $supplierPayment
+    ): View {
+        $supplierPayment->load([
+            'supplier',
+            'purchaseOrder',
+            'invoice',
+        ]);
 
-    return view(
-        'printing.supplier-payment',
-        [
-            'document' => $supplierPayment,
-        ]
-    );
-}
+        return view(
+            'printing.supplier-payment',
+            [
+                'document' => $supplierPayment,
+            ]
+        );
+    }
+
     public function printSupplierInvoice(
-    SupplierInvoice $supplierInvoice,
-    DocumentPrinter $printer
-): View {
-    $supplierInvoice->load([
-    'supplier',
-    'purchaseOrder',
-    'goodsReceipt',
-    'payments',
-]);
-    return $printer->render(
-        $supplierInvoice,
-        'supplier_invoice'
-    );
-}
-public function showSupplierInvoice(
-    SupplierInvoice $supplierInvoice
-): View {
-    $supplierInvoice->load([
-        'supplier',
-        'payments',
-    ]);
+        SupplierInvoice $supplierInvoice,
+        DocumentPrinter $printer
+    ): View {
+        $supplierInvoice->load([
+            'supplier',
+            'purchaseOrder',
+            'goodsReceipt',
+            'payments',
+        ]);
 
-    return view(
-        'procurement.invoices.show',
-        compact('supplierInvoice')
-    );
-}
+        return $printer->render(
+            $supplierInvoice,
+            'supplier_invoice'
+        );
+    }
 
+    public function showSupplierInvoice(
+        SupplierInvoice $supplierInvoice
+    ): View {
+        $supplierInvoice->load([
+            'supplier',
+            'payments',
+        ]);
 
-
-
+        return view(
+            'procurement.invoices.show',
+            compact('supplierInvoice')
+        );
+    }
 
     public function suppliers(Request $request): View|JsonResponse
     {
@@ -105,7 +105,7 @@ public function showSupplierInvoice(
             ->with('contacts')
             ->when(
                 $request->input('search'),
-                fn($query, $search) => $query->where('name', 'like', "%{$search}%")
+                fn ($query, $search) => $query->where('name', 'like', "%{$search}%")
                     ->orWhere('code', 'like', "%{$search}%")
                     ->orWhere('phone', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%")
@@ -128,7 +128,7 @@ public function showSupplierInvoice(
 
     public function showSupplier(Supplier $supplier): View
     {
-        $supplier->load(['contacts', 'purchaseOrders' => fn($q) => $q->latest('order_date')->limit(10), 'goodsReceipts' => fn($q) => $q->latest('received_at')->limit(10), 'invoices' => fn($q) => $q->latest('invoice_date')->limit(10), 'payments' => fn($q) => $q->latest('payment_date')->limit(10), 'returns' => fn($q) => $q->latest('return_date')->limit(10)]);
+        $supplier->load(['contacts', 'purchaseOrders' => fn ($q) => $q->latest('order_date')->limit(10), 'goodsReceipts' => fn ($q) => $q->latest('received_at')->limit(10), 'invoices' => fn ($q) => $q->latest('invoice_date')->limit(10), 'payments' => fn ($q) => $q->latest('payment_date')->limit(10), 'returns' => fn ($q) => $q->latest('return_date')->limit(10)]);
         $summary = ['purchases' => $supplier->purchaseOrders->sum('total'), 'invoiced' => $supplier->invoices->sum('total'), 'paid' => $supplier->payments->sum('amount')];
         $summary['outstanding'] = $summary['invoiced'] - $summary['paid'];
 
@@ -148,14 +148,15 @@ public function showSupplierInvoice(
         return redirect()->route('suppliers.show', $supplier)->with('success', 'تم تحديث المورد بنجاح.');
     }
 
-    public function destroySupplier(Supplier $supplier): RedirectResponse
+    public function destroySupplier(Supplier $supplier, DeleteSupplierAction $action): RedirectResponse
     {
-        if ($supplier->purchaseOrders()->exists() || $supplier->invoices()->exists()) {
-            return back()->with('error', 'لا يمكن حذف مورد مرتبط بمستندات مشتريات. اجعله غير نشط بدلًا من ذلك.');
+        try {
+            $action->handle($supplier);
+        } catch (ValidationException $e) {
+            return back()->with('error', $e->validator->errors()->first());
         }
-        $supplier->delete();
 
-        return redirect()->route('suppliers.index')->with('success', 'تم حذف المورد بنجاح.');
+        return redirect()->route('suppliers.index')->with('success', 'تم حذف المورد مع الاحتفاظ بسجلاته التاريخية.');
     }
 
     public function storeSupplierContact(Request $request, Supplier $supplier): RedirectResponse
@@ -220,6 +221,7 @@ public function showSupplierInvoice(
 
         return view('procurement.invoices.index', compact('invoices'));
     }
+
     public function createInvoice(): View
     {
         $suppliers = Supplier::query()
@@ -330,7 +332,7 @@ public function showSupplierInvoice(
             ->selectRaw('purchase_returns.goods_receipt_id, purchase_return_items.material_id, SUM(purchase_return_items.quantity) as returned_quantity')
             ->get()
             ->groupBy('goods_receipt_id')
-            ->map(fn($rows) => $rows->pluck('returned_quantity', 'material_id'));
+            ->map(fn ($rows) => $rows->pluck('returned_quantity', 'material_id'));
 
         foreach ($receipts as $receipt) {
             $returnedForReceipt = $returnedByReceiptMaterial->get($receipt->id, collect());
@@ -413,7 +415,6 @@ public function showSupplierInvoice(
 
         $action->handle($goodsReceipt);
 
-
         return back()->with('success', 'تم تأكيد إذن الاستلام وترحيله إلى المخزون.');
     }
 
@@ -465,7 +466,7 @@ public function showSupplierInvoice(
 
         $po = null;
 
-        if (!empty($data['purchase_order_id'])) {
+        if (! empty($data['purchase_order_id'])) {
 
             $po = PurchaseOrder::query()
                 ->findOrFail($data['purchase_order_id']);
@@ -484,7 +485,7 @@ public function showSupplierInvoice(
     |--------------------------------------------------------------------------
     */
 
-        if (!empty($data['goods_receipt_id'])) {
+        if (! empty($data['goods_receipt_id'])) {
 
             $receipt = GoodsReceipt::query()
                 ->with('items')
@@ -508,7 +509,7 @@ public function showSupplierInvoice(
         */
 
             if (
-                !empty($data['purchase_order_id']) &&
+                ! empty($data['purchase_order_id']) &&
                 (int) $receipt->purchase_order_id !==
                 (int) $data['purchase_order_id']
             ) {
@@ -677,14 +678,11 @@ public function showSupplierInvoice(
 
         $status = match (true) {
 
-            bccomp($remainingAmount, '0', 2) === 0 =>
-            'paid',
+            bccomp($remainingAmount, '0', 2) === 0 => 'paid',
 
-            bccomp($advancePaid, '0', 2) > 0 =>
-            'partially_paid',
+            bccomp($advancePaid, '0', 2) > 0 => 'partially_paid',
 
-            default =>
-            'unpaid',
+            default => 'unpaid',
         };
 
         /*
@@ -697,27 +695,20 @@ public function showSupplierInvoice(
 
             ...$data,
 
-            'invoice_number' =>
-            app(CodeGeneratorService::class)
+            'invoice_number' => app(CodeGeneratorService::class)
                 ->next('PINV'),
 
-            'subtotal' =>
-            $subtotal,
+            'subtotal' => $subtotal,
 
-            'discount' =>
-            $discount,
+            'discount' => $discount,
 
-            'tax' =>
-            $tax,
+            'tax' => $tax,
 
-            'total' =>
-            $total,
+            'total' => $total,
 
-            'remaining_amount' =>
-            $remainingAmount,
+            'remaining_amount' => $remainingAmount,
 
-            'status' =>
-            $status,
+            'status' => $status,
         ]);
 
         return back()->with(
@@ -725,6 +716,7 @@ public function showSupplierInvoice(
             "تم إنشاء الفاتورة {$invoice->invoice_number}."
         );
     }
+
     public function storePayment(
         StoreSupplierPaymentRequest $request
     ): RedirectResponse {
@@ -771,35 +763,25 @@ public function showSupplierInvoice(
 
             $payment = SupplierPayment::create([
 
-                'payment_number' =>
-                app(CodeGeneratorService::class)->next('SPAY'),
+                'payment_number' => app(CodeGeneratorService::class)->next('SPAY'),
 
-                'supplier_id' =>
-                $supplier->id,
+                'supplier_id' => $supplier->id,
 
-                'purchase_order_id' =>
-                $po->id,
+                'purchase_order_id' => $po->id,
 
-                'supplier_invoice_id' =>
-                null,
+                'supplier_invoice_id' => null,
 
-                'payment_type' =>
-                'advance',
+                'payment_type' => 'advance',
 
-                'payment_date' =>
-                $data['payment_date'],
+                'payment_date' => $data['payment_date'],
 
-                'amount' =>
-                $data['amount'],
+                'amount' => $data['amount'],
 
-                'payment_method' =>
-                $data['payment_method'],
+                'payment_method' => $data['payment_method'],
 
-                'reference' =>
-                $data['reference'] ?? null,
+                'reference' => $data['reference'] ?? null,
 
-                'notes' =>
-                $data['notes'] ?? null,
+                'notes' => $data['notes'] ?? null,
             ]);
 
             return back()->with(
@@ -915,35 +897,25 @@ public function showSupplierInvoice(
 
             SupplierPayment::create([
 
-                'payment_number' =>
-                app(CodeGeneratorService::class)->next('SPAY'),
+                'payment_number' => app(CodeGeneratorService::class)->next('SPAY'),
 
-                'supplier_id' =>
-                $invoice->supplier_id,
+                'supplier_id' => $invoice->supplier_id,
 
-                'purchase_order_id' =>
-                $invoice->purchase_order_id,
+                'purchase_order_id' => $invoice->purchase_order_id,
 
-                'supplier_invoice_id' =>
-                $invoice->id,
+                'supplier_invoice_id' => $invoice->id,
 
-                'payment_type' =>
-                'invoice',
+                'payment_type' => 'invoice',
 
-                'payment_date' =>
-                $data['payment_date'],
+                'payment_date' => $data['payment_date'],
 
-                'amount' =>
-                $amount,
+                'amount' => $amount,
 
-                'payment_method' =>
-                $data['payment_method'],
+                'payment_method' => $data['payment_method'],
 
-                'reference' =>
-                $data['reference'] ?? null,
+                'reference' => $data['reference'] ?? null,
 
-                'notes' =>
-                $data['notes'] ?? null,
+                'notes' => $data['notes'] ?? null,
             ]);
 
             /*
@@ -954,11 +926,9 @@ public function showSupplierInvoice(
 
             $invoice->update([
 
-                'remaining_amount' =>
-                $newRemaining,
+                'remaining_amount' => $newRemaining,
 
-                'status' =>
-                $status,
+                'status' => $status,
             ]);
         });
 
@@ -982,6 +952,7 @@ public function showSupplierInvoice(
 
         return back()->with('success', 'تم تأكيد مرتجع المشتريات وترحيله إلى المخزون.');
     }
+
     public function supplierLedger(Supplier $supplier)
     {
         $invoices = $supplier->invoices()
@@ -1017,7 +988,7 @@ public function showSupplierInvoice(
         foreach ($payments as $payment) {
             $transactions->push([
                 'date' => $payment->payment_date,
-                'reference' => 'PAY-' . $payment->id,
+                'reference' => 'PAY-'.$payment->id,
                 'type' => 'Payment',
                 'description' => $payment->payment_method ?? 'دفعة مورد',
                 'debit' => 0,
