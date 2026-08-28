@@ -22,6 +22,7 @@ use App\Models\Material;
 use App\Models\MaterialStockMovement;
 use App\Models\PaymentReceipt;
 use App\Models\Product;
+use App\Models\ProductCostLayer;
 use App\Models\ProductionOrder;
 use App\Models\ProductionOrderOperation;
 use App\Models\ProductVariant;
@@ -44,7 +45,8 @@ function softDeletePolicyFixture(): array
     $color = Color::create(['code' => 'SD-BLK', 'name' => 'Black', 'status' => 'active']);
     $size = Size::create(['code' => 'SD-L', 'name' => 'Large', 'status' => 'active']);
     $variant = ProductVariant::create(['product_id' => $product->id, 'color_id' => $color->id, 'size_id' => $size->id, 'sku' => 'SD-SKU', 'barcode' => 'SD-BAR', 'default_price' => 100, 'quantity' => 20, 'status' => 'active']);
-    StockMovement::create(['product_variant_id' => $variant->id, 'movement_type' => 'opening', 'direction' => 'in', 'quantity' => 20, 'movement_date' => now()]);
+    $openingMovement = StockMovement::create(['product_variant_id' => $variant->id, 'movement_type' => 'opening', 'direction' => 'in', 'quantity' => 20, 'movement_date' => now()]);
+    ProductCostLayer::create(['product_variant_id' => $variant->id, 'stock_movement_id' => $openingMovement->id, 'layer_date' => now(), 'original_quantity' => 20, 'remaining_quantity' => 20, 'unit_cost' => 10, 'total_original_cost' => 200, 'is_final' => true]);
     $customer = Customer::create(['code' => 'SD-C', 'name' => 'Historical Customer', 'phone' => '01000000010', 'credit_limit' => 10000, 'status' => 'active']);
     $invoice = SalesInvoice::create(['invoice_number' => 'SD-INV', 'customer_id' => $customer->id, 'invoice_date' => now(), 'status' => SalesInvoiceStatus::DRAFT, 'total_quantity' => 2, 'subtotal' => 200, 'total_amount' => 200]);
     $item = $invoice->items()->create(['product_variant_id' => $variant->id, 'product_name' => $product->name, 'color_name' => $color->name, 'size_name' => $size->name, 'sku' => $variant->sku, 'barcode' => $variant->barcode, 'quantity' => 2, 'unit_price' => 100, 'line_total' => 200]);

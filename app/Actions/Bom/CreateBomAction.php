@@ -66,7 +66,14 @@ class CreateBomAction
 
         foreach ($data['items'] as $itemIndex => $item) {
             $material = $materials->get($item['material_id']);
-            $bomItem = $bom->items()->create(['material_id' => $material->id, 'material_code' => $material->code, 'material_name' => $material->name, 'unit' => $material->unit->value, 'quantity' => $item['quantity']]);
+            $bomItem = $bom->items()->create([
+                'material_id' => $material->id,
+                'material_code' => $material->code,
+                'material_name' => $material->name,
+                'unit' => $material->unit->value,
+                'quantity' => $item['quantity'],
+                'standard_unit_cost' => $material->standard_unit_cost,
+            ]);
             $allocations = array_values($item['operation_allocations'] ?? []);
 
             // Preserve the legacy behavior for old clients and BOM records.

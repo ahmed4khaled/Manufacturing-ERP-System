@@ -11,12 +11,16 @@ use App\Actions\ProductionOrder\HoldProductionOrderAction;
 use App\Actions\ProductionOrder\RecordProductionOutputAction;
 use App\Actions\ProductionOrder\ResumeProductionOrderAction;
 use App\Enums\BomStatus;
+use App\Enums\ProductionOrderStatus;
 use App\Enums\WorkerStatus;
 use App\Http\Requests\ProductionOrder\RecordProductionOutputRequest;
 use App\Http\Requests\ProductionOrder\StoreProductionOrderRequest;
 use App\Models\Bom;
+use App\Models\MaterialCostAllocation;
+use App\Models\ProductionMaterialTransaction;
 use App\Models\ProductionOrder;
 use App\Models\Worker;
+use App\Services\InventoryCostingService;
 use App\Services\MaterialStockService;
 use App\Services\Printing\DocumentPrinter;
 use App\Services\ProductionSummaryService;
@@ -116,7 +120,7 @@ class ProductionOrderController extends Controller
         return redirect()->route('production-orders.show', $order)->with('success', 'تم إنشاء أمر الإنتاج بنجاح.');
     }
 
-    public function show(ProductionOrder $productionOrder, ProductionSummaryService $summary): View
+    public function show(ProductionOrder $productionOrder, ProductionSummaryService $summary, InventoryCostingService $costing): View
     {
         $productionOrder->load(['creator', 'materials.material', 'materials.operationRequirements.productionOrderOperation', 'operations', 'workAssignments.worker', 'workAssignments.operation', 'workAssignments.materials.productionOrderMaterial', 'workAssignments.materials.operationRequirement', 'materialTransactions.worker', 'materialTransactions.material', 'materialTransactions.recorder', 'materialTransactions.reviewer', 'outputs.recorder', 'defects.worker', 'defects.operation', 'defects.recorder', 'defects.reviewer', 'reworks.worker', 'reworks.operation', 'activities.user']);
         $orderSummary = $summary->orderSummary($productionOrder);
@@ -127,7 +131,29 @@ class ProductionOrderController extends Controller
         }
         $workers = Worker::query()->where('status', WorkerStatus::ACTIVE)->orderBy('name')->get();
 
-        return view('production-orders.show', compact('productionOrder', 'orderSummary', 'workers'));
+        $materialCostAllocations = MaterialCostAllocation::query()
+            ->where('reference_type', ProductionMaterialTransaction::class)
+            ->whereIn('reference_id', $productionOrder->materialTransactions->pluck('id'))
+            ->with(['layer.material', 'stockMovement'])
+            ->orderBy('id')
+            ->get();
+
+        $usesCurrentMaterialCost = in_array($productionOrder->status, [
+            ProductionOrderStatus::CONFIRMED,
+            ProductionOrderStatus::IN_PROGRESS,
+            ProductionOrderStatus::PARTIALLY_COMPLETED,
+        ], true);
+        $displayMaterialCost = $usesCurrentMaterialCost
+            ? $costing->currentProductionMaterialCost($productionOrder)
+            : $productionOrder->actual_material_cost;
+        $materialCostLabel = $productionOrder->status === ProductionOrderStatus::COMPLETED
+            ? 'تكلفة خامات FIFO الفعلية النهائية'
+            : 'تكلفة خامات FIFO الحالية';
+        $materialVariance = $displayMaterialCost === null
+            ? null
+            : (float) $displayMaterialCost - (float) $productionOrder->standard_material_cost;
+
+        return view('production-orders.show', compact('productionOrder', 'orderSummary', 'workers', 'materialCostAllocations', 'displayMaterialCost', 'materialCostLabel', 'materialVariance'));
     }
 
     public function confirm(ProductionOrder $productionOrder, ConfirmProductionOrderAction $action): RedirectResponse

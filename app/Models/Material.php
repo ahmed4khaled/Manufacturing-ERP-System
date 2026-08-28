@@ -22,6 +22,7 @@ class Material extends Model
         'unit',
         'minimum_stock',
         'quantity',
+        'standard_unit_cost',
         'description',
         'status',
     ];
@@ -31,6 +32,7 @@ class Material extends Model
         'unit' => MaterialUnit::class,
         'minimum_stock' => 'decimal:3',
         'quantity' => 'decimal:3',
+        'standard_unit_cost' => 'decimal:4',
         'status' => MaterialStatus::class,
     ];
 
@@ -52,6 +54,11 @@ class Material extends Model
     public function productionMaterialTransactions(): HasMany
     {
         return $this->hasMany(ProductionMaterialTransaction::class);
+    }
+
+    public function costLayers(): HasMany
+    {
+        return $this->hasMany(MaterialCostLayer::class);
     }
 
     public function scopeSearch(Builder $query, ?string $search): Builder

@@ -11,6 +11,7 @@ class CustomerLedgerService
     public function getTotalDebit(int $customerId): string
     {
         return (string) CustomerLedgerEntry::query()
+            ->activeBusiness()
             ->where('customer_id', $customerId)
             ->sum('debit');
     }
@@ -18,6 +19,7 @@ class CustomerLedgerService
     public function getTotalCredit(int $customerId): string
     {
         return (string) CustomerLedgerEntry::query()
+            ->activeBusiness()
             ->where('customer_id', $customerId)
             ->sum('credit');
     }
@@ -37,6 +39,7 @@ class CustomerLedgerService
     public function getBalances(?Collection $customerIds = null): Collection
     {
         return CustomerLedgerEntry::query()
+            ->activeBusiness()
             ->selectRaw('customer_id, SUM(debit) - SUM(credit) AS balance')
             ->when($customerIds !== null, fn ($query) => $query->whereIn('customer_id', $customerIds))
             ->groupBy('customer_id')
@@ -64,6 +67,7 @@ class CustomerLedgerService
     public function getOpeningBalance(int $customerId, string $transactionDate, int $entryId): string
     {
         $debit = (string) CustomerLedgerEntry::query()
+            ->activeBusiness()
             ->where('customer_id', $customerId)
             ->where(function ($query) use ($transactionDate, $entryId) {
                 $query->where('transaction_date', '<', $transactionDate)
@@ -75,6 +79,7 @@ class CustomerLedgerService
             ->sum('debit');
 
         $credit = (string) CustomerLedgerEntry::query()
+            ->activeBusiness()
             ->where('customer_id', $customerId)
             ->where(function ($query) use ($transactionDate, $entryId) {
                 $query->where('transaction_date', '<', $transactionDate)
@@ -121,6 +126,7 @@ class CustomerLedgerService
     public function getRecentEntries(int $customerId, int $limit = 10): Collection
     {
         $entries = CustomerLedgerEntry::query()
+            ->activeBusiness()
             ->where('customer_id', $customerId)
             ->orderByDesc('transaction_date')
             ->orderByDesc('id')

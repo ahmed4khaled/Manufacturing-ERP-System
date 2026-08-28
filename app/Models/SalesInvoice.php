@@ -26,6 +26,7 @@ class SalesInvoice extends Model
         'subtotal',
         'discount',
         'total_amount',
+        'total_cogs',
     ];
 
     protected $casts = [
@@ -34,6 +35,7 @@ class SalesInvoice extends Model
         'subtotal' => 'decimal:2',
         'discount' => 'decimal:2',
         'total_amount' => 'decimal:2',
+        'total_cogs' => 'decimal:2',
         'total_quantity' => 'decimal:3',
     ];
 

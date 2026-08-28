@@ -42,6 +42,29 @@ class CustomerLedgerEntry extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    /**
+     * The source invoice is intentionally available with trashed records for audit/history.
+     */
+    public function salesInvoice(): BelongsTo
+    {
+        return $this->belongsTo(SalesInvoice::class, 'reference_id')->withTrashed();
+    }
+
+    /**
+     * Exclude the original and reversal impact of soft-deleted erroneous invoices
+     * from active customer accounting without altering append-only ledger history.
+     */
+    public function scopeActiveBusiness(Builder $query): Builder
+    {
+        return $query->where(function (Builder $query): void {
+            $query->whereNotIn('customer_ledger_entries.reference_type', [
+                LedgerReferenceType::SALES_INVOICE->value,
+                LedgerReferenceType::SALES_INVOICE_REVERSAL->value,
+            ])->orWhereHas('salesInvoice', fn (Builder $invoiceQuery) => $invoiceQuery
+                ->whereNull('sales_invoices.deleted_at'));
+        });
+    }
+
     public function scopeSearch(Builder $query, ?string $search): Builder
     {
         if (blank($search)) {

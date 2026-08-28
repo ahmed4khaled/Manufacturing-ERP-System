@@ -10,6 +10,7 @@ use App\Models\Category;
 use App\Models\Color;
 use App\Models\Customer;
 use App\Models\Product;
+use App\Models\ProductCostLayer;
 use App\Models\ProductVariant;
 use App\Models\SalesInvoice;
 use App\Models\Size;
@@ -57,12 +58,19 @@ function inventorySafetyVariant(): ProductVariant
 
 function inventoryOpening(ProductVariant $variant, string $quantity): StockMovement
 {
-    return app(CreateOpeningStockAction::class)->handle([
+    $movement = app(CreateOpeningStockAction::class)->handle([
         'product_variant_id' => $variant->id,
         'quantity' => $quantity,
         'movement_date' => now()->toDateString(),
         'notes' => 'رصيد اختبار',
     ]);
+    $unitCost = (string) $variant->product->cost_price;
+    ProductCostLayer::query()->where('stock_movement_id', $movement->id)->update([
+        'unit_cost' => $unitCost,
+        'total_original_cost' => bcmul($quantity, $unitCost, 2),
+    ]);
+
+    return $movement;
 }
 
 function inventorySalesInvoice(ProductVariant $variant, string $quantity): SalesInvoice

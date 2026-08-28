@@ -50,6 +50,10 @@
                             <label class="form-label text-muted small mb-1">الحد الأدنى / حد إعادة الطلب</label>
                             <p class="mb-0">{{ $material->minimum_stock }} {{ $material->unit->label() }}</p>
                         </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small mb-1">تكلفة الوحدة القياسية</label>
+                            <p class="mb-0">{{ $material->standard_unit_cost !== null ? number_format($material->standard_unit_cost, 4).' ج.م' : 'غير محددة' }}</p>
+                        </div>
                         <div class="col-12">
                             <label class="form-label text-muted small mb-1">الوصف</label>
                             <p class="mb-0">{{ $material->description ?? '—' }}</p>

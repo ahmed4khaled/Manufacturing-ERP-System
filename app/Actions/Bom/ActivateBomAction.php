@@ -5,11 +5,14 @@ namespace App\Actions\Bom;
 use App\Enums\BomStatus;
 use App\Models\Bom;
 use App\Models\Product;
+use App\Services\BomCostService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class ActivateBomAction
 {
+    public function __construct(private readonly BomCostService $costs) {}
+
     public function handle(Bom $bom): Bom
     {
         return DB::transaction(function () use ($bom) {
@@ -27,8 +30,13 @@ class ActivateBomAction
                 '0.00',
             );
             $product = Product::query()->lockForUpdate()->findOrFail($bom->product_id);
+            $materialCost = $this->costs->resolveStandardMaterialUnitCost($bom, (string) $product->base_cost_price);
+            $standardUnitCost = bcadd($materialCost['unit_cost'], $operationsUnitCost, 4);
             $product->update([
-                'cost_price' => bcadd((string) $product->base_cost_price, $operationsUnitCost, 2),
+                'cost_price' => $standardUnitCost,
+            ]);
+            $bom->productVariant()->update([
+                'standard_cost' => $standardUnitCost,
             ]);
 
             return $bom->fresh();

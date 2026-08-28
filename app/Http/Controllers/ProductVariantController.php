@@ -55,9 +55,25 @@ class ProductVariantController extends Controller
 
     public function show(ProductVariant $productVariant): View
     {
-        $productVariant->load(['product', 'color', 'size']);
+        $productVariant->load([
+            'product',
+            'color',
+            'size',
+            'costLayers' => fn ($query) => $query
+                ->with(['productionOrder', 'productionOutput'])
+                ->orderBy('layer_date')
+                ->orderBy('id'),
+        ]);
 
-        return view('product-variants.show', compact('productVariant'));
+        $availableLayers = $productVariant->costLayers
+            ->where('is_final', true)
+            ->where('remaining_quantity', '>', 0);
+        $availableQuantity = $availableLayers->sum('remaining_quantity');
+        $fifoInventoryValue = $availableLayers
+            ->whereNotNull('unit_cost')
+            ->sum(fn ($layer) => (float) $layer->remaining_quantity * (float) $layer->unit_cost);
+
+        return view('product-variants.show', compact('productVariant', 'availableQuantity', 'fifoInventoryValue'));
     }
 
     public function edit(ProductVariant $productVariant): View

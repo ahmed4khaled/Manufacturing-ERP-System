@@ -36,7 +36,8 @@ class ProductionSummaryService
 
         return [
             'planned' => (string) $order->planned_quantity,
-            'assigned' => (string) $assignments->sum('assigned_quantity'),
+            'assigned' => (string) $order->planned_quantity,
+            'work_assignment_load' => bcadd((string) $assignments->sum('assigned_quantity'), '0', 3),
             'produced' => bcadd($produced, $reworkGood, 3), 'good' => $good, 'defective' => $defective,
             'remaining' => bccomp((string) $order->planned_quantity, $good, 3) > 0 ? bcsub((string) $order->planned_quantity, $good, 3) : '0.000',
             'output' => bcadd($output, '0', 3),

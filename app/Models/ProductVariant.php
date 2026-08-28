@@ -21,12 +21,18 @@ class ProductVariant extends Model
         'sku',
         'barcode',
         'default_price',
+        'standard_cost',
+        'actual_cost',
+        'last_production_cost',
         'quantity',
         'status',
     ];
 
     protected $casts = [
         'default_price' => 'decimal:2',
+        'standard_cost' => 'decimal:4',
+        'actual_cost' => 'decimal:4',
+        'last_production_cost' => 'decimal:4',
         'quantity' => 'decimal:3',
         'status' => VariantStatus::class,
     ];
@@ -64,6 +70,11 @@ class ProductVariant extends Model
     public function productionOutputs(): HasMany
     {
         return $this->hasMany(ProductionOutput::class);
+    }
+
+    public function costLayers(): HasMany
+    {
+        return $this->hasMany(ProductCostLayer::class);
     }
 
     public function scopeSearch(Builder $query, ?string $search): Builder

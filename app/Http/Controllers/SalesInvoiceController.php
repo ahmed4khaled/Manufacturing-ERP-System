@@ -13,6 +13,7 @@ use App\Http\Requests\SalesInvoice\StoreSalesInvoiceRequest;
 use App\Http\Requests\SalesInvoice\UpdateSalesInvoiceRequest;
 use App\Models\Customer;
 use App\Models\Product;
+use App\Models\ProductCostAllocation;
 use App\Models\SalesInvoice;
 use App\Services\PaymentReceiptAllocationService;
 use App\Services\Printing\DocumentPrinter;
@@ -119,7 +120,15 @@ class SalesInvoiceController extends Controller
             })
             ->values();
 
-        return view('sales-invoices.show', compact('salesInvoice', 'groupedItems'));
+        $costAllocations = ProductCostAllocation::query()
+            ->where('reference_type', SalesInvoice::class)
+            ->where('reference_id', $salesInvoice->id)
+            ->where('direction', 'out')
+            ->with(['layer.productVariant.product', 'layer.productVariant.color', 'layer.productVariant.size'])
+            ->orderBy('id')
+            ->get();
+
+        return view('sales-invoices.show', compact('salesInvoice', 'groupedItems', 'costAllocations'));
     }
 
     public function edit(SalesInvoice $salesInvoice): View|RedirectResponse

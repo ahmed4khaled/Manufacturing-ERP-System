@@ -8,10 +8,12 @@ use App\Http\Controllers\CustomerLedgerController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\ManufacturingOperationController;
 use App\Http\Controllers\MaterialController;
+use App\Http\Controllers\MaterialCostLayerController;
 use App\Http\Controllers\MaterialInventoryController;
 use App\Http\Controllers\PaymentReceiptController;
 use App\Http\Controllers\ProcurementController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ProductCostLayerController;
 use App\Http\Controllers\ProductionDefectController;
 use App\Http\Controllers\ProductionOrderController;
 use App\Http\Controllers\ProductionReportController;
@@ -161,6 +163,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('customer-ledger', [CustomerLedgerController::class, 'index'])->name('customer-ledger.index');
 
     Route::get('inventory', [InventoryController::class, 'index'])->name('inventory.index');
+    Route::get('inventory/cost-layers', [ProductCostLayerController::class, 'index'])
+        ->middleware('permission:inventory.view')
+        ->name('inventory.cost-layers.index');
     Route::get('inventory/movements', [InventoryController::class, 'movements'])->name('inventory.movements');
     Route::get('inventory/variants/{productVariant}', [InventoryController::class, 'show'])->name('inventory.show');
     Route::get('inventory/opening-stock', [InventoryController::class, 'createOpeningStock'])->name('inventory.opening-stock.create');
@@ -169,6 +174,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('inventory/adjustments', [InventoryController::class, 'storeAdjustment'])->name('inventory.adjustments.store');
 
     Route::get('material-inventory', [MaterialInventoryController::class, 'index'])->name('material-inventory.index');
+    Route::get('material-inventory/cost-layers', [MaterialCostLayerController::class, 'index'])
+        ->middleware('permission:material_inventory.view')
+        ->name('material-inventory.cost-layers.index');
+    Route::get('material-inventory/cost-layers/{materialCostLayer}', [MaterialCostLayerController::class, 'show'])
+        ->middleware('permission:material_inventory.view')
+        ->name('material-inventory.cost-layers.show');
     Route::get('material-inventory/movements', [MaterialInventoryController::class, 'movements'])->name('material-inventory.movements');
     Route::get('material-inventory/materials/{material}', [MaterialInventoryController::class, 'show'])->name('material-inventory.show');
     Route::get('material-inventory/opening-stock', [MaterialInventoryController::class, 'createOpeningStock'])->name('material-inventory.opening-stock.create');

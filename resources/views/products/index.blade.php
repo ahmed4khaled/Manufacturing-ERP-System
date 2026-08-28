@@ -61,7 +61,7 @@
                             <th>الاسم</th>
                             <th>التصنيف</th>
                             <th>الحالة</th>
-                            <th class="text-end">سعر التكلفة</th>
+                            <th class="text-end">التكلفة المرجعية للموديل</th>
                             <th class="text-end">الإجراءات</th>
                         </tr>
                     </thead>

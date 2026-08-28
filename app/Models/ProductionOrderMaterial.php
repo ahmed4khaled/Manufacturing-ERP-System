@@ -8,9 +8,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ProductionOrderMaterial extends Model
 {
-    protected $fillable = ['production_order_id', 'bom_item_id', 'material_id', 'material_code', 'material_name', 'unit', 'standard_quantity', 'required_quantity', 'is_overridden', 'override_reason', 'overridden_by'];
+    protected $fillable = ['production_order_id', 'bom_item_id', 'material_id', 'material_code', 'material_name', 'unit', 'standard_quantity', 'required_quantity', 'standard_unit_cost', 'standard_total_cost', 'is_overridden', 'override_reason', 'overridden_by'];
 
-    protected $casts = ['standard_quantity' => 'decimal:3', 'required_quantity' => 'decimal:3', 'is_overridden' => 'boolean'];
+    protected $casts = ['standard_quantity' => 'decimal:3', 'required_quantity' => 'decimal:3', 'standard_unit_cost' => 'decimal:4', 'standard_total_cost' => 'decimal:2', 'is_overridden' => 'boolean'];
 
     public function productionOrder(): BelongsTo
     {

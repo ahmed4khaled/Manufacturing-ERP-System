@@ -15,6 +15,8 @@ use Illuminate\Validation\ValidationException;
 
 class MaterialStockService
 {
+    public function __construct(private readonly InventoryCostingService $costing) {}
+
     public function getCurrentStock(Material $material): string
     {
         $stockIn = (string) $material->stockMovements()
@@ -115,10 +117,13 @@ class MaterialStockService
 
     public function createOpeningStock(array $data): MaterialStockMovement
     {
-        return $this->createMovement($data + [
+        $movement = $this->createMovement($data + [
             'movement_type' => MaterialStockMovementType::OPENING,
             'direction' => StockMovementDirection::IN,
         ]);
+        $this->costing->createUnvaluedMaterialLayer($movement);
+
+        return $movement;
     }
 
     public function createAdjustment(array $data): MaterialStockMovement
@@ -136,11 +141,18 @@ class MaterialStockService
             }
         }
 
-        return $this->createMovement($data + [
+        $movement = $this->createMovement($data + [
             'movement_type' => $direction === StockMovementDirection::IN
                 ? MaterialStockMovementType::ADJUSTMENT_IN
                 : MaterialStockMovementType::ADJUSTMENT_OUT,
         ]);
+        if ($direction === StockMovementDirection::IN) {
+            $this->costing->createUnvaluedMaterialLayer($movement);
+        } else {
+            $this->costing->consumeMaterialMovement($movement);
+        }
+
+        return $movement;
     }
 
     public function createPurchaseReceiptMovement(array $data): MaterialStockMovement
@@ -173,7 +185,7 @@ class MaterialStockService
                 continue;
             }
 
-            $this->createPurchaseReceiptMovement([
+            $movement = $this->createPurchaseReceiptMovement([
                 'material_id' => $item->material_id,
                 'quantity' => $item->accepted_quantity,
                 'reference_type' => GoodsReceipt::class,
@@ -183,6 +195,7 @@ class MaterialStockService
                 'notes' => 'إذن استلام',
                 'user_id' => $receipt->received_by,
             ]);
+            $this->costing->createMaterialReceiptLayer($item, $movement);
         }
     }
 
@@ -198,7 +211,7 @@ class MaterialStockService
         }
 
         foreach ($return->items as $item) {
-            $this->createPurchaseReturnMovement([
+            $movement = $this->createPurchaseReturnMovement([
                 'material_id' => $item->material_id,
                 'quantity' => $item->quantity,
                 'reference_type' => PurchaseReturn::class,
@@ -208,6 +221,7 @@ class MaterialStockService
                 'notes' => 'مرتجع مشتريات',
                 'user_id' => $return->created_by,
             ]);
+            $this->costing->consumePurchaseReturn($item, $movement, $return);
         }
     }
 
@@ -238,7 +252,7 @@ class MaterialStockService
     {
         $this->assertReferenceNotPosted(ProductionMaterialTransaction::class, $transaction->id, $transaction->material_id);
 
-        return $this->createMovement([
+        $movement = $this->createMovement([
             'material_id' => $transaction->material_id,
             'movement_type' => MaterialStockMovementType::PRODUCTION_ISSUE,
             'direction' => StockMovementDirection::OUT,
@@ -250,13 +264,16 @@ class MaterialStockService
             'notes' => 'صرف خامة للعامل '.$transaction->worker->name,
             'user_id' => $transaction->recorded_by,
         ]);
+        $this->costing->consumeMaterialIssue($transaction, $movement);
+
+        return $movement;
     }
 
     public function createProductionReturnMovement(ProductionMaterialTransaction $transaction): MaterialStockMovement
     {
         $this->assertReferenceNotPosted(ProductionMaterialTransaction::class, $transaction->id, $transaction->material_id);
 
-        return $this->createMovement([
+        $movement = $this->createMovement([
             'material_id' => $transaction->material_id,
             'movement_type' => MaterialStockMovementType::PRODUCTION_RETURN,
             'direction' => StockMovementDirection::IN,
@@ -268,6 +285,9 @@ class MaterialStockService
             'notes' => 'مرتجع خامة من العامل '.$transaction->worker->name,
             'user_id' => $transaction->recorded_by,
         ]);
+        $this->costing->restoreMaterialReturn($transaction, $movement);
+
+        return $movement;
     }
 
     public function referenceAlreadyPosted(?string $referenceType, ?int $referenceId, int $materialId): bool

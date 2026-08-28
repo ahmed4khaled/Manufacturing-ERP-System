@@ -183,7 +183,38 @@
                 <i class="bi bi-speedometer2"></i>
                 لوحة التحكم
             </a>
-
+        @can('statistics.view')
+                <div class="nav-section">الإحصائيات</div>
+                <button class="nav-link nav-toggle {{ request()->routeIs('statistics.*') ? 'active' : '' }}"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#statistics-nav"
+                        aria-expanded="{{ request()->routeIs('statistics.*') ? 'true' : 'false' }}"
+                        aria-controls="statistics-nav">
+                    <i class="bi bi-bar-chart-line"></i>
+                    الإحصائيات
+                    <i class="bi bi-chevron-down toggle-icon"></i>
+                </button>
+                <div class="collapse {{ request()->routeIs('statistics.*') ? 'show' : '' }}" id="statistics-nav">
+                    @foreach([
+                        ['statistics.dashboard', 'bi-speedometer2', 'لوحة الإحصائيات'],
+                        ['statistics.sales', 'bi-receipt', 'إحصائيات المبيعات'],
+                        ['statistics.customers', 'bi-people', 'إحصائيات العملاء'],
+                        ['statistics.collections', 'bi-cash-coin', 'إحصائيات التحصيلات'],
+                        ['statistics.purchases', 'bi-cart-check', 'إحصائيات المشتريات'],
+                        ['statistics.inventory', 'bi-boxes', 'إحصائيات المخزون'],
+                        ['statistics.materials', 'bi-box-seam', 'إحصائيات الخامات'],
+                        ['statistics.manufacturing', 'bi-gear-wide-connected', 'إحصائيات التصنيع'],
+                        ['statistics.workers', 'bi-person-workspace', 'إحصائيات العمال'],
+                        ['statistics.defects', 'bi-bandaid', 'العيوب والهالك'],
+                        ['statistics.returns', 'bi-arrow-return-right', 'إحصائيات المرتجعات'],
+                    ] as [$statisticsRoute, $statisticsIcon, $statisticsLabel])
+                        <a href="{{ route($statisticsRoute) }}" class="nav-link sub-link {{ request()->routeIs($statisticsRoute) ? 'active' : '' }}">
+                            <i class="bi {{ $statisticsIcon }}"></i>{{ $statisticsLabel }}
+                        </a>
+                    @endforeach
+                </div>
+            @endcan
             <div class="nav-section">المبيعات</div>
             <a href="{{ route('customers.index') }}" class="nav-link {{ request()->routeIs('customers.*') ? 'active' : '' }}">
                 <i class="bi bi-people"></i>
@@ -229,6 +260,12 @@
                 <i class="bi bi-arrow-left-right"></i>
                 حركات الخامات
             </a>
+            @can('material_inventory.view')
+                <a href="{{ route('material-inventory.cost-layers.index') }}" class="nav-link sub-link {{ request()->routeIs('material-inventory.cost-layers.*') ? 'active' : '' }}">
+                    <i class="bi bi-layers-half"></i>
+                    طبقات تكلفة الخامات FIFO
+                </a>
+            @endcan
             <a href="{{ route('material-inventory.opening-stock.create') }}" class="nav-link sub-link {{ request()->routeIs('material-inventory.opening-stock.*') ? 'active' : '' }}">
                 <i class="bi bi-box-arrow-in-down"></i>
                 أرصدة الخامات الافتتاحية
@@ -254,6 +291,12 @@
                 <i class="bi bi-arrow-left-right"></i>
                 حركات مخزون المنتجات
             </a>
+            @can('inventory.view')
+                <a href="{{ route('inventory.cost-layers.index') }}" class="nav-link sub-link {{ request()->routeIs('inventory.cost-layers.*') ? 'active' : '' }}">
+                    <i class="bi bi-layers-half"></i>
+                    طبقات تكلفة المنتجات FIFO
+                </a>
+            @endcan
             <a href="{{ route('inventory.opening-stock.create') }}" class="nav-link sub-link {{ request()->routeIs('inventory.opening-stock.*') ? 'active' : '' }}">
                 <i class="bi bi-box-arrow-in-down"></i>
                 الأرصدة الافتتاحية

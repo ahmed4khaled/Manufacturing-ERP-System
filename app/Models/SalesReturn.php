@@ -23,6 +23,7 @@ class SalesReturn extends Model
         'notes',
         'total_quantity',
         'total_amount',
+        'total_cogs',
         'created_by',
     ];
 
@@ -31,6 +32,7 @@ class SalesReturn extends Model
         'status' => SalesReturnStatus::class,
         'total_quantity' => 'decimal:3',
         'total_amount' => 'decimal:2',
+        'total_cogs' => 'decimal:2',
     ];
 
     public function salesInvoice(): BelongsTo

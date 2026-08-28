@@ -62,6 +62,23 @@
         @enderror
     </div>
 
+    <div class="col-md-6">
+        <label for="standard_unit_cost" class="form-label">تكلفة الوحدة القياسية</label>
+        <input
+            type="number"
+            name="standard_unit_cost"
+            id="standard_unit_cost"
+            step="0.0001"
+            min="0"
+            class="form-control @error('standard_unit_cost') is-invalid @enderror"
+            value="{{ old('standard_unit_cost', $material?->standard_unit_cost) }}"
+        >
+        <div class="form-text">تُحفظ كمرجع داخل إصدار BOM ثم كـ snapshot داخل أمر الإنتاج.</div>
+        @error('standard_unit_cost')
+            <div class="invalid-feedback">{{ $message }}</div>
+        @enderror
+    </div>
+
     <div class="col-12">
         <label for="description" class="form-label">الوصف</label>
         <textarea

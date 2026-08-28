@@ -8,9 +8,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class BomItem extends Model
 {
-    protected $fillable = ['bom_id', 'material_id', 'material_code', 'material_name', 'unit', 'quantity'];
+    protected $fillable = ['bom_id', 'material_id', 'material_code', 'material_name', 'unit', 'quantity', 'standard_unit_cost'];
 
-    protected $casts = ['quantity' => 'decimal:3'];
+    protected $casts = ['quantity' => 'decimal:3', 'standard_unit_cost' => 'decimal:4'];
 
     public function bom(): BelongsTo
     {

@@ -16,6 +16,7 @@ use App\Models\Color;
 use App\Models\Customer;
 use App\Models\CustomerLedgerEntry;
 use App\Models\Product;
+use App\Models\ProductCostLayer;
 use App\Models\ProductVariant;
 use App\Models\SalesInvoice;
 use App\Models\SalesReturn;
@@ -61,11 +62,15 @@ function salesReturnWorkflowContext(): array
         'quantity' => 0,
         'status' => 'active',
     ]);
-    app(CreateOpeningStockAction::class)->handle([
+    $openingMovement = app(CreateOpeningStockAction::class)->handle([
         'product_variant_id' => $variant->id,
         'quantity' => '20.000',
         'movement_date' => now()->toDateString(),
         'notes' => 'رصيد اختبار المرتجع',
+    ]);
+    ProductCostLayer::query()->where('stock_movement_id', $openingMovement->id)->update([
+        'unit_cost' => '50.0000',
+        'total_original_cost' => '1000.00',
     ]);
 
     $customer = Customer::create([

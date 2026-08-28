@@ -17,6 +17,8 @@ use Illuminate\Validation\ValidationException;
 
 class StockService
 {
+    public function __construct(private readonly InventoryCostingService $costing) {}
+
     public function getCurrentStock(ProductVariant $variant): string
     {
         $stockIn = (string) $variant->stockMovements()
@@ -123,10 +125,13 @@ class StockService
 
     public function createOpeningStock(array $data): StockMovement
     {
-        return $this->createMovement($data + [
+        $movement = $this->createMovement($data + [
             'movement_type' => StockMovementType::OPENING,
             'direction' => StockMovementDirection::IN,
         ]);
+        $this->costing->createUnvaluedProductLayer($movement);
+
+        return $movement;
     }
 
     public function createAdjustment(array $data): StockMovement
@@ -144,11 +149,18 @@ class StockService
             }
         }
 
-        return $this->createMovement($data + [
+        $movement = $this->createMovement($data + [
             'movement_type' => $direction === StockMovementDirection::IN
                 ? StockMovementType::ADJUSTMENT_IN
                 : StockMovementType::ADJUSTMENT_OUT,
         ]);
+        if ($direction === StockMovementDirection::IN) {
+            $this->costing->createUnvaluedProductLayer($movement);
+        } else {
+            $this->costing->consumeProductMovement($movement);
+        }
+
+        return $movement;
     }
 
     public function createSalesMovements(SalesInvoice $invoice): void
@@ -159,8 +171,10 @@ class StockService
             StockMovementType::SALE,
         );
 
+        $totalCogs = '0.00';
+        $valued = true;
         foreach ($invoice->items as $item) {
-            $this->createMovement([
+            $movement = $this->createMovement([
                 'product_variant_id' => $item->product_variant_id,
                 'movement_type' => StockMovementType::SALE,
                 'direction' => StockMovementDirection::OUT,
@@ -172,7 +186,14 @@ class StockService
                 'notes' => 'فاتورة مبيعات',
                 'user_id' => auth()->id(),
             ]);
+            $cost = $this->costing->consumeSale($item, $movement, $invoice);
+            if ($cost === null) {
+                $valued = false;
+            } else {
+                $totalCogs = bcadd($totalCogs, $cost, 2);
+            }
         }
+        $invoice->update(['total_cogs' => $valued ? $totalCogs : null]);
     }
 
     public function createSalesReversals(SalesInvoice $invoice): void
@@ -184,7 +205,7 @@ class StockService
         );
 
         foreach ($invoice->items as $item) {
-            $this->createMovement([
+            $movement = $this->createMovement([
                 'product_variant_id' => $item->product_variant_id,
                 'movement_type' => StockMovementType::SALE_REVERSAL,
                 'direction' => StockMovementDirection::IN,
@@ -196,6 +217,7 @@ class StockService
                 'notes' => 'إلغاء فاتورة مبيعات',
                 'user_id' => auth()->id(),
             ]);
+            $this->costing->restoreSale($item, $movement, $invoice);
         }
     }
 
@@ -207,8 +229,10 @@ class StockService
             StockMovementType::SALES_RETURN,
         );
 
+        $totalCogs = '0.00';
+        $valued = true;
         foreach ($salesReturn->items as $item) {
-            $this->createMovement([
+            $movement = $this->createMovement([
                 'product_variant_id' => $item->product_variant_id,
                 'movement_type' => StockMovementType::SALES_RETURN,
                 'direction' => StockMovementDirection::IN,
@@ -220,7 +244,14 @@ class StockService
                 'notes' => 'مرتجع مبيعات',
                 'user_id' => auth()->id(),
             ]);
+            $cost = $this->costing->restoreSalesReturn($item, $movement, $salesReturn);
+            if ($cost === null) {
+                $valued = false;
+            } else {
+                $totalCogs = bcadd($totalCogs, $cost, 2);
+            }
         }
+        $salesReturn->update(['total_cogs' => $valued ? $totalCogs : null]);
     }
 
     public function createSalesReturnReversals(SalesReturn $salesReturn): void
@@ -232,7 +263,7 @@ class StockService
         );
 
         foreach ($salesReturn->items as $item) {
-            $this->createMovement([
+            $movement = $this->createMovement([
                 'product_variant_id' => $item->product_variant_id,
                 'movement_type' => StockMovementType::SALES_RETURN_REVERSAL,
                 'direction' => StockMovementDirection::OUT,
@@ -244,6 +275,7 @@ class StockService
                 'notes' => 'إلغاء مرتجع مبيعات',
                 'user_id' => auth()->id(),
             ]);
+            $this->costing->reverseSalesReturn($item, $movement, $salesReturn);
         }
     }
 
@@ -268,7 +300,7 @@ class StockService
     {
         $this->assertReferenceNotPosted(ProductionOutput::class, $output->id, StockMovementType::PRODUCTION_OUTPUT);
 
-        return $this->createMovement([
+        $movement = $this->createMovement([
             'product_variant_id' => $output->product_variant_id,
             'movement_type' => StockMovementType::PRODUCTION_OUTPUT,
             'direction' => StockMovementDirection::IN,
@@ -280,6 +312,9 @@ class StockService
             'notes' => 'إنتاج تام',
             'user_id' => $output->recorded_by,
         ]);
+        $this->costing->createProvisionalProductLayer($output, $movement);
+
+        return $movement;
     }
 
     private function createMovement(array $data): StockMovement

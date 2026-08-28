@@ -9,6 +9,7 @@ use App\Models\Bom;
 use App\Models\BomItem;
 use App\Models\ProductionOrder;
 use App\Models\Worker;
+use App\Services\BomCostService;
 use App\Services\BomRequirementService;
 use App\Services\CodeGeneratorService;
 use App\Services\ProductionActivityService;
@@ -21,6 +22,7 @@ class CreateProductionOrderAction
     public function __construct(
         private readonly CodeGeneratorService $codes,
         private readonly BomRequirementService $requirements,
+        private readonly BomCostService $costs,
         private readonly ProductionActivityService $activity,
     ) {}
 
@@ -45,7 +47,8 @@ class CreateProductionOrderAction
             $this->validateAssignments($bom, $assignments, (string) $data['planned_quantity']);
 
             $variant = $bom->productVariant;
-            $baseUnitCost = (string) $variant->product->base_cost_price;
+            $materialCost = $this->costs->resolveStandardMaterialUnitCost($bom, (string) $variant->product->base_cost_price);
+            $baseUnitCost = $materialCost['unit_cost'];
             $operationsUnitCost = $bom->operations->reduce(
                 fn ($total, $operation) => bcadd($total, (string) $operation->unit_cost, 2),
                 '0.00',
@@ -67,6 +70,9 @@ class CreateProductionOrderAction
                 'operations_unit_cost' => $operationsUnitCost,
                 'estimated_unit_cost' => $estimatedUnitCost,
                 'estimated_total_cost' => $estimatedTotalCost,
+                'standard_material_cost' => bcmul($baseUnitCost, (string) $data['planned_quantity'], 2),
+                'standard_material_cost_source' => $materialCost['source'],
+                'standard_operation_cost' => bcmul($operationsUnitCost, (string) $data['planned_quantity'], 2),
                 'planned_quantity' => $data['planned_quantity'],
                 'planned_start_date' => $data['planned_start_date'],
                 'planned_completion_date' => $data['planned_completion_date'] ?? null,
@@ -238,6 +244,10 @@ class CreateProductionOrderAction
                 'unit' => $item->unit,
                 'standard_quantity' => $standard,
                 'required_quantity' => $required,
+                'standard_unit_cost' => $item->standard_unit_cost,
+                'standard_total_cost' => $item->standard_unit_cost === null
+                    ? null
+                    : bcmul($standard, (string) $item->standard_unit_cost, 2),
                 'is_overridden' => $isOverride,
                 'override_reason' => $isOverride ? $requirementInput[$item->id]['override_reason'] : null,
                 'overridden_by' => $isOverride ? auth()->id() : null,

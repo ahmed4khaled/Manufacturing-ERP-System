@@ -16,6 +16,7 @@ class CustomerLedgerController extends Controller
         CustomerLedgerService $ledgerService
     ): View {
         $entries = CustomerLedgerEntry::query()
+            ->activeBusiness()
             ->with(['customer', 'creator'])
             ->search($request->input('search'))
             ->filterCustomer($request->input('customer_id'))
@@ -38,7 +39,6 @@ class CustomerLedgerController extends Controller
         );
     }
 
-
     /**
      * Print customer account statement.
      */
@@ -54,11 +54,11 @@ class CustomerLedgerController extends Controller
         */
 
         $entries = CustomerLedgerEntry::query()
+            ->activeBusiness()
             ->where('customer_id', $customer->id)
             ->orderBy('transaction_date')
             ->orderBy('id')
             ->get();
-
 
         /*
         |--------------------------------------------------------------------------
@@ -76,7 +76,6 @@ class CustomerLedgerController extends Controller
             $entry->running_balance = $runningBalance;
         });
 
-
         /*
         |--------------------------------------------------------------------------
         | Statement totals
@@ -88,7 +87,6 @@ class CustomerLedgerController extends Controller
         $totalCredit = (float) $entries->sum('credit');
 
         $currentBalance = $totalDebit - $totalCredit;
-
 
         /*
         |--------------------------------------------------------------------------

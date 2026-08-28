@@ -37,7 +37,7 @@
 
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
-                <thead><tr><th>رمز المخزون</th><th>المنتج</th><th>اللون</th><th>المقاس</th><th>الحالة</th><th class="text-end">السعر</th><th class="text-end">الكمية</th><th class="text-end">الإجراءات</th></tr></thead>
+                <thead><tr><th>رمز المخزون</th><th>المنتج</th><th>اللون</th><th>المقاس</th><th>الحالة</th><th class="text-end">سعر البيع</th><th class="text-end">التكلفة القياسية</th><th class="text-end">التكلفة الفعلية</th><th class="text-end">الكمية</th><th class="text-end">الإجراءات</th></tr></thead>
                 <tbody>
                     @forelse ($variants as $variant)
                         <tr>
@@ -47,6 +47,8 @@
                             <td>{{ $variant->size?->name }}</td>
                             <td><span class="badge bg-{{ $variant->status->badgeClass() }}">{{ $variant->status->label() }}</span></td>
                             <td class="text-end">{{ number_format($variant->default_price, 2) }}</td>
+                            <td class="text-end">{{ $variant->standard_cost !== null ? number_format($variant->standard_cost, 2) : '—' }}</td>
+                            <td class="text-end fw-semibold">{{ $variant->actual_cost !== null ? number_format($variant->actual_cost, 2) : 'غير مُقيّمة' }}</td>
                             <td class="text-end">{{ $variant->quantity }}</td>
                             <td class="text-end">
                                 <div class="btn-group btn-group-sm">
@@ -57,7 +59,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="8" class="text-center text-muted py-5">لا توجد متغيرات.</td></tr>
+                        <tr><td colspan="10" class="text-center text-muted py-5">لا توجد متغيرات.</td></tr>
                     @endforelse
                 </tbody>
             </table>

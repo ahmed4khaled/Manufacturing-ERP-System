@@ -15,6 +15,7 @@ class DeleteCustomerAction
             $customer = Customer::query()->lockForUpdate()->findOrFail($customer->id);
 
             $balance = $customer->ledgerEntries()
+                ->activeBusiness()
                 ->selectRaw(
                     'COALESCE(SUM(debit), 0) - COALESCE(SUM(credit), 0) as balance'
                 )

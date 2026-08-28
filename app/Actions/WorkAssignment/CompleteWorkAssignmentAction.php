@@ -5,6 +5,7 @@ namespace App\Actions\WorkAssignment;
 use App\Enums\ProductionDefectStatus;
 use App\Enums\ProductionMaterialTransactionStatus;
 use App\Enums\ProductionMaterialTransactionType;
+use App\Enums\ProductionReworkStatus;
 use App\Enums\WorkAssignmentStatus;
 use App\Models\WorkAssignment;
 use App\Services\ProductionActivityService;
@@ -34,6 +35,42 @@ class CompleteWorkAssignmentAction
             }
             if (bccomp($produced, (string) $assignment->assigned_quantity, 3) > 0) {
                 throw ValidationException::withMessages(['produced_quantity' => 'المنتج لا يمكن أن يتجاوز الكمية المسندة.']);
+            }
+            $previousOperation = $assignment->productionOrder->operations()
+                ->where('sequence', '<', $assignment->operation->sequence)
+                ->orderByDesc('sequence')
+                ->lockForUpdate()
+                ->first();
+            if ($previousOperation) {
+                $previousAssignments = $assignment->productionOrder->workAssignments()
+                    ->where('production_order_operation_id', $previousOperation->id)
+                    ->lockForUpdate()
+                    ->get();
+                $previousReworks = $assignment->productionOrder->reworks()
+                    ->where('production_order_operation_id', $previousOperation->id)
+                    ->where('status', ProductionReworkStatus::COMPLETED)
+                    ->lockForUpdate()
+                    ->get();
+                $availableFromPreviousStage = bcadd(
+                    (string) $previousAssignments->sum('good_quantity'),
+                    (string) $previousReworks->sum('good_quantity'),
+                    3,
+                );
+                $currentStageProduced = bcadd(
+                    (string) $assignment->productionOrder->workAssignments()
+                        ->where('production_order_operation_id', $assignment->production_order_operation_id)
+                        ->whereKeyNot($assignment->id)
+                        ->lockForUpdate()
+                        ->get()
+                        ->sum('produced_quantity'),
+                    $produced,
+                    3,
+                );
+                if (bccomp($currentStageProduced, $availableFromPreviousStage, 3) > 0) {
+                    throw ValidationException::withMessages([
+                        'produced_quantity' => "إجمالي إنتاج هذه العملية لا يمكن أن يتجاوز الكمية الجيدة المقبولة من العملية السابقة ({$availableFromPreviousStage}).",
+                    ]);
+                }
             }
             $reportedDefects = (string) $assignment->defects()->where('status', '!=', ProductionDefectStatus::REJECTED)->sum('quantity');
             if (bccomp($reportedDefects, $defective, 3) !== 0) {

@@ -7,8 +7,9 @@ use App\Enums\ProductionMaterialTransactionStatus;
 use App\Enums\ProductionOrderStatus;
 use App\Enums\ProductionReworkStatus;
 use App\Enums\WorkAssignmentStatus;
-use App\Models\Product;
 use App\Models\ProductionOrder;
+use App\Models\ProductVariant;
+use App\Services\InventoryCostingService;
 use App\Services\ProductionActivityService;
 use App\Services\ProductionSummaryService;
 use Illuminate\Support\Facades\DB;
@@ -16,7 +17,7 @@ use Illuminate\Validation\ValidationException;
 
 class CompleteProductionOrderAction
 {
-    public function __construct(private readonly ProductionSummaryService $summary, private readonly ProductionActivityService $activity) {}
+    public function __construct(private readonly ProductionSummaryService $summary, private readonly ProductionActivityService $activity, private readonly InventoryCostingService $costing) {}
 
     public function handle(ProductionOrder $order): ProductionOrder
     {
@@ -49,10 +50,19 @@ class CompleteProductionOrderAction
                 throw ValidationException::withMessages(['outputs' => 'لا يمكن حساب التكلفة النهائية بدون إنتاج تام.']);
             }
 
-            $finalTotalCost = (string) $order->estimated_total_cost;
-            $finalUnitCost = bcdiv($finalTotalCost, $summary['output'], 2);
+            $costing = $this->costing->finalizeProductionCost($order, $summary['output']);
+            if ($costing['total'] === null || $costing['unit'] === null) {
+                throw ValidationException::withMessages([
+                    'costing' => 'لا يمكن إغلاق أمر الإنتاج لأن خامة مصروفة واحدة على الأقل غير مُقيّمة. يجب تقييم طبقات FIFO أولاً.',
+                ]);
+            }
+            $finalTotalCost = $costing['total'];
+            $finalUnitCost = $costing['unit'];
             $order->update([
                 'status' => ProductionOrderStatus::COMPLETED,
+                'actual_material_cost' => $costing['actual_material_cost'],
+                'actual_operation_cost' => $costing['actual_operation_cost'],
+                'cost_variance' => $costing['variance'],
                 'final_unit_cost' => $finalUnitCost,
                 'final_total_cost' => $finalTotalCost,
                 'closed_by' => auth()->id(),
@@ -65,7 +75,11 @@ class CompleteProductionOrderAction
                     'total_cost' => bcmul($finalUnitCost, (string) $output->quantity, 2),
                 ]);
             }
-            Product::query()->lockForUpdate()->whereKey($order->product_id)->update(['cost_price' => $finalUnitCost]);
+            $this->costing->finalizeProductLayers($order, $finalUnitCost);
+            ProductVariant::query()->lockForUpdate()->whereKey($order->product_variant_id)->update([
+                'actual_cost' => $finalUnitCost,
+                'last_production_cost' => $finalUnitCost,
+            ]);
             $this->activity->record($order, 'completed', 'تم إغلاق أمر الإنتاج وحساب تكلفة الوحدة النهائية.', [
                 'final_unit_cost' => $finalUnitCost,
                 'final_total_cost' => $finalTotalCost,

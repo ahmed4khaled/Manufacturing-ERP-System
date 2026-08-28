@@ -663,6 +663,36 @@
 
     </div>
 
+    @if ($salesInvoice->status === \App\Enums\SalesInvoiceStatus::CONFIRMED)
+        @can('sales_invoices.view')
+            <div class="card mt-4" id="fifo-cogs">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <strong>تكلفة البضاعة المباعة — تخصيصات FIFO</strong>
+                    <span>الكمية المباعة: <strong>{{ number_format($salesInvoice->total_quantity, 3) }}</strong></span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle mb-0">
+                        <thead class="table-light"><tr><th>متغير المنتج</th><th>طبقة التكلفة</th><th class="text-end">الكمية من الطبقة</th><th class="text-end">تكلفة الوحدة</th><th class="text-end">COGS</th></tr></thead>
+                        <tbody>
+                            @forelse ($costAllocations as $allocation)
+                                <tr>
+                                    <td>@if($allocation->layer?->productVariant)<a href="{{ route('product-variants.show', $allocation->layer->productVariant) }}">{{ $allocation->layer->productVariant->sku }}</a><div class="small text-muted">{{ $allocation->layer->productVariant->product?->name }} / {{ $allocation->layer->productVariant->color?->name }} / {{ $allocation->layer->productVariant->size?->name }}</div>@else—@endif</td>
+                                    <td>#{{ $allocation->product_cost_layer_id }}</td>
+                                    <td class="text-end">{{ number_format($allocation->quantity, 3) }}</td>
+                                    <td class="text-end">{{ $allocation->unit_cost !== null ? number_format($allocation->unit_cost, 4).' ج.م' : 'غير مُقيّمة' }}</td>
+                                    <td class="text-end fw-semibold">{{ $allocation->total_cost !== null ? number_format($allocation->total_cost, 2).' ج.م' : 'غير مُقيّمة' }}</td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="5" class="text-center text-muted py-4">لا توجد تخصيصات تكلفة FIFO مسجلة لهذه الفاتورة.</td></tr>
+                            @endforelse
+                        </tbody>
+                        <tfoot><tr><th colspan="4">إجمالي COGS</th><th class="text-end">{{ $salesInvoice->total_cogs !== null ? number_format($salesInvoice->total_cogs, 2).' ج.م' : 'غير مُقيّم' }}</th></tr></tfoot>
+                    </table>
+                </div>
+            </div>
+        @endcan
+    @endif
+
 
     {{-- =========================================================
          BACK

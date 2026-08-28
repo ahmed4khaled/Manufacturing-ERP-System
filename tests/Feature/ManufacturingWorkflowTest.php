@@ -33,6 +33,7 @@ use App\Models\Category;
 use App\Models\Color;
 use App\Models\ManufacturingOperation;
 use App\Models\Material;
+use App\Models\MaterialCostLayer;
 use App\Models\MaterialStockMovement;
 use App\Models\Product;
 use App\Models\ProductionOrder;
@@ -127,6 +128,10 @@ it('runs material accountability and finished goods posting without double deduc
     $f = manufacturingFixture();
     $bom = manufacturingBom($f);
     app(CreateMaterialOpeningStockAction::class)->handle(['material_id' => $f['material']->id, 'quantity' => '100.000', 'movement_date' => now()->toDateString()]);
+    MaterialCostLayer::query()->where('material_id', $f['material']->id)->update([
+        'unit_cost' => '10.0000',
+        'total_original_cost' => '1000.00',
+    ]);
     $order = manufacturingOrder($f, $bom);
     expect($order->order_number)->toStartWith('MO')->and($order->product_name)->toBe('Abaya Model A')->and($order->bom_version)->toBe(1);
     $confirm = app(ConfirmProductionOrderAction::class);
@@ -153,10 +158,11 @@ it('runs material accountability and finished goods posting without double deduc
         ->and(app(StockService::class)->getCurrentStock($f['variant']))->toBe('9.000')
         ->and(StockMovement::where('movement_type', StockMovementType::PRODUCTION_OUTPUT)->count())->toBe(1)
         ->and($order->fresh()->status)->toBe(ProductionOrderStatus::COMPLETED)
-        ->and((string) $order->fresh()->final_total_cost)->toBe('1100.00')
-        ->and((string) $order->fresh()->final_unit_cost)->toBe('122.22')
-        ->and((string) $order->outputs()->first()->unit_cost)->toBe('122.22')
-        ->and((string) $f['product']->fresh()->cost_price)->toBe('122.22')
+        ->and((string) $order->fresh()->final_total_cost)->toBe('390.00')
+        ->and((string) $order->fresh()->final_unit_cost)->toBe('43.3333')
+        ->and((string) $order->outputs()->first()->unit_cost)->toBe('43.3333')
+        ->and((string) $f['product']->fresh()->cost_price)->toBe('110.00')
+        ->and((string) $f['variant']->fresh()->actual_cost)->toBe('43.3333')
         ->and((string) $f['product']->fresh()->base_cost_price)->toBe('100.00')
         ->and($assignment->fresh()->worker_id)->toBe($f['worker']->id)
         ->and($waste->fresh()->recorded_by)->toBe(auth()->id())
@@ -193,6 +199,10 @@ it('reviews defects and completes rework into valid final output', function () {
     $f = manufacturingFixture();
     $bom = manufacturingBom($f);
     app(CreateMaterialOpeningStockAction::class)->handle(['material_id' => $f['material']->id, 'quantity' => '100.000', 'movement_date' => now()->toDateString()]);
+    MaterialCostLayer::query()->where('material_id', $f['material']->id)->update([
+        'unit_cost' => '10.0000',
+        'total_original_cost' => '1000.00',
+    ]);
     $order = manufacturingOrder($f, $bom);
     app(ConfirmProductionOrderAction::class)->handle($order);
     $assignment = $order->workAssignments()->first();

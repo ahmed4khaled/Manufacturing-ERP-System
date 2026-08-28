@@ -21,6 +21,7 @@ class StoreMaterialRequest extends FormRequest
             'category' => ['required', Rule::enum(MaterialCategory::class)],
             'unit' => ['required', Rule::enum(MaterialUnit::class)],
             'minimum_stock' => ['nullable', 'numeric', 'gte:0'],
+            'standard_unit_cost' => ['nullable', 'numeric', 'gte:0'],
             'description' => ['nullable', 'string'],
         ];
     }

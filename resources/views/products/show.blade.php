@@ -42,9 +42,9 @@
                             <p class="mb-0">{{ $product->description ?? '—' }}</p>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label text-muted small mb-1">سعر التكلفة</label>
+                            <label class="form-label text-muted small mb-1">التكلفة المرجعية للموديل</label>
                             <p class="mb-0 fw-semibold">{{ number_format($product->cost_price, 2) }} ج.م</p>
-                            <small class="text-muted">أساسية قبل التشغيل: {{ number_format($product->base_cost_price, 2) }} ج.م</small>
+                            <small class="text-muted">ليست تكلفة المتغير؛ راجع جدول المتغيرات. أساسية قبل التشغيل: {{ number_format($product->base_cost_price, 2) }} ج.م</small>
                         </div>
                     </div>
                 </div>
@@ -68,6 +68,7 @@
                                         <th>المقاس</th>
                                         <th>الحالة</th>
                                         <th class="text-end">السعر</th>
+                                        <th class="text-end">التكلفة الفعلية</th>
                                         <th class="text-end">الكمية</th>
                                     </tr>
                                 </thead>
@@ -84,6 +85,7 @@
                                             <td>{{ $variant->size?->name }}</td>
                                             <td><span class="badge bg-{{ $variant->status->badgeClass() }}">{{ $variant->status->label() }}</span></td>
                                             <td class="text-end">{{ number_format($variant->default_price, 2) }}</td>
+                                            <td class="text-end">{{ $variant->actual_cost !== null ? number_format($variant->actual_cost, 2) : 'غير مُقيّمة' }}</td>
                                             <td class="text-end">{{ $variant->quantity }}</td>
                                         </tr>
                                     @endforeach
