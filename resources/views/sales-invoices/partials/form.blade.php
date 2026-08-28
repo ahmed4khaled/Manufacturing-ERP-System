@@ -63,6 +63,11 @@
                 <div class="card-header bg-white"><h5 class="card-title mb-0">إضافة منتج (موديل)</h5></div>
                 <div class="card-body">
                     @error('products')<div class="alert alert-danger">{{ $message }}</div>@enderror
+                    <div class="mb-4 p-3 border rounded bg-light">
+                        <label for="barcodeScanInput" class="form-label fw-semibold">مسح / إدخال الباركود</label>
+                        <div class="input-group"><input id="barcodeScanInput" type="text" inputmode="numeric" autocomplete="off" class="form-control" placeholder="امسح الباركود ثم اضغط Enter"><button id="barcodeScanBtn" type="button" class="btn btn-dark"><i class="bi bi-upc-scan me-1"></i> إضافة</button></div>
+                        <div id="barcodeScanFeedback" class="form-text">كل مسح يضيف قطعة، وتكرار نفس الباركود يزيد الكمية.</div>
+                    </div>
 
                     <div class="row g-3 align-items-end mb-3">
                         <div class="col-md-8">
@@ -180,6 +185,7 @@
 <script>
 (() => {
     const variantsUrl = @json(route('sales-invoices.product-variants', ['product' => '__PRODUCT__']));
+    const barcodeLookupUrl = @json(route('barcodes.lookup'));
     const existingProducts = @json($existingProducts ?? []);
     const addedProducts = [...existingProducts];
 
@@ -205,8 +211,53 @@
     const hiddenProductsContainer = document.getElementById('hiddenProductsContainer');
     const saveInvoiceBtn = document.getElementById('saveInvoiceBtn');
     const invoiceForm = document.getElementById('invoiceForm');
+    const barcodeScanInput = document.getElementById('barcodeScanInput');
+    const barcodeScanBtn = document.getElementById('barcodeScanBtn');
+    const barcodeScanFeedback = document.getElementById('barcodeScanFeedback');
 
     discountInput?.addEventListener('input', () => updateNetTotal());
+
+    async function scanBarcode() {
+        const barcode = barcodeScanInput.value.trim();
+        if (!barcode) return;
+
+        barcodeScanBtn.disabled = true;
+        try {
+            const url = `${barcodeLookupUrl}?context=sales_invoice&barcode=${encodeURIComponent(barcode)}`;
+            const response = await fetch(url, { headers: { Accept: 'application/json' } });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message || data.errors?.barcode?.[0] || 'الباركود غير صالح.');
+
+            let product = addedProducts.find(item => String(item.product_id) === String(data.product_id));
+            if (!product) {
+                product = { product_id: data.product_id, product_name: data.product_name, product_code: data.product_code, variants: [], total_quantity: 0, total_amount: 0 };
+                addedProducts.push(product);
+            }
+            let variant = product.variants.find(item => String(item.product_variant_id) === String(data.product_variant_id));
+            if (variant) {
+                variant.quantity = Number(variant.quantity) + 1;
+            } else {
+                product.variants.push({ product_variant_id: data.product_variant_id, color: data.color, size: data.size, sku: data.sku, barcode: data.barcode, unit_price: Number(data.unit_price), quantity: 1 });
+            }
+            product.total_quantity = product.variants.reduce((sum, item) => sum + Number(item.quantity), 0);
+            product.total_amount = product.variants.reduce((sum, item) => sum + (Number(item.quantity) * Number(item.unit_price)), 0);
+            barcodeScanFeedback.textContent = `${data.product_name} — ${data.color} / ${data.size} · الكمية: ${product.variants.find(item => String(item.product_variant_id) === String(data.product_variant_id)).quantity}`;
+            barcodeScanFeedback.className = 'form-text text-success';
+            barcodeScanInput.value = '';
+            renderSummary();
+        } catch (error) {
+            barcodeScanFeedback.textContent = error.message;
+            barcodeScanFeedback.className = 'form-text text-danger';
+        } finally {
+            barcodeScanBtn.disabled = false;
+            barcodeScanInput.focus();
+        }
+    }
+
+    barcodeScanBtn?.addEventListener('click', scanBarcode);
+    barcodeScanInput?.addEventListener('keydown', event => {
+        if (event.key === 'Enter') { event.preventDefault(); scanBarcode(); }
+    });
 
     productSelector?.addEventListener('change', () => {
         loadVariantsBtn.disabled = !productSelector.value;

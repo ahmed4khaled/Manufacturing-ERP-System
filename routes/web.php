@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\BarcodeController;
 use App\Http\Controllers\BomController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ColorController;
@@ -36,6 +37,19 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('barcodes/product-variant', [BarcodeController::class, 'lookup'])->name('barcodes.lookup');
+    Route::get('product-variants/{productVariant}/labels', [BarcodeController::class, 'variantLabels'])
+        ->middleware('permission:product_variants.view')
+        ->name('product-variants.labels');
+    Route::get('production-orders/{productionOrder}/labels', [BarcodeController::class, 'productionLabels'])
+        ->middleware('permission:production_orders.view')
+        ->name('production-orders.labels');
+    Route::get('production-labels', [BarcodeController::class, 'batch'])
+        ->middleware('permission:production_orders.view')
+        ->name('production-labels.batch');
+    Route::post('production-labels', [BarcodeController::class, 'batchLabels'])
+        ->middleware('permission:production_orders.view')
+        ->name('production-labels.print');
     Route::prefix('statistics')->name('statistics.')->middleware('permission:statistics.view')->group(function () {
         Route::get('/', [StatisticsController::class, 'dashboard'])->name('dashboard');
         Route::get('sales', [StatisticsController::class, 'sales'])->name('sales');

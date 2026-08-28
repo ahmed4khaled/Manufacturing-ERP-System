@@ -43,6 +43,17 @@
         </div>
     </div>
 
+    @can('product_variants.view')
+        <div class="card mt-4"><div class="card-header bg-white"><strong>طباعة ملصقات الباركود</strong></div><div class="card-body">
+            @if($productVariant->barcode)
+                <form method="GET" action="{{ route('product-variants.labels', $productVariant) }}" target="_blank" class="row g-3 align-items-end">
+                    <div class="col-md-4"><label class="form-label">عدد الملصقات</label><input name="quantity" type="number" min="1" max="1000" value="1" class="form-control" required></div>
+                    <div class="col-auto"><button name="mode" value="preview" class="btn btn-outline-primary">معاينة</button></div><div class="col-auto"><button name="mode" value="print" class="btn btn-primary">طباعة الملصقات</button></div>
+                </form>
+            @else<div class="alert alert-warning mb-0">لا يمكن طباعة ملصقات قبل توفر باركود للمتغير.</div>@endif
+        </div></div>
+    @endcan
+
     @can('inventory.view')
         <div class="card mt-4" id="fifo-costing">
             <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2">

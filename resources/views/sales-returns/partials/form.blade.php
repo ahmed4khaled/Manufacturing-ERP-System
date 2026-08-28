@@ -28,6 +28,11 @@
                     <span class="text-muted small">الفاتورة {{ $invoice->invoice_number }}</span>
                 </div>
                 <div class="card-body p-0">
+                    <div class="p-3 border-bottom bg-light">
+                        <label for="returnBarcodeInput" class="form-label fw-semibold">مسح باركود من بنود الفاتورة</label>
+                        <div class="input-group"><input id="returnBarcodeInput" type="text" autocomplete="off" class="form-control" placeholder="امسح الباركود ثم اضغط Enter"><button id="returnBarcodeBtn" type="button" class="btn btn-dark"><i class="bi bi-upc-scan me-1"></i> تحديد</button></div>
+                        <div id="returnBarcodeFeedback" class="form-text">المسح يحدد البند فقط ولا ينشئ أو يعتمد المرتجع.</div>
+                    </div>
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0">
                             <thead class="table-light">
@@ -45,7 +50,7 @@
                                         $oldLine = $oldItems->get($item->id);
                                         $quantity = $oldLine['quantity'] ?? $existingQuantities->get($item->id, 0);
                                     @endphp
-                                    <tr>
+                                    <tr data-product-variant-id="{{ $item->product_variant_id }}">
                                         <td>
                                             <div class="fw-semibold">{{ $item->product_name }}</div>
                                             <code>{{ $item->sku }}</code>
@@ -113,3 +118,38 @@
         <a href="{{ $salesReturn ? route('sales-returns.show', $salesReturn) : route('sales-returns.index') }}" class="btn btn-outline-secondary">إلغاء</a>
     </div>
 </form>
+
+@push('scripts')
+<script>
+(() => {
+    const input = document.getElementById('returnBarcodeInput');
+    const button = document.getElementById('returnBarcodeBtn');
+    const feedback = document.getElementById('returnBarcodeFeedback');
+    const lookupUrl = @json(route('barcodes.lookup'));
+    async function scan() {
+        const barcode = input.value.trim();
+        if (!barcode) return;
+        button.disabled = true;
+        try {
+            const response = await fetch(`${lookupUrl}?context=sales_return&barcode=${encodeURIComponent(barcode)}`, { headers: { Accept: 'application/json' } });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message || data.errors?.barcode?.[0] || 'الباركود غير صالح.');
+            const row = document.querySelector(`tr[data-product-variant-id="${data.product_variant_id}"]`);
+            if (!row) throw new Error('هذا المتغير غير موجود ضمن البنود المتاحة للإرجاع في الفاتورة.');
+            const quantity = row.querySelector('input[type="number"]');
+            const maximum = Number(quantity.max);
+            quantity.value = Math.min(maximum, Number(quantity.value || 0) + 1);
+            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            feedback.textContent = `${data.product_name} — ${data.color} / ${data.size} · الكمية المرتجعة: ${quantity.value}`;
+            feedback.className = 'form-text text-success';
+            input.value = '';
+        } catch (error) {
+            feedback.textContent = error.message;
+            feedback.className = 'form-text text-danger';
+        } finally { button.disabled = false; input.focus(); }
+    }
+    button?.addEventListener('click', scan);
+    input?.addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); scan(); } });
+})();
+</script>
+@endpush
