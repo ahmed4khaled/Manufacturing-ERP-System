@@ -159,7 +159,13 @@ it('exposes operational scanning in sales returns and inventory without submitti
     grantBarcodePermission('inventory.adjustment');
     $movementCount = StockMovement::count();
 
-    $this->get(route('sales-invoices.create'))->assertOk()->assertSee('barcodeScanInput', false)->assertSee('variant.quantity = Number(variant.quantity) + 1', false);
+    $this->get(route('sales-invoices.create'))
+        ->assertOk()
+        ->assertSee('barcodeScanInput', false)
+        ->assertSee('barcodeScanQuantity', false)
+        ->assertSee('variant.quantity = Number(variant.quantity) + scannedQuantity', false)
+        ->assertSee('summary-variant-qty', false)
+        ->assertDontSee('barcodeScanBtn', false);
     $this->get(route('sales-returns.create', ['sales_invoice_id' => $invoice->id]))->assertOk()->assertSee('returnBarcodeInput', false)->assertSee('data-product-variant-id="'.$fixture['variant']->id.'"', false);
     $this->get(route('inventory.adjustments.create'))->assertOk()->assertSee('product_variant_id_barcode', false);
     $this->get(route('inventory.opening-stock.create'))->assertOk()->assertSee('product_variant_id_barcode', false);

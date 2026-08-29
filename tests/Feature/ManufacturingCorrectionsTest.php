@@ -25,6 +25,7 @@ use App\Models\Customer;
 use App\Models\ManufacturingOperation;
 use App\Models\Material;
 use App\Models\Product;
+use App\Models\ProductCostAllocation;
 use App\Models\ProductCostLayer;
 use App\Models\ProductionMaterialTransaction;
 use App\Models\ProductVariant;
@@ -258,15 +259,19 @@ it('blocks production completion when consumed material FIFO cost is unvalued', 
         ->and(ProductCostLayer::query()->where('production_order_id', $order->id)->value('is_final'))->toBeFalse();
 });
 
-it('blocks selling finished goods from an unvalued final cost layer', function () {
+it('allows confirming a sale from an unvalued final layer and records unvalued COGS', function () {
     $fixture = correctedManufacturingFixture();
     $customer = Customer::create(['code' => 'FIX-CUS', 'name' => 'Fixed Customer', 'phone' => '01000000000', 'credit_limit' => 100000, 'status' => 'active']);
     $movement = StockMovement::create(['product_variant_id' => $fixture['variant']->id, 'movement_type' => StockMovementType::OPENING, 'direction' => StockMovementDirection::IN, 'quantity' => '5.000', 'movement_date' => now()->toDateString()]);
-    ProductCostLayer::create(['product_variant_id' => $fixture['variant']->id, 'stock_movement_id' => $movement->id, 'layer_date' => now()->toDateString(), 'original_quantity' => '5.000', 'remaining_quantity' => '5.000', 'unit_cost' => null, 'total_original_cost' => null, 'is_final' => true]);
+    $layer = ProductCostLayer::create(['product_variant_id' => $fixture['variant']->id, 'stock_movement_id' => $movement->id, 'layer_date' => now()->toDateString(), 'original_quantity' => '5.000', 'remaining_quantity' => '5.000', 'unit_cost' => null, 'total_original_cost' => null, 'is_final' => true]);
     $invoice = SalesInvoice::create(['invoice_number' => 'FIX-INV', 'customer_id' => $customer->id, 'invoice_date' => now()->toDateString(), 'status' => SalesInvoiceStatus::DRAFT, 'total_quantity' => 1, 'subtotal' => 500, 'discount' => 0, 'total_amount' => 500]);
     $invoice->items()->create(['product_variant_id' => $fixture['variant']->id, 'product_name' => $fixture['product']->name, 'sku' => $fixture['variant']->sku, 'quantity' => 1, 'unit_price' => 500, 'line_total' => 500]);
 
-    expect(fn () => app(ConfirmSalesInvoiceAction::class)->handle($invoice))->toThrow(ValidationException::class)
-        ->and($invoice->fresh()->status)->toBe(SalesInvoiceStatus::DRAFT)
-        ->and(StockMovement::query()->where('movement_type', StockMovementType::SALE)->count())->toBe(0);
+    app(ConfirmSalesInvoiceAction::class)->handle($invoice);
+
+    expect($invoice->fresh()->status)->toBe(SalesInvoiceStatus::CONFIRMED)
+        ->and(StockMovement::query()->where('movement_type', StockMovementType::SALE)->count())->toBe(1)
+        ->and($invoice->fresh()->total_cogs)->toBeNull()
+        ->and((string) $layer->fresh()->remaining_quantity)->toBe('4.000')
+        ->and(ProductCostAllocation::query()->where('product_cost_layer_id', $layer->id)->value('unit_cost'))->toBeNull();
 });

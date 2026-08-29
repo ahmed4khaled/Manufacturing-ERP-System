@@ -65,8 +65,11 @@
                     @error('products')<div class="alert alert-danger">{{ $message }}</div>@enderror
                     <div class="mb-4 p-3 border rounded bg-light">
                         <label for="barcodeScanInput" class="form-label fw-semibold">مسح / إدخال الباركود</label>
-                        <div class="input-group"><input id="barcodeScanInput" type="text" inputmode="numeric" autocomplete="off" class="form-control" placeholder="امسح الباركود ثم اضغط Enter"><button id="barcodeScanBtn" type="button" class="btn btn-dark"><i class="bi bi-upc-scan me-1"></i> إضافة</button></div>
-                        <div id="barcodeScanFeedback" class="form-text">كل مسح يضيف قطعة، وتكرار نفس الباركود يزيد الكمية.</div>
+                        <div class="row g-2">
+                            <div class="col-md-8"><input id="barcodeScanInput" type="text" inputmode="numeric" autocomplete="off" class="form-control" placeholder="امسح الباركود ليُضاف تلقائيًا"></div>
+                            <div class="col-md-4"><div class="input-group"><span class="input-group-text">الكمية</span><input id="barcodeScanQuantity" type="number" min="0.001" step="0.001" value="1" class="form-control text-center"></div></div>
+                        </div>
+                        <div id="barcodeScanFeedback" class="form-text">حدد الكمية ثم امسح الباركود؛ سيُضاف المنتج تلقائيًا بدون الضغط على زر إضافة، ويمكن تعديل الكمية من الملخص.</div>
                     </div>
 
                     <div class="row g-3 align-items-end mb-3">
@@ -212,16 +215,27 @@
     const saveInvoiceBtn = document.getElementById('saveInvoiceBtn');
     const invoiceForm = document.getElementById('invoiceForm');
     const barcodeScanInput = document.getElementById('barcodeScanInput');
-    const barcodeScanBtn = document.getElementById('barcodeScanBtn');
+    const barcodeScanQuantity = document.getElementById('barcodeScanQuantity');
     const barcodeScanFeedback = document.getElementById('barcodeScanFeedback');
+    let barcodeScanTimer = null;
+    let barcodeScanInProgress = false;
 
     discountInput?.addEventListener('input', () => updateNetTotal());
 
     async function scanBarcode() {
         const barcode = barcodeScanInput.value.trim();
-        if (!barcode) return;
+        const scannedQuantity = Number(barcodeScanQuantity.value);
+        if (!barcode || barcodeScanInProgress) return;
+        if (!Number.isFinite(scannedQuantity) || scannedQuantity <= 0) {
+            barcodeScanFeedback.textContent = 'أدخل كمية أكبر من صفر قبل مسح الباركود.';
+            barcodeScanFeedback.className = 'form-text text-danger';
+            barcodeScanQuantity.focus();
+            return;
+        }
 
-        barcodeScanBtn.disabled = true;
+        barcodeScanInProgress = true;
+        barcodeScanInput.disabled = true;
+        barcodeScanQuantity.disabled = true;
         try {
             const url = `${barcodeLookupUrl}?context=sales_invoice&barcode=${encodeURIComponent(barcode)}`;
             const response = await fetch(url, { headers: { Accept: 'application/json' } });
@@ -235,12 +249,11 @@
             }
             let variant = product.variants.find(item => String(item.product_variant_id) === String(data.product_variant_id));
             if (variant) {
-                variant.quantity = Number(variant.quantity) + 1;
+                variant.quantity = Number(variant.quantity) + scannedQuantity;
             } else {
-                product.variants.push({ product_variant_id: data.product_variant_id, color: data.color, size: data.size, sku: data.sku, barcode: data.barcode, unit_price: Number(data.unit_price), quantity: 1 });
+                product.variants.push({ product_variant_id: data.product_variant_id, color: data.color, size: data.size, sku: data.sku, barcode: data.barcode, unit_price: Number(data.unit_price), quantity: scannedQuantity });
             }
-            product.total_quantity = product.variants.reduce((sum, item) => sum + Number(item.quantity), 0);
-            product.total_amount = product.variants.reduce((sum, item) => sum + (Number(item.quantity) * Number(item.unit_price)), 0);
+            recalculateProduct(product);
             barcodeScanFeedback.textContent = `${data.product_name} — ${data.color} / ${data.size} · الكمية: ${product.variants.find(item => String(item.product_variant_id) === String(data.product_variant_id)).quantity}`;
             barcodeScanFeedback.className = 'form-text text-success';
             barcodeScanInput.value = '';
@@ -249,15 +262,23 @@
             barcodeScanFeedback.textContent = error.message;
             barcodeScanFeedback.className = 'form-text text-danger';
         } finally {
-            barcodeScanBtn.disabled = false;
+            barcodeScanInProgress = false;
+            barcodeScanInput.disabled = false;
+            barcodeScanQuantity.disabled = false;
             barcodeScanInput.focus();
         }
     }
 
-    barcodeScanBtn?.addEventListener('click', scanBarcode);
     barcodeScanInput?.addEventListener('keydown', event => {
         if (event.key === 'Enter') { event.preventDefault(); scanBarcode(); }
     });
+    barcodeScanInput?.addEventListener('input', () => {
+        window.clearTimeout(barcodeScanTimer);
+        if (barcodeScanInput.value.trim().length >= 8) {
+            barcodeScanTimer = window.setTimeout(scanBarcode, 250);
+        }
+    });
+    barcodeScanQuantity?.addEventListener('change', () => barcodeScanInput.focus());
 
     productSelector?.addEventListener('change', () => {
         loadVariantsBtn.disabled = !productSelector.value;
@@ -384,12 +405,21 @@
         let grandAmount = 0;
 
         summaryTableBody.innerHTML = addedProducts.map((product, index) => {
+            recalculateProduct(product);
             grandQty += product.total_quantity;
             grandAmount += product.total_amount;
+            const variantDetails = product.variants.map((variant, variantIndex) => `
+                <div class="d-flex align-items-center justify-content-end gap-2 mb-1">
+                    <small class="text-muted">${variant.color || '—'} / ${variant.size || '—'}${variant.sku ? ` · ${variant.sku}` : ''}</small>
+                    <input type="number" min="0.001" step="0.001" value="${variant.quantity}"
+                        class="form-control form-control-sm text-center summary-variant-qty" style="width:95px"
+                        data-product-index="${index}" data-variant-index="${variantIndex}" aria-label="كمية المتغير">
+                </div>
+            `).join('');
             return `
                 <tr>
                     <td><strong>${product.product_name}</strong><br><small class="text-muted">${product.product_code}</small></td>
-                    <td class="text-end">${product.total_quantity.toLocaleString()} قطعة</td>
+                    <td class="text-end">${variantDetails}<strong>${product.total_quantity.toLocaleString()} قطعة</strong></td>
                     <td class="text-end">${formatMoney(product.total_amount)} ج.م</td>
                     <td class="text-end">
                         <button type="button" class="btn btn-sm btn-outline-danger remove-product" data-index="${index}">
@@ -407,11 +437,32 @@
                 renderSummary();
             });
         });
+        summaryTableBody.querySelectorAll('.summary-variant-qty').forEach(input => {
+            input.addEventListener('change', event => {
+                const product = addedProducts[Number(event.target.dataset.productIndex)];
+                const variant = product?.variants[Number(event.target.dataset.variantIndex)];
+                const quantity = Number(event.target.value);
+                if (!variant || !Number.isFinite(quantity) || quantity <= 0) {
+                    event.target.setCustomValidity('الكمية يجب أن تكون أكبر من صفر.');
+                    event.target.reportValidity();
+                    return;
+                }
+                event.target.setCustomValidity('');
+                variant.quantity = quantity;
+                recalculateProduct(product);
+                renderSummary();
+            });
+        });
 
         grandTotalQty.textContent = grandQty.toLocaleString();
         grandTotalAmount.textContent = formatMoney(grandAmount) + ' ج.م';
         updateNetTotal(grandAmount);
         summaryProductCount.textContent = `${addedProducts.length} منتج`;
+    }
+
+    function recalculateProduct(product) {
+        product.total_quantity = product.variants.reduce((sum, item) => sum + Number(item.quantity), 0);
+        product.total_amount = product.variants.reduce((sum, item) => sum + (Number(item.quantity) * Number(item.unit_price)), 0);
     }
 
     function updateNetTotal(subtotal = null) {

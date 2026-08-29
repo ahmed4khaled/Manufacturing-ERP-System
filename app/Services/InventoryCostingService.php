@@ -241,7 +241,7 @@ class InventoryCostingService
             ->where('remaining_quantity', '>', 0)->where('is_final', true)
             ->orderBy('layer_date')->orderBy('id')->lockForUpdate()->get();
 
-        return $this->consumeProductCollection($layers, (string) $item->quantity, $movement, SalesInvoice::class, $invoice->id);
+        return $this->consumeProductCollection($layers, (string) $item->quantity, $movement, SalesInvoice::class, $invoice->id, true);
     }
 
     public function consumeProductMovement(StockMovement $movement): ?string
@@ -343,7 +343,7 @@ class InventoryCostingService
         return $valued ? $total : null;
     }
 
-    private function consumeProductCollection(Collection $layers, string $needed, StockMovement $movement, string $referenceType, int $referenceId): ?string
+    private function consumeProductCollection(Collection $layers, string $needed, StockMovement $movement, string $referenceType, int $referenceId, bool $allowUnvalued = false): ?string
     {
         $consumed = '0.000';
         $total = '0.00';
@@ -353,7 +353,7 @@ class InventoryCostingService
             if (bccomp($take, '0', 3) <= 0) {
                 continue;
             }
-            if ($layer->unit_cost === null) {
+            if ($layer->unit_cost === null && ! $allowUnvalued) {
                 throw ValidationException::withMessages([
                     'costing' => 'لا يمكن صرف أو بيع مخزون منتج من طبقة تكلفة غير مُقيّمة.',
                 ]);
