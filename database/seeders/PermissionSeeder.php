@@ -86,6 +86,10 @@ class PermissionSeeder extends Seeder
             'users.assign_roles', 'users.assign_permissions',
             'roles.view', 'roles.create', 'roles.edit', 'roles.delete',
             'permissions.view',
+
+            // Accounting
+            'accounting.view', 'accounting.create', 'accounting.update', 'accounting.post',
+            'accounting.reverse', 'accounting.close_period', 'accounting.manage_accounts', 'accounting.reports',
         ];
 
         foreach ($permissions as $permission) {

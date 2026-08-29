@@ -7,6 +7,7 @@ use App\Enums\LedgerReferenceType;
 use App\Enums\PaymentReceiptStatus;
 use App\Models\CustomerLedgerEntry;
 use App\Models\PaymentReceipt;
+use App\Services\Accounting\DocumentPostingService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -14,6 +15,7 @@ class CancelPaymentReceiptAction
 {
     public function __construct(
         private readonly CreateCustomerLedgerEntryAction $ledger,
+        private readonly DocumentPostingService $accounting,
     ) {}
 
     public function handle(PaymentReceipt $receipt): PaymentReceipt
@@ -55,6 +57,7 @@ class CancelPaymentReceiptAction
                 'credit' => 0,
                 'created_by' => auth()->id(),
             ]);
+            $this->accounting->reverse($receipt, 'customer_payment', now()->toDateString());
 
             return $receipt->fresh(['customer', 'invoice', 'allocations.salesInvoice', 'creator']);
         });

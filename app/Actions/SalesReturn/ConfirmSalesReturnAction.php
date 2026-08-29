@@ -9,6 +9,7 @@ use App\Enums\SalesReturnStatus;
 use App\Models\CustomerLedgerEntry;
 use App\Models\SalesInvoice;
 use App\Models\SalesReturn;
+use App\Services\Accounting\DocumentPostingService;
 use App\Services\SalesReturnService;
 use App\Services\StockService;
 use Illuminate\Support\Facades\DB;
@@ -20,6 +21,7 @@ class ConfirmSalesReturnAction
         private readonly CreateCustomerLedgerEntryAction $ledger,
         private readonly SalesReturnService $salesReturnService,
         private readonly StockService $stockService,
+        private readonly DocumentPostingService $accounting,
     ) {}
 
     public function handle(SalesReturn $salesReturn): SalesReturn
@@ -89,6 +91,7 @@ class ConfirmSalesReturnAction
                 'credit' => $salesReturn->total_amount,
                 'created_by' => auth()->id(),
             ]);
+            $this->accounting->salesReturn($salesReturn->fresh());
 
             return $salesReturn->fresh(['salesInvoice', 'customer', 'items']);
         });

@@ -8,6 +8,7 @@ use App\Enums\PaymentReceiptStatus;
 use App\Models\Customer;
 use App\Models\CustomerLedgerEntry;
 use App\Models\PaymentReceipt;
+use App\Services\Accounting\DocumentPostingService;
 use App\Services\PaymentReceiptAllocationService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -17,6 +18,7 @@ class ConfirmPaymentReceiptAction
     public function __construct(
         private readonly CreateCustomerLedgerEntryAction $createLedgerEntry,
         private readonly PaymentReceiptAllocationService $allocationService,
+        private readonly DocumentPostingService $accounting,
     ) {}
 
     public function handle(PaymentReceipt $receipt): PaymentReceipt
@@ -80,6 +82,7 @@ class ConfirmPaymentReceiptAction
                 'credit' => $receipt->amount,
                 'created_by' => auth()->id(),
             ]);
+            $this->accounting->customerPayment($receipt);
 
             return $receipt->fresh(['customer', 'invoice', 'allocations.salesInvoice', 'creator']);
         });

@@ -1,0 +1,7 @@
+@extends('layouts.dashboard')
+@section('title','دفتر الأستاذ')
+@section('content')
+@include('accounting._header',['title'=>'دفتر الأستاذ العام'])
+<div class="card"><div class="card-body"><form class="row g-2 mb-4"><div class="col-md-5"><select name="account_id" class="form-select">@foreach($accounts as $a)<option value="{{ $a->id }}" @selected($account?->id===$a->id)>{{ $a->code }} - {{ $a->name }}</option>@endforeach</select></div><div class="col"><input type="date" name="date_from" value="{{ request('date_from') }}" class="form-control"></div><div class="col"><input type="date" name="date_to" value="{{ request('date_to') }}" class="form-control"></div><div class="col-auto"><button class="btn btn-primary">عرض</button></div></form>
+<div class="alert alert-light">الرصيد الافتتاحي: <strong>{{ number_format((float)$report['openingBalance'],2) }}</strong></div><div class="table-responsive"><table class="table"><thead><tr><th>التاريخ</th><th>المرجع</th><th>البيان</th><th>مدين</th><th>دائن</th><th>الرصيد</th></tr></thead><tbody>@forelse($report['lines'] as $line)<tr><td>{{ $line->journalEntry->entry_date->format('Y-m-d') }}</td><td>{{ $line->journalEntry->entry_number }}</td><td>{{ $line->description ?: $line->journalEntry->description }}</td><td>{{ number_format($line->debit,2) }}</td><td>{{ number_format($line->credit,2) }}</td><td class="fw-bold">{{ number_format((float)$line->running_balance,2) }}</td></tr>@empty<tr><td colspan="6" class="text-center text-muted">لا توجد حركات.</td></tr>@endforelse</tbody></table></div></div></div>
+@endsection

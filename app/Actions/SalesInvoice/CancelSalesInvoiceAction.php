@@ -8,6 +8,7 @@ use App\Enums\SalesInvoiceStatus;
 use App\Enums\SalesReturnStatus;
 use App\Models\CustomerLedgerEntry;
 use App\Models\SalesInvoice;
+use App\Services\Accounting\DocumentPostingService;
 use App\Services\PaymentReceiptAllocationService;
 use App\Services\StockService;
 use Illuminate\Support\Facades\DB;
@@ -19,6 +20,7 @@ class CancelSalesInvoiceAction
         private readonly CreateCustomerLedgerEntryAction $ledger,
         private readonly StockService $stock,
         private readonly PaymentReceiptAllocationService $allocationService,
+        private readonly DocumentPostingService $accounting,
     ) {}
 
     public function handle(SalesInvoice $invoice): SalesInvoice
@@ -77,6 +79,7 @@ class CancelSalesInvoiceAction
                 'credit' => $invoice->total_amount,
                 'created_by' => auth()->id(),
             ]);
+            $this->accounting->reverse($invoice, 'sales_invoice', now()->toDateString());
 
             return $invoice->fresh(['customer', 'items']);
         });

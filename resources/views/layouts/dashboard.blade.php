@@ -36,7 +36,12 @@
             z-index: 1040;
             transition: transform 0.3s ease;
             overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #475569 transparent;
         }
+
+        .erp-sidebar::-webkit-scrollbar { width: 6px; }
+        .erp-sidebar::-webkit-scrollbar-thumb { background: #475569; border-radius: 999px; }
 
         .erp-sidebar .brand {
             height: var(--navbar-height);
@@ -44,6 +49,10 @@
             align-items: center;
             padding: 0 1.25rem;
             border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            position: sticky;
+            top: 0;
+            background: var(--sidebar-bg);
+            z-index: 2;
         }
 
         .erp-sidebar .brand span {
@@ -60,12 +69,23 @@
             align-items: center;
             gap: 0.75rem;
             font-size: 0.925rem;
+            margin: 0.1rem 0.65rem;
+            border-radius: 0.55rem;
+            transition: background-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
         }
 
         .erp-sidebar .nav-link:hover,
         .erp-sidebar .nav-link.active {
             background: var(--sidebar-hover);
             color: #fff;
+        }
+
+        .erp-sidebar a.nav-link:hover {
+            transform: translateX(-2px);
+        }
+
+        .erp-sidebar .nav-link.active {
+            box-shadow: inset -3px 0 0 var(--accent);
         }
 
         .erp-sidebar .nav-section {
@@ -78,8 +98,46 @@
         }
 
         .erp-sidebar .nav-link.sub-link {
-            padding-right: 2.5rem;
+            padding: 0.58rem 2.7rem 0.58rem 1rem;
             font-size: 0.875rem;
+            margin-block: 0;
+        }
+
+        .erp-sidebar .nav-link.sub-link i {
+            font-size: 0.82rem;
+            opacity: 0.85;
+        }
+
+        .erp-sidebar .nav-module {
+            margin-bottom: 0.15rem;
+        }
+
+        .erp-sidebar .nav-children {
+            position: relative;
+            padding-block: 0.15rem 0.4rem;
+        }
+
+        .erp-sidebar .nav-children::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0.45rem;
+            right: 1.85rem;
+            width: 1px;
+            background: rgba(148, 163, 184, 0.18);
+        }
+
+        .sidebar-footer-note {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin: 1.25rem 1rem 0.5rem;
+            padding: 0.75rem;
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 0.65rem;
+            color: #94a3b8;
+            font-size: 0.75rem;
+            background: rgba(99, 102, 241, 0.08);
         }
 
         .erp-sidebar .nav-link.nav-toggle {
@@ -117,6 +175,41 @@
             margin-top: var(--navbar-height);
             padding: 1.5rem;
             min-height: calc(100vh - var(--navbar-height));
+            transition: opacity 0.15s ease;
+        }
+
+        .erp-content.is-loading {
+            opacity: 0.48;
+            pointer-events: none;
+        }
+
+        .ajax-progress {
+            position: fixed;
+            top: var(--navbar-height);
+            right: var(--sidebar-width);
+            left: 0;
+            height: 3px;
+            z-index: 1055;
+            opacity: 0;
+            overflow: hidden;
+            pointer-events: none;
+            transition: opacity 0.15s ease;
+        }
+
+        .ajax-progress::after {
+            content: '';
+            display: block;
+            width: 35%;
+            height: 100%;
+            background: var(--accent);
+            animation: ajax-progress 0.85s ease-in-out infinite;
+        }
+
+        .ajax-progress.show { opacity: 1; }
+
+        @keyframes ajax-progress {
+            from { transform: translateX(290%); }
+            to { transform: translateX(-100%); }
         }
 
         .sidebar-overlay {
@@ -144,6 +237,10 @@
                 margin-right: 0;
             }
 
+            .ajax-progress {
+                right: 0;
+            }
+
             .sidebar-overlay.show {
                 display: block;
             }
@@ -166,10 +263,13 @@
         }
     </style>
 
+    <meta id="erpPageStylesStart" name="erp-page-styles-start">
     @stack('styles')
+    <meta id="erpPageStylesEnd" name="erp-page-styles-end">
 </head>
 <body>
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <div class="ajax-progress" id="ajaxProgress" role="progressbar" aria-label="جاري تحميل الصفحة"></div>
 
     <aside class="erp-sidebar" id="erpSidebar">
         <div class="brand">
@@ -177,213 +277,9 @@
             <span>مصنع العبايات</span>
         </div>
 
-        <nav class="nav flex-column py-2">
-            <div class="nav-section">الرئيسية</div>
-            <a href="{{ route('dashboard') }}" class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
-                <i class="bi bi-speedometer2"></i>
-                لوحة التحكم
-            </a>
-        @can('statistics.view')
-                <div class="nav-section">الإحصائيات</div>
-                <button class="nav-link nav-toggle {{ request()->routeIs('statistics.*') ? 'active' : '' }}"
-                        type="button"
-                        data-bs-toggle="collapse"
-                        data-bs-target="#statistics-nav"
-                        aria-expanded="{{ request()->routeIs('statistics.*') ? 'true' : 'false' }}"
-                        aria-controls="statistics-nav">
-                    <i class="bi bi-bar-chart-line"></i>
-                    الإحصائيات
-                    <i class="bi bi-chevron-down toggle-icon"></i>
-                </button>
-                <div class="collapse {{ request()->routeIs('statistics.*') ? 'show' : '' }}" id="statistics-nav">
-                    @foreach([
-                        ['statistics.dashboard', 'bi-speedometer2', 'لوحة الإحصائيات'],
-                        ['statistics.sales', 'bi-receipt', 'إحصائيات المبيعات'],
-                        ['statistics.customers', 'bi-people', 'إحصائيات العملاء'],
-                        ['statistics.collections', 'bi-cash-coin', 'إحصائيات التحصيلات'],
-                        ['statistics.purchases', 'bi-cart-check', 'إحصائيات المشتريات'],
-                        ['statistics.inventory', 'bi-boxes', 'إحصائيات المخزون'],
-                        ['statistics.materials', 'bi-box-seam', 'إحصائيات الخامات'],
-                        ['statistics.manufacturing', 'bi-gear-wide-connected', 'إحصائيات التصنيع'],
-                        ['statistics.workers', 'bi-person-workspace', 'إحصائيات العمال'],
-                        ['statistics.defects', 'bi-bandaid', 'العيوب والهالك'],
-                        ['statistics.returns', 'bi-arrow-return-right', 'إحصائيات المرتجعات'],
-                    ] as [$statisticsRoute, $statisticsIcon, $statisticsLabel])
-                        <a href="{{ route($statisticsRoute) }}" class="nav-link sub-link {{ request()->routeIs($statisticsRoute) ? 'active' : '' }}">
-                            <i class="bi {{ $statisticsIcon }}"></i>{{ $statisticsLabel }}
-                        </a>
-                    @endforeach
-                </div>
-            @endcan
-            <div class="nav-section">المبيعات</div>
-            <a href="{{ route('customers.index') }}" class="nav-link {{ request()->routeIs('customers.*') ? 'active' : '' }}">
-                <i class="bi bi-people"></i>
-                العملاء
-            </a>
-            <a href="{{ route('sales-invoices.index') }}" class="nav-link {{ request()->routeIs('sales-invoices.*') ? 'active' : '' }}">
-                <i class="bi bi-receipt"></i>
-                فواتير المبيعات
-            </a>
-            <a href="{{ route('payment-receipts.index') }}" class="nav-link {{ request()->routeIs('payment-receipts.*') ? 'active' : '' }}">
-                <i class="bi bi-cash-coin"></i>
-                سندات القبض
-            </a>
-            <a href="{{ route('sales-returns.index') }}" class="nav-link {{ request()->routeIs('sales-returns.*') ? 'active' : '' }}">
-                <i class="bi bi-arrow-return-right"></i>
-                مرتجعات المبيعات
-            </a>
-            <a href="{{ route('customer-ledger.index') }}" class="nav-link {{ request()->routeIs('customer-ledger.*') ? 'active' : '' }}">
-                <i class="bi bi-journal-text"></i>
-                كشف حساب العملاء
-            </a>
-            <div class="nav-section">المشتريات</div>
-            <a href="{{ route('suppliers.index') }}" class="nav-link {{ request()->routeIs('suppliers.*') ? 'active' : '' }}">
-                <i class="bi bi-truck"></i>
-                الموردون
-            </a>
-            <a href="{{ route('purchase-orders.index') }}" class="nav-link {{ request()->routeIs('purchase-orders.*') ? 'active' : '' }}"><i class="bi bi-file-earmark-text"></i>أوامر الشراء</a>
-            <a href="{{ route('goods-receipts.index') }}" class="nav-link {{ request()->routeIs('goods-receipts.*') ? 'active' : '' }}"><i class="bi bi-box-arrow-in-down"></i>أذون استلام الخامات</a>
-            <a href="{{ route('supplier-invoices.index') }}" class="nav-link {{ request()->routeIs('supplier-invoices.*') ? 'active' : '' }}"><i class="bi bi-receipt"></i>فواتير الموردين</a>
-            <a href="{{ route('supplier-payments.index') }}" class="nav-link {{ request()->routeIs('supplier-payments.*') ? 'active' : '' }}"><i class="bi bi-cash-stack"></i>مدفوعات الموردين</a>
-            <a href="{{ route('purchase-returns.index') }}" class="nav-link {{ request()->routeIs('purchase-returns.*') ? 'active' : '' }}"><i class="bi bi-arrow-return-left"></i>مرتجعات المشتريات</a>
+        <nav class="nav flex-column py-2" id="erpSidebarNav">
+            @include('layouts.partials.erp-sidebar')
 
-            <div class="nav-section">الخامات</div>
-            <a href="{{ route('materials.index') }}" class="nav-link sub-link {{ request()->routeIs('materials.*') ? 'active' : '' }}">
-                <i class="bi bi-box-seam"></i>
-                دليل الخامات
-            </a>
-            <a href="{{ route('material-inventory.index') }}" class="nav-link sub-link {{ request()->routeIs('material-inventory.index', 'material-inventory.show') ? 'active' : '' }}">
-                <i class="bi bi-archive"></i>
-                مخزون الخامات
-            </a>
-            <a href="{{ route('material-inventory.movements') }}" class="nav-link sub-link {{ request()->routeIs('material-inventory.movements') ? 'active' : '' }}">
-                <i class="bi bi-arrow-left-right"></i>
-                حركات الخامات
-            </a>
-            @can('material_inventory.view')
-                <a href="{{ route('material-inventory.cost-layers.index') }}" class="nav-link sub-link {{ request()->routeIs('material-inventory.cost-layers.*') ? 'active' : '' }}">
-                    <i class="bi bi-layers-half"></i>
-                    طبقات تكلفة الخامات FIFO
-                </a>
-            @endcan
-            <a href="{{ route('material-inventory.opening-stock.create') }}" class="nav-link sub-link {{ request()->routeIs('material-inventory.opening-stock.*') ? 'active' : '' }}">
-                <i class="bi bi-box-arrow-in-down"></i>
-                أرصدة الخامات الافتتاحية
-            </a>
-            <a href="{{ route('material-inventory.adjustments.create') }}" class="nav-link sub-link {{ request()->routeIs('material-inventory.adjustments.*') ? 'active' : '' }}">
-                <i class="bi bi-sliders"></i>
-                تسويات مخزون الخامات
-            </a>
-
-            <div class="nav-section">التصنيع</div>
-            <a href="{{ route('workers.index') }}" class="nav-link sub-link {{ request()->routeIs('workers.*') ? 'active' : '' }}"><i class="bi bi-people"></i>العمال</a>
-            <a href="{{ route('manufacturing-operations.index') }}" class="nav-link sub-link {{ request()->routeIs('manufacturing-operations.*') ? 'active' : '' }}"><i class="bi bi-list-ol"></i>عمليات التصنيع</a>
-            <a href="{{ route('boms.index') }}" class="nav-link sub-link {{ request()->routeIs('boms.*') ? 'active' : '' }}"><i class="bi bi-diagram-3"></i>قوائم المواد BOM</a>
-            <a href="{{ route('production-orders.index') }}" class="nav-link sub-link {{ request()->routeIs('production-orders.*', 'work-assignments.*', 'production-defects.*', 'production-reworks.*') ? 'active' : '' }}"><i class="bi bi-gear-wide-connected"></i>أوامر الإنتاج</a>
-            <a href="{{ route('production-reports.material-variance') }}" class="nav-link sub-link {{ request()->routeIs('production-reports.*') ? 'active' : '' }}"><i class="bi bi-graph-up"></i>انحراف الخامات</a>
-
-            <div class="nav-section">مخزون المنتجات</div>
-            <a href="{{ route('inventory.index') }}" class="nav-link {{ request()->routeIs('inventory.index', 'inventory.show') ? 'active' : '' }}">
-                <i class="bi bi-boxes"></i>
-                أرصدة المنتجات
-            </a>
-            <a href="{{ route('inventory.movements') }}" class="nav-link sub-link {{ request()->routeIs('inventory.movements') ? 'active' : '' }}">
-                <i class="bi bi-arrow-left-right"></i>
-                حركات مخزون المنتجات
-            </a>
-            @can('inventory.view')
-                <a href="{{ route('inventory.cost-layers.index') }}" class="nav-link sub-link {{ request()->routeIs('inventory.cost-layers.*') ? 'active' : '' }}">
-                    <i class="bi bi-layers-half"></i>
-                    طبقات تكلفة المنتجات FIFO
-                </a>
-            @endcan
-            <a href="{{ route('inventory.opening-stock.create') }}" class="nav-link sub-link {{ request()->routeIs('inventory.opening-stock.*') ? 'active' : '' }}">
-                <i class="bi bi-box-arrow-in-down"></i>
-                الأرصدة الافتتاحية
-            </a>
-            <a href="{{ route('inventory.adjustments.create') }}" class="nav-link sub-link {{ request()->routeIs('inventory.adjustments.*') ? 'active' : '' }}">
-                <i class="bi bi-sliders"></i>
-                تسويات المخزون
-            </a>
-            <div class="nav-section">المنتجات</div>
-            <a href="{{ route('categories.index') }}" class="nav-link sub-link {{ request()->routeIs('categories.*') ? 'active' : '' }}">
-                <i class="bi bi-tags"></i>
-                التصنيفات
-            </a>
-            <a href="{{ route('products.index') }}" class="nav-link sub-link {{ request()->routeIs('products.*') ? 'active' : '' }}">
-                <i class="bi bi-box-seam"></i>
-                الموديلات
-            </a>
-            <a href="{{ route('colors.index') }}" class="nav-link sub-link {{ request()->routeIs('colors.*') ? 'active' : '' }}">
-                <i class="bi bi-palette"></i>
-                الألوان
-            </a>
-            <a href="{{ route('sizes.index') }}" class="nav-link sub-link {{ request()->routeIs('sizes.*') ? 'active' : '' }}">
-                <i class="bi bi-rulers"></i>
-                المقاسات
-            </a>
-            <a href="{{ route('product-variants.index') }}" class="nav-link sub-link {{ request()->routeIs('product-variants.*') ? 'active' : '' }}">
-                <i class="bi bi-layers"></i>
-                متغيرات المنتجات
-            </a>
-
-           
-
-            @can('statistics.view')
-                <div class="nav-section">الإحصائيات</div>
-                <button class="nav-link nav-toggle {{ request()->routeIs('statistics.*') ? 'active' : '' }}"
-                        type="button"
-                        data-bs-toggle="collapse"
-                        data-bs-target="#statistics-nav"
-                        aria-expanded="{{ request()->routeIs('statistics.*') ? 'true' : 'false' }}"
-                        aria-controls="statistics-nav">
-                    <i class="bi bi-bar-chart-line"></i>
-                    الإحصائيات
-                    <i class="bi bi-chevron-down toggle-icon"></i>
-                </button>
-                <div class="collapse {{ request()->routeIs('statistics.*') ? 'show' : '' }}" id="statistics-nav">
-                    @foreach([
-                        ['statistics.dashboard', 'bi-speedometer2', 'لوحة الإحصائيات'],
-                        ['statistics.sales', 'bi-receipt', 'إحصائيات المبيعات'],
-                        ['statistics.customers', 'bi-people', 'إحصائيات العملاء'],
-                        ['statistics.collections', 'bi-cash-coin', 'إحصائيات التحصيلات'],
-                        ['statistics.purchases', 'bi-cart-check', 'إحصائيات المشتريات'],
-                        ['statistics.inventory', 'bi-boxes', 'إحصائيات المخزون'],
-                        ['statistics.materials', 'bi-box-seam', 'إحصائيات الخامات'],
-                        ['statistics.manufacturing', 'bi-gear-wide-connected', 'إحصائيات التصنيع'],
-                        ['statistics.workers', 'bi-person-workspace', 'إحصائيات العمال'],
-                        ['statistics.defects', 'bi-bandaid', 'العيوب والهالك'],
-                        ['statistics.returns', 'bi-arrow-return-right', 'إحصائيات المرتجعات'],
-                    ] as [$statisticsRoute, $statisticsIcon, $statisticsLabel])
-                        <a href="{{ route($statisticsRoute) }}" class="nav-link sub-link {{ request()->routeIs($statisticsRoute) ? 'active' : '' }}">
-                            <i class="bi {{ $statisticsIcon }}"></i>{{ $statisticsLabel }}
-                        </a>
-                    @endforeach
-                </div>
-            @endcan
-
-            @canany(['users.view', 'roles.view', 'permissions.view'])
-                <div class="nav-section">الإدارة</div>
-                @can('users.view')
-                    <a href="{{ route('users.index') }}" class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}"><i class="bi bi-people-fill"></i>المستخدمون</a>
-                @endcan
-                @can('roles.view')
-                    <a href="{{ route('roles.index') }}" class="nav-link {{ request()->routeIs('roles.*') ? 'active' : '' }}"><i class="bi bi-person-badge"></i>الأدوار</a>
-                @endcan
-                @can('permissions.view')
-                    <a href="{{ route('permissions.index') }}" class="nav-link {{ request()->routeIs('permissions.*') ? 'active' : '' }}"><i class="bi bi-shield-check"></i>الصلاحيات</a>
-                @endcan
-            @endcanany
-
-            <div class="nav-section">قريبًا</div>
-            <span class="nav-link text-muted pe-none">
-                <i class="bi bi-gear-wide-connected"></i>
-                التصنيع
-            </span>
-            <span class="nav-link text-muted pe-none">
-                <i class="bi bi-calculator"></i>
-                المحاسبة
-            </span>
         </nav>
     </aside>
 
@@ -392,7 +288,7 @@
             <i class="bi bi-list fs-4"></i>
         </button>
 
-        <div class="flex-grow-1">
+        <div class="flex-grow-1" id="erpBreadcrumb">
             @hasSection('breadcrumb')
                 @yield('breadcrumb')
             @endif
@@ -418,7 +314,7 @@
         </div>
     </header>
 
-    <main class="erp-content">
+    <main class="erp-content" id="erpContent">
         @if (session('success'))
             <div class="alert alert-success alert-dismissible fade show" role="alert">
                 <i class="bi bi-check-circle me-2"></i>{{ session('success') }}
@@ -438,21 +334,167 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        const sidebar = document.getElementById('erpSidebar');
-        const overlay = document.getElementById('sidebarOverlay');
-        const toggle = document.getElementById('sidebarToggle');
+        (() => {
+            const sidebar = document.getElementById('erpSidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            const toggle = document.getElementById('sidebarToggle');
+            const progress = document.getElementById('ajaxProgress');
+            let navigationController = null;
 
-        toggle?.addEventListener('click', () => {
-            sidebar.classList.toggle('show');
-            overlay.classList.toggle('show');
-        });
+            const closeMobileSidebar = () => {
+                sidebar?.classList.remove('show');
+                overlay?.classList.remove('show');
+            };
 
-        overlay?.addEventListener('click', () => {
-            sidebar.classList.remove('show');
-            overlay.classList.remove('show');
-        });
+            toggle?.addEventListener('click', () => {
+                sidebar?.classList.toggle('show');
+                overlay?.classList.toggle('show');
+            });
+
+            overlay?.addEventListener('click', closeMobileSidebar);
+
+            const pageStyleNodes = (documentNode) => {
+                const start = documentNode.getElementById('erpPageStylesStart');
+                const end = documentNode.getElementById('erpPageStylesEnd');
+                const nodes = [];
+
+                if (! start || ! end) {
+                    return nodes;
+                }
+
+                let node = start.nextSibling;
+                while (node && node !== end) {
+                    nodes.push(node);
+                    node = node.nextSibling;
+                }
+
+                return nodes;
+            };
+
+            const replacePageStyles = (nextDocument) => {
+                pageStyleNodes(document).forEach((node) => node.remove());
+                const end = document.getElementById('erpPageStylesEnd');
+
+                pageStyleNodes(nextDocument).forEach((node) => {
+                    end.before(document.importNode(node, true));
+                });
+            };
+
+            const executePageScripts = async (scripts) => {
+                const container = document.getElementById('erpPageScripts');
+                container.replaceChildren();
+
+                for (const source of scripts) {
+                    const script = document.createElement('script');
+                    [...source.attributes].forEach((attribute) => script.setAttribute(attribute.name, attribute.value));
+                    script.textContent = source.textContent;
+
+                    if (script.src) {
+                        await new Promise((resolve, reject) => {
+                            script.addEventListener('load', resolve, { once: true });
+                            script.addEventListener('error', reject, { once: true });
+                            container.appendChild(script);
+                        });
+                    } else {
+                        container.appendChild(script);
+                    }
+                }
+            };
+
+            const navigate = async (url, pushState = true) => {
+                navigationController?.abort();
+                const controller = new AbortController();
+                navigationController = controller;
+
+                const content = document.getElementById('erpContent');
+                content.classList.add('is-loading');
+                content.setAttribute('aria-busy', 'true');
+                progress?.classList.add('show');
+
+                try {
+                    const response = await fetch(url, {
+                        headers: {
+                            'Accept': 'text/html',
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        credentials: 'same-origin',
+                        signal: controller.signal,
+                    });
+
+                    if (! response.ok) {
+                        throw new Error(`Navigation failed with status ${response.status}`);
+                    }
+
+                    const html = await response.text();
+                    const nextDocument = new DOMParser().parseFromString(html, 'text/html');
+                    const nextContent = nextDocument.getElementById('erpContent');
+                    const nextSidebarNav = nextDocument.getElementById('erpSidebarNav');
+
+                    if (! nextContent || ! nextSidebarNav) {
+                        window.location.assign(response.url || url);
+                        return;
+                    }
+
+                    const scripts = [
+                        ...nextContent.querySelectorAll('script'),
+                        ...nextDocument.querySelectorAll('#erpPageScripts script'),
+                    ];
+                    nextContent.querySelectorAll('script').forEach((script) => script.remove());
+
+                    replacePageStyles(nextDocument);
+                    content.innerHTML = nextContent.innerHTML;
+                    document.getElementById('erpSidebarNav').innerHTML = nextSidebarNav.innerHTML;
+                    document.getElementById('erpBreadcrumb').innerHTML = nextDocument.getElementById('erpBreadcrumb')?.innerHTML ?? '';
+                    document.title = nextDocument.title;
+
+                    const nextToken = nextDocument.querySelector('meta[name="csrf-token"]')?.content;
+                    if (nextToken) {
+                        document.querySelector('meta[name="csrf-token"]').content = nextToken;
+                    }
+
+                    if (pushState) {
+                        window.history.pushState({ erpAjax: true }, '', response.url || url);
+                    }
+
+                    closeMobileSidebar();
+                    window.scrollTo({ top: 0, behavior: 'auto' });
+                    await executePageScripts(scripts);
+                    document.dispatchEvent(new CustomEvent('erp:navigated', { detail: { url: response.url || url } }));
+                } catch (error) {
+                    if (error.name !== 'AbortError') {
+                        window.location.assign(url);
+                    }
+                } finally {
+                    if (navigationController === controller) {
+                        content.classList.remove('is-loading');
+                        content.removeAttribute('aria-busy');
+                        progress?.classList.remove('show');
+                    }
+                }
+            };
+
+            document.addEventListener('click', (event) => {
+                const link = event.target.closest('a[data-erp-nav]');
+
+                if (! link || event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || link.target || link.download) {
+                    return;
+                }
+
+                const target = new URL(link.href, window.location.href);
+                if (target.origin !== window.location.origin) {
+                    return;
+                }
+
+                event.preventDefault();
+                navigate(target.href);
+            });
+
+            window.addEventListener('popstate', () => navigate(window.location.href, false));
+        })();
     </script>
 
-    @stack('scripts')
+    <div id="erpPageScripts" hidden>
+        @stack('scripts')
+    </div>
 </body>
 </html>

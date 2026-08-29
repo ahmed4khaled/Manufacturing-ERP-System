@@ -24,6 +24,7 @@ use App\Models\Supplier;
 use App\Models\SupplierContact;
 use App\Models\SupplierInvoice;
 use App\Models\SupplierPayment;
+use App\Services\Accounting\DocumentPostingService;
 use App\Services\CodeGeneratorService;
 use App\Services\Printing\DocumentPrinter;
 use Illuminate\Http\JsonResponse;
@@ -451,7 +452,8 @@ class ProcurementController extends Controller
     }
 
     public function storeInvoice(
-        StoreSupplierInvoiceRequest $request
+        StoreSupplierInvoiceRequest $request,
+        DocumentPostingService $accounting,
     ): RedirectResponse {
 
         $data = $request->validated();
@@ -691,25 +693,30 @@ class ProcurementController extends Controller
     |--------------------------------------------------------------------------
     */
 
-        $invoice = SupplierInvoice::create([
+        $invoice = DB::transaction(function () use ($data, $subtotal, $discount, $tax, $total, $remainingAmount, $status, $accounting) {
+            $invoice = SupplierInvoice::create([
 
-            ...$data,
+                ...$data,
 
-            'invoice_number' => app(CodeGeneratorService::class)
-                ->next('PINV'),
+                'invoice_number' => app(CodeGeneratorService::class)
+                    ->next('PINV'),
 
-            'subtotal' => $subtotal,
+                'subtotal' => $subtotal,
 
-            'discount' => $discount,
+                'discount' => $discount,
 
-            'tax' => $tax,
+                'tax' => $tax,
 
-            'total' => $total,
+                'total' => $total,
 
-            'remaining_amount' => $remainingAmount,
+                'remaining_amount' => $remainingAmount,
 
-            'status' => $status,
-        ]);
+                'status' => $status,
+            ]);
+            $accounting->supplierInvoice($invoice);
+
+            return $invoice;
+        });
 
         return back()->with(
             'success',
@@ -718,7 +725,8 @@ class ProcurementController extends Controller
     }
 
     public function storePayment(
-        StoreSupplierPaymentRequest $request
+        StoreSupplierPaymentRequest $request,
+        DocumentPostingService $accounting,
     ): RedirectResponse {
 
         $data = $request->validated();
@@ -761,28 +769,33 @@ class ProcurementController extends Controller
         |--------------------------------------------------------------------------
         */
 
-            $payment = SupplierPayment::create([
+            $payment = DB::transaction(function () use ($supplier, $po, $data, $accounting) {
+                $payment = SupplierPayment::create([
 
-                'payment_number' => app(CodeGeneratorService::class)->next('SPAY'),
+                    'payment_number' => app(CodeGeneratorService::class)->next('SPAY'),
 
-                'supplier_id' => $supplier->id,
+                    'supplier_id' => $supplier->id,
 
-                'purchase_order_id' => $po->id,
+                    'purchase_order_id' => $po->id,
 
-                'supplier_invoice_id' => null,
+                    'supplier_invoice_id' => null,
 
-                'payment_type' => 'advance',
+                    'payment_type' => 'advance',
 
-                'payment_date' => $data['payment_date'],
+                    'payment_date' => $data['payment_date'],
 
-                'amount' => $data['amount'],
+                    'amount' => $data['amount'],
 
-                'payment_method' => $data['payment_method'],
+                    'payment_method' => $data['payment_method'],
 
-                'reference' => $data['reference'] ?? null,
+                    'reference' => $data['reference'] ?? null,
 
-                'notes' => $data['notes'] ?? null,
-            ]);
+                    'notes' => $data['notes'] ?? null,
+                ]);
+                $accounting->supplierPayment($payment);
+
+                return $payment;
+            });
 
             return back()->with(
                 'success',
@@ -802,7 +815,7 @@ class ProcurementController extends Controller
     |
     */
 
-        DB::transaction(function () use ($data, $supplier) {
+        DB::transaction(function () use ($data, $supplier, $accounting) {
 
             /*
         |--------------------------------------------------------------------------
@@ -895,7 +908,7 @@ class ProcurementController extends Controller
         |--------------------------------------------------------------------------
         */
 
-            SupplierPayment::create([
+            $payment = SupplierPayment::create([
 
                 'payment_number' => app(CodeGeneratorService::class)->next('SPAY'),
 
@@ -917,6 +930,7 @@ class ProcurementController extends Controller
 
                 'notes' => $data['notes'] ?? null,
             ]);
+            $accounting->supplierPayment($payment);
 
             /*
         |--------------------------------------------------------------------------

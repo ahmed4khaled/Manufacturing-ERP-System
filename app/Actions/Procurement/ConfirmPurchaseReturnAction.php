@@ -6,13 +6,14 @@ use App\Models\Material;
 use App\Models\MaterialStockMovement;
 use App\Models\PurchaseReturn;
 use App\Models\PurchaseReturnItem;
+use App\Services\Accounting\DocumentPostingService;
 use App\Services\MaterialStockService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class ConfirmPurchaseReturnAction
 {
-    public function __construct(private MaterialStockService $materialStock) {}
+    public function __construct(private MaterialStockService $materialStock, private DocumentPostingService $accounting) {}
 
     public function handle(PurchaseReturn $return): PurchaseReturn
     {
@@ -73,6 +74,7 @@ class ConfirmPurchaseReturnAction
 
             $return->update(['status' => 'confirmed']);
             $this->materialStock->createPurchaseReturnMovements($return);
+            $this->accounting->purchaseReturn($return);
 
             return $return->fresh('items');
         });

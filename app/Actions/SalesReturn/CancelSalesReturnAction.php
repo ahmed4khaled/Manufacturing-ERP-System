@@ -8,6 +8,7 @@ use App\Enums\SalesReturnStatus;
 use App\Models\CustomerLedgerEntry;
 use App\Models\SalesInvoice;
 use App\Models\SalesReturn;
+use App\Services\Accounting\DocumentPostingService;
 use App\Services\StockService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -17,6 +18,7 @@ class CancelSalesReturnAction
     public function __construct(
         private readonly CreateCustomerLedgerEntryAction $ledger,
         private readonly StockService $stockService,
+        private readonly DocumentPostingService $accounting,
     ) {}
 
     public function handle(SalesReturn $salesReturn): SalesReturn
@@ -65,6 +67,7 @@ class CancelSalesReturnAction
                 'credit' => 0,
                 'created_by' => auth()->id(),
             ]);
+            $this->accounting->reverse($salesReturn, 'sales_return', now()->toDateString());
 
             return $salesReturn->fresh(['salesInvoice', 'customer', 'items']);
         });

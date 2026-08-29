@@ -9,6 +9,7 @@ use App\Enums\ProductionReworkStatus;
 use App\Enums\WorkAssignmentStatus;
 use App\Models\ProductionOrder;
 use App\Models\ProductVariant;
+use App\Services\Accounting\DocumentPostingService;
 use App\Services\InventoryCostingService;
 use App\Services\ProductionActivityService;
 use App\Services\ProductionSummaryService;
@@ -17,7 +18,7 @@ use Illuminate\Validation\ValidationException;
 
 class CompleteProductionOrderAction
 {
-    public function __construct(private readonly ProductionSummaryService $summary, private readonly ProductionActivityService $activity, private readonly InventoryCostingService $costing) {}
+    public function __construct(private readonly ProductionSummaryService $summary, private readonly ProductionActivityService $activity, private readonly InventoryCostingService $costing, private readonly DocumentPostingService $accounting) {}
 
     public function handle(ProductionOrder $order): ProductionOrder
     {
@@ -84,6 +85,8 @@ class CompleteProductionOrderAction
                 'final_unit_cost' => $finalUnitCost,
                 'final_total_cost' => $finalTotalCost,
             ]);
+
+            $this->accounting->production($order->fresh());
 
             return $order->fresh(['operations', 'outputs']);
         });

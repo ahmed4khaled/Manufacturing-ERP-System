@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AccountingController;
 use App\Http\Controllers\BarcodeController;
 use App\Http\Controllers\BomController;
 use App\Http\Controllers\CategoryController;
@@ -29,6 +30,8 @@ use App\Http\Controllers\StatisticsController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WorkAssignmentController;
 use App\Http\Controllers\WorkerController;
+use App\Services\Accounting\AccountingReportService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -40,6 +43,31 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified', 'active'])->name('dashboard');
 
 Route::middleware(['auth', 'verified', 'active'])->group(function () {
+    Route::prefix('accounting')->name('accounting.')->group(function () {
+        Route::get('accounts', [AccountingController::class, 'accounts'])->middleware('permission:accounting.view')->name('accounts');
+        Route::post('accounts', [AccountingController::class, 'storeAccount'])->middleware('permission:accounting.manage_accounts')->name('accounts.store');
+        Route::get('journals', [AccountingController::class, 'journals'])->middleware('permission:accounting.view')->name('journals');
+        Route::post('journals', [AccountingController::class, 'storeJournal'])->middleware('permission:accounting.post')->name('journals.store');
+        Route::post('journals/{journalEntry}/reverse', [AccountingController::class, 'reverseJournal'])->middleware('permission:accounting.reverse')->name('journals.reverse');
+        Route::get('ledger', [AccountingController::class, 'ledger'])->middleware('permission:accounting.reports')->name('ledger');
+        Route::get('trial-balance', [AccountingController::class, 'trialBalance'])->middleware('permission:accounting.reports')->name('trial-balance');
+        Route::get('profit-loss', [AccountingController::class, 'profitLoss'])->middleware('permission:accounting.reports')->name('profit-loss');
+        Route::get('balance-sheet', [AccountingController::class, 'balanceSheet'])->middleware('permission:accounting.reports')->name('balance-sheet');
+        Route::get('cash-bank', fn (Request $request, AccountingReportService $reports) => app(AccountingController::class)->balances($request, $reports, 'cash-bank'))->middleware('permission:accounting.reports')->name('cash-bank');
+        Route::get('customer-balances', fn (Request $request, AccountingReportService $reports) => app(AccountingController::class)->balances($request, $reports, 'customers'))->middleware('permission:accounting.reports')->name('customer-balances');
+        Route::get('supplier-balances', fn (Request $request, AccountingReportService $reports) => app(AccountingController::class)->balances($request, $reports, 'suppliers'))->middleware('permission:accounting.reports')->name('supplier-balances');
+        Route::get('inventory-valuation', [AccountingController::class, 'inventoryValuation'])->middleware('permission:accounting.reports')->name('inventory-valuation');
+        Route::get('cogs', [AccountingController::class, 'cogs'])->middleware('permission:accounting.reports')->name('cogs');
+        Route::get('partners', [AccountingController::class, 'partners'])->middleware('permission:accounting.view')->name('partners');
+        Route::post('partners', [AccountingController::class, 'storePartner'])->middleware('permission:accounting.create')->name('partners.store');
+        Route::post('partners/{partner}/transactions', [AccountingController::class, 'partnerTransaction'])->middleware('permission:accounting.post')->name('partners.transactions');
+        Route::get('expenses', [AccountingController::class, 'expenses'])->middleware('permission:accounting.view')->name('expenses');
+        Route::post('expenses', [AccountingController::class, 'storeExpense'])->middleware('permission:accounting.post')->name('expenses.store');
+        Route::get('periods', [AccountingController::class, 'periods'])->middleware('permission:accounting.view')->name('periods');
+        Route::post('fiscal-years', [AccountingController::class, 'storeYear'])->middleware('permission:accounting.close_period')->name('years.store');
+        Route::post('periods/{fiscalPeriod}/close', [AccountingController::class, 'closePeriod'])->middleware('permission:accounting.close_period')->name('periods.close');
+        Route::post('fiscal-years/{fiscalYear}/close', [AccountingController::class, 'closeYear'])->middleware('permission:accounting.close_period')->name('years.close');
+    });
     Route::get('users', [UserController::class, 'index'])->middleware('permission:users.view')->name('users.index');
     Route::get('users/create', [UserController::class, 'create'])->middleware('permission:users.create')->name('users.create');
     Route::post('users', [UserController::class, 'store'])->middleware('permission:users.create')->name('users.store');

@@ -7,6 +7,7 @@ use App\Enums\LedgerReferenceType;
 use App\Enums\SalesInvoiceStatus;
 use App\Models\CustomerLedgerEntry;
 use App\Models\SalesInvoice;
+use App\Services\Accounting\DocumentPostingService;
 use App\Services\StockService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -16,6 +17,7 @@ class ConfirmSalesInvoiceAction
     public function __construct(
         private readonly CreateCustomerLedgerEntryAction $createLedgerEntry,
         private readonly StockService $stockService,
+        private readonly DocumentPostingService $accounting,
     ) {}
 
     public function handle(SalesInvoice $invoice): SalesInvoice
@@ -83,6 +85,7 @@ class ConfirmSalesInvoiceAction
             ]);
 
             $this->stockService->createSalesMovements($invoice);
+            $this->accounting->salesInvoice($invoice->fresh());
 
             return $invoice->fresh(['customer', 'items']);
         });
