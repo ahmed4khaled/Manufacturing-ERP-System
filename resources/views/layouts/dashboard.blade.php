@@ -362,6 +362,19 @@
                 </div>
             @endcan
 
+            @canany(['users.view', 'roles.view', 'permissions.view'])
+                <div class="nav-section">الإدارة</div>
+                @can('users.view')
+                    <a href="{{ route('users.index') }}" class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}"><i class="bi bi-people-fill"></i>المستخدمون</a>
+                @endcan
+                @can('roles.view')
+                    <a href="{{ route('roles.index') }}" class="nav-link {{ request()->routeIs('roles.*') ? 'active' : '' }}"><i class="bi bi-person-badge"></i>الأدوار</a>
+                @endcan
+                @can('permissions.view')
+                    <a href="{{ route('permissions.index') }}" class="nav-link {{ request()->routeIs('permissions.*') ? 'active' : '' }}"><i class="bi bi-shield-check"></i>الصلاحيات</a>
+                @endcan
+            @endcanany
+
             <div class="nav-section">قريبًا</div>
             <span class="nav-link text-muted pe-none">
                 <i class="bi bi-gear-wide-connected"></i>

@@ -82,6 +82,10 @@ class PermissionSeeder extends Seeder
 
             // Management
             'statistics.view',
+            'users.view', 'users.create', 'users.edit', 'users.status',
+            'users.assign_roles', 'users.assign_permissions',
+            'roles.view', 'roles.create', 'roles.edit', 'roles.delete',
+            'permissions.view',
         ];
 
         foreach ($permissions as $permission) {

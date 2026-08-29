@@ -25,6 +25,7 @@ class ProfileUpdateRequest extends FormRequest
                 'email',
                 'max:255',
                 Rule::unique(User::class)->ignore($this->user()->id),
+                Rule::when($this->user()->email === User::SUPER_ADMIN_EMAIL, Rule::in([User::SUPER_ADMIN_EMAIL])),
             ],
         ];
     }
