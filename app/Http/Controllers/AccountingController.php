@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Account;
 use App\Models\Customer;
-use App\Models\Expense;
 use App\Models\FiscalPeriod;
 use App\Models\FiscalYear;
 use App\Models\JournalEntry;
@@ -14,10 +13,9 @@ use App\Models\Partner;
 use App\Models\ProductCostLayer;
 use App\Models\Supplier;
 use App\Services\Accounting\AccountingReportService;
-use App\Services\Accounting\DocumentPostingService;
 use App\Services\Accounting\JournalEntryService;
 use App\Services\Accounting\PeriodClosingService;
-use App\Services\CodeGeneratorService;
+use App\Services\Accounting\QuickExpenseAccountService;
 use App\Services\CustomerLedgerService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -47,7 +45,7 @@ class AccountingController extends Controller
 
     public function journals(Request $request): View
     {
-        $entries = JournalEntry::query()->with(['lines.account'])->when($request->date_from, fn ($q, $date) => $q->whereDate('entry_date', '>=', $date))
+        $entries = JournalEntry::query()->with(['lines.account'])->when($request->integer('entry_id'), fn ($q, $id) => $q->whereKey($id))->when($request->date_from, fn ($q, $date) => $q->whereDate('entry_date', '>=', $date))
             ->when($request->date_to, fn ($q, $date) => $q->whereDate('entry_date', '<=', $date))->latest('entry_date')->latest('id')->paginate(30)->withQueryString();
 
         return view('accounting.journals', ['entries' => $entries, 'accounts' => Account::posting()->orderBy('code')->get()]);
@@ -146,14 +144,17 @@ class AccountingController extends Controller
         return view('accounting.balances', ['title' => 'تكلفة البضاعة المباعة FIFO', 'accounts' => $reports->balancesByType('expense', $request->date_from, $request->date_to)->where('subtype', 'cost_of_goods_sold'), 'parties' => null]);
     }
 
-    public function partners(): View
+    public function partners(QuickExpenseAccountService $quickExpenseAccounts): View
     {
         $partners = Partner::query()->orderBy('code')->get()->each(function ($partner): void {
             $sum = JournalEntryLine::query()->where('partner_id', $partner->id)->whereHas('journalEntry', fn ($q) => $q->where('status', 'posted'))->selectRaw('COALESCE(SUM(credit),0) credit, COALESCE(SUM(debit),0) debit')->first();
             $partner->balance = bcsub((string) $sum->credit, (string) $sum->debit, 2);
         });
 
-        return view('accounting.partners', ['partners' => $partners, 'accounts' => Account::posting()->orderBy('code')->get()]);
+        return view('accounting.partners', [
+            'partners' => $partners,
+            'paymentAccounts' => $quickExpenseAccounts->paymentAccounts(),
+        ]);
     }
 
     public function storePartner(Request $request): RedirectResponse
@@ -163,40 +164,36 @@ class AccountingController extends Controller
         return back()->with('success', 'تم إنشاء الشريك.');
     }
 
-    public function partnerTransaction(Request $request, Partner $partner, JournalEntryService $journal): RedirectResponse
-    {
-        $data = $request->validate(['type' => ['required', Rule::in(['capital', 'current', 'withdrawal', 'paid_expense', 'profit_distribution'])], 'date' => ['required', 'date'], 'amount' => ['required', 'numeric', 'gt:0'], 'expense_account_id' => ['nullable', 'exists:accounts,id'], 'description' => ['required', 'string']]);
+    public function partnerTransaction(
+        Request $request,
+        Partner $partner,
+        JournalEntryService $journal,
+        QuickExpenseAccountService $quickExpenseAccounts,
+    ): RedirectResponse {
+        $data = $request->validate([
+            'type' => ['required', Rule::in(['capital', 'current', 'withdrawal', 'repayment', 'profit_distribution'])],
+            'date' => ['required', 'date'],
+            'amount' => ['required', 'numeric', 'gt:0'],
+            'payment_account_id' => ['nullable', 'required_if:type,repayment', 'exists:accounts,id'],
+            'description' => ['required', 'string'],
+            'submission_token' => ['required', 'uuid'],
+        ]);
         $cash = $journal->account('cash')->id;
-        $current = $partner->current_account_id ?: $journal->account('partner_current')->id;
+        $current = $quickExpenseAccounts->partnerCurrentAccount($partner)->id;
         $mapped = match ($data['type']) {
             'capital' => [$cash, $partner->capital_account_id ?: $journal->account('partner_capital')->id],
             'current' => [$cash, $current],
             'withdrawal' => [$partner->withdrawals_account_id ?: $journal->account('partner_withdrawals')->id, $cash],
-            'paid_expense' => [(int) $data['expense_account_id'], $current],
+            'repayment' => [$current, $quickExpenseAccounts->companyPaymentAccount((int) $data['payment_account_id'])->id],
             'profit_distribution' => [$journal->account('retained_earnings')->id, $current],
         };
-        $journal->post(['entry_date' => $data['date'], 'description' => $data['description'], 'reference_type' => Partner::class, 'reference_id' => $partner->id, 'entry_type' => $data['type'].'_'.now()->format('YmdHisv')], [
-            ['account_id' => $mapped[0], 'debit' => $data['amount'], 'credit' => 0, 'partner_id' => $partner->id],
-            ['account_id' => $mapped[1], 'debit' => 0, 'credit' => $data['amount'], 'partner_id' => $partner->id],
+        $partnerLine = in_array($data['type'], ['withdrawal', 'repayment'], true) ? 0 : 1;
+        $journal->post(['entry_date' => $data['date'], 'description' => $data['description'], 'reference_type' => Partner::class, 'reference_id' => $partner->id, 'entry_type' => $data['type'].'_'.$data['submission_token']], [
+            ['account_id' => $mapped[0], 'debit' => $data['amount'], 'credit' => 0, 'partner_id' => $partnerLine === 0 ? $partner->id : null],
+            ['account_id' => $mapped[1], 'debit' => 0, 'credit' => $data['amount'], 'partner_id' => $partnerLine === 1 ? $partner->id : null],
         ]);
 
         return back()->with('success', 'تم ترحيل حركة الشريك.');
-    }
-
-    public function expenses(): View
-    {
-        return view('accounting.expenses', ['expenses' => Expense::query()->with(['expenseAccount', 'paymentAccount'])->latest('expense_date')->paginate(30), 'expenseAccounts' => Account::posting()->where('type', 'expense')->orderBy('code')->get(), 'paymentAccounts' => Account::posting()->where('type', 'asset')->whereIn('subtype', ['cash', 'bank'])->orderBy('code')->get()]);
-    }
-
-    public function storeExpense(Request $request, DocumentPostingService $posting, CodeGeneratorService $codes): RedirectResponse
-    {
-        $data = $request->validate(['expense_date' => ['required', 'date'], 'expense_account_id' => ['required', 'exists:accounts,id'], 'payment_account_id' => ['required', 'exists:accounts,id'], 'amount' => ['required', 'numeric', 'gt:0'], 'description' => ['required', 'string'], 'reference' => ['nullable', 'string']]);
-        DB::transaction(function () use ($data, $posting, $codes): void {
-            $expense = Expense::query()->create($data + ['expense_number' => $codes->next('EXP'), 'created_by' => auth()->id()]);
-            $posting->expense($expense);
-        });
-
-        return back()->with('success', 'تم ترحيل المصروف.');
     }
 
     public function periods(): View

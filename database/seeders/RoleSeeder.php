@@ -82,10 +82,17 @@ class RoleSeeder extends Seeder
                 'payment_receipts.confirm',
                 'payment_receipts.cancel',
                 'customer_ledger.view',
+                'expenses.view',
+                'expenses.create',
+                'expenses.reverse',
+                'wages.view',
+                'wages.pay',
+                'wages.reverse',
             ],
             'Manufacturing' => [
                 'workers.view', 'manufacturing_operations.view', 'boms.view',
                 'production_orders.view', 'production_orders.create', 'production_orders.execute',
+                'wages.view',
             ],
             'Production Supervisor' => [
                 'workers.view', 'workers.create', 'workers.edit',
@@ -94,6 +101,7 @@ class RoleSeeder extends Seeder
                 'production_orders.view', 'production_orders.create', 'production_orders.confirm',
                 'production_orders.execute', 'production_orders.review', 'production_orders.complete',
                 'production_orders.cancel', 'production_reports.view',
+                'wages.view', 'wages.create', 'wages.update',
             ],
         ];
 

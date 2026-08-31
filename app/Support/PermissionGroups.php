@@ -36,6 +36,8 @@ class PermissionGroups
         'users' => 'المستخدمون',
         'roles' => 'الأدوار',
         'permissions' => 'الصلاحيات',
+        'expenses' => 'المصروفات السريعة',
+        'wages' => 'أجور العاملين',
     ];
 
     /**

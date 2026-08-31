@@ -2,6 +2,7 @@
 
 namespace App\Actions\ProductionOrder;
 
+use App\Actions\WorkerWage\GenerateProductionWorkerWagesAction;
 use App\Enums\ProductionDefectStatus;
 use App\Enums\ProductionMaterialTransactionStatus;
 use App\Enums\ProductionOrderStatus;
@@ -18,7 +19,13 @@ use Illuminate\Validation\ValidationException;
 
 class CompleteProductionOrderAction
 {
-    public function __construct(private readonly ProductionSummaryService $summary, private readonly ProductionActivityService $activity, private readonly InventoryCostingService $costing, private readonly DocumentPostingService $accounting) {}
+    public function __construct(
+        private readonly ProductionSummaryService $summary,
+        private readonly ProductionActivityService $activity,
+        private readonly InventoryCostingService $costing,
+        private readonly GenerateProductionWorkerWagesAction $workerWages,
+        private readonly DocumentPostingService $accounting,
+    ) {}
 
     public function handle(ProductionOrder $order): ProductionOrder
     {
@@ -86,6 +93,7 @@ class CompleteProductionOrderAction
                 'final_total_cost' => $finalTotalCost,
             ]);
 
+            $this->workerWages->handle($order->fresh());
             $this->accounting->production($order->fresh());
 
             return $order->fresh(['operations', 'outputs']);

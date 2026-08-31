@@ -8,7 +8,7 @@ use Illuminate\Validation\ValidationException;
 
 class JournalEntryLine extends Model
 {
-    protected $fillable = ['journal_entry_id', 'account_id', 'debit', 'credit', 'description', 'customer_id', 'supplier_id', 'partner_id'];
+    protected $fillable = ['journal_entry_id', 'account_id', 'debit', 'credit', 'description', 'customer_id', 'supplier_id', 'partner_id', 'worker_id'];
 
     protected function casts(): array
     {
@@ -59,5 +59,10 @@ class JournalEntryLine extends Model
     public function partner(): BelongsTo
     {
         return $this->belongsTo(Partner::class);
+    }
+
+    public function worker(): BelongsTo
+    {
+        return $this->belongsTo(Worker::class)->withTrashed();
     }
 }

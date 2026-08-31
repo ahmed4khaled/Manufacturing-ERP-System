@@ -13,6 +13,7 @@ use App\Models\Product;
 use App\Models\ProductionMaterialTransaction;
 use App\Models\ProductionOrder;
 use App\Models\ProductionOutput;
+use App\Models\ProductionWorkerWage;
 use App\Models\ProductVariant;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseReturn;
@@ -22,6 +23,7 @@ use App\Models\Supplier;
 use App\Models\SupplierInvoice;
 use App\Models\SupplierPayment;
 use App\Models\Worker;
+use App\Models\WorkerWagePayment;
 use Illuminate\Database\Seeder;
 use RuntimeException;
 
@@ -33,6 +35,7 @@ class DemoDatasetSeeder extends Seeder
             DemoMasterDataSeeder::class,
             DemoProcurementSeeder::class,
             DemoManufacturingSeeder::class,
+            WorkerWageDemoSeeder::class,
             DemoSalesSeeder::class,
         ]);
 
@@ -53,6 +56,8 @@ class DemoDatasetSeeder extends Seeder
             'goods_receipts' => GoodsReceipt::query()->where('receipt_number', 'like', 'DEMO-GR-%')->count(),
             'production_orders' => ProductionOrder::query()->where('notes', 'like', 'DEMO-DATASET-PRODUCTION-%')->count(),
             'production_outputs' => ProductionOutput::query()->whereIn('production_order_id', ProductionOrder::query()->where('notes', 'like', 'DEMO-DATASET-PRODUCTION-%')->pluck('id'))->count(),
+            'worker_wages' => ProductionWorkerWage::query()->whereIn('production_order_id', ProductionOrder::query()->where('notes', 'like', 'DEMO-DATASET-PRODUCTION-%')->pluck('id'))->count(),
+            'worker_wage_payments' => WorkerWagePayment::query()->where('reference', 'like', 'DEMO-WAGE-PAY-%')->count(),
             'sales_invoices' => SalesInvoice::query()->where('notes', 'like', 'DEMO-DATASET-SALES-%')->count(),
             'payment_receipts' => PaymentReceipt::query()->where('notes', 'like', 'DEMO-DATASET-PAYMENT-%')->count(),
             'receipt_allocations' => PaymentReceiptAllocation::query()->whereIn('payment_receipt_id', PaymentReceipt::query()->where('notes', 'like', 'DEMO-DATASET-PAYMENT-%')->pluck('id'))->count(),
@@ -61,7 +66,7 @@ class DemoDatasetSeeder extends Seeder
             'sales_returns' => SalesReturn::query()->where('notes', 'DEMO-DATASET-SALES-RETURN-01')->count(),
             'purchase_returns' => PurchaseReturn::query()->where('return_number', 'DEMO-PR-001')->count(),
         ];
-        $expected = ['customers' => 5, 'suppliers' => 5, 'materials' => 10, 'products' => 4, 'variants' => 18, 'workers' => 8, 'boms' => 8, 'purchase_orders' => 12, 'goods_receipts' => 12, 'production_orders' => 8, 'production_outputs' => 8, 'sales_invoices' => 10, 'payment_receipts' => 5, 'receipt_allocations' => 5, 'supplier_invoices' => 12, 'supplier_payments' => 5, 'sales_returns' => 1, 'purchase_returns' => 1];
+        $expected = ['customers' => 5, 'suppliers' => 5, 'materials' => 10, 'products' => 4, 'variants' => 18, 'workers' => 8, 'boms' => 8, 'purchase_orders' => 12, 'goods_receipts' => 12, 'production_orders' => 8, 'production_outputs' => 8, 'worker_wages' => 26, 'worker_wage_payments' => 3, 'sales_invoices' => 10, 'payment_receipts' => 5, 'receipt_allocations' => 5, 'supplier_invoices' => 12, 'supplier_payments' => 5, 'sales_returns' => 1, 'purchase_returns' => 1];
         if ($counts !== $expected) {
             throw new RuntimeException('Demo dataset count verification failed: '.json_encode($counts));
         }

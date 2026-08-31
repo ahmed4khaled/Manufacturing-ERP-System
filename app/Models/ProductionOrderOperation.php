@@ -41,4 +41,9 @@ class ProductionOrderOperation extends Model
     {
         return $this->hasMany(ProductionOrderMaterialOperation::class);
     }
+
+    public function workerWages(): HasMany
+    {
+        return $this->hasMany(ProductionWorkerWage::class);
+    }
 }

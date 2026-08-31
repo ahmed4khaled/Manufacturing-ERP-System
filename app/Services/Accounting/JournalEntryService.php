@@ -72,6 +72,7 @@ class JournalEntryService
                     'customer_id' => $line['customer_id'] ?? null,
                     'supplier_id' => $line['supplier_id'] ?? null,
                     'partner_id' => $line['partner_id'] ?? null,
+                    'worker_id' => $line['worker_id'] ?? null,
                 ]);
             }
 
@@ -107,6 +108,7 @@ class JournalEntryService
                 'customer_id' => $line->customer_id,
                 'supplier_id' => $line->supplier_id,
                 'partner_id' => $line->partner_id,
+                'worker_id' => $line->worker_id,
             ])->all());
             $original->update(['reversed_by_id' => $reversal->id]);
 

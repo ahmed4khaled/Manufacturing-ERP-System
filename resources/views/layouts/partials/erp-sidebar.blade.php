@@ -31,12 +31,13 @@
             'id' => 'manufacturing-nav',
             'label' => 'التصنيع والإنتاج',
             'icon' => 'bi-gear-wide-connected',
-            'patterns' => ['production-orders.*', 'work-assignments.*', 'production-defects.*', 'production-reworks.*', 'manufacturing-operations.*', 'boms.*', 'workers.*', 'production-reports.*'],
+            'patterns' => ['production-orders.*', 'work-assignments.*', 'production-defects.*', 'production-reworks.*', 'manufacturing-operations.*', 'boms.*', 'workers.*', 'worker-wages.*', 'production-reports.*'],
             'items' => [
                 ['production-orders.index', ['production-orders.*', 'work-assignments.*', 'production-defects.*', 'production-reworks.*'], 'bi-gear-wide-connected', 'أوامر الإنتاج'],
                 ['manufacturing-operations.index', ['manufacturing-operations.*'], 'bi-list-ol', 'عمليات التصنيع'],
                 ['boms.index', ['boms.*'], 'bi-diagram-3', 'قوائم المواد BOM'],
                 ['workers.index', ['workers.*'], 'bi-person-workspace', 'العمال'],
+                ['worker-wages.index', ['worker-wages.*'], 'bi-cash-coin', 'أجور العاملين', 'wages.view'],
                 ['production-reports.material-variance', ['production-reports.*'], 'bi-graph-up', 'انحراف الخامات'],
             ],
         ],
@@ -137,8 +138,31 @@
 @endforeach
 
 <div class="nav-section">المالية والرقابة</div>
+@canany(['expenses.view', 'expenses.create', 'accounting.view', 'accounting.post'])
+    @php($expensesActive = request()->routeIs('accounting.expenses*'))
+    <div class="nav-module">
+        <button class="nav-link nav-toggle {{ $expensesActive ? 'active' : '' }}" type="button" data-bs-toggle="collapse" data-bs-target="#expenses-nav" aria-expanded="{{ $expensesActive ? 'true' : 'false' }}" aria-controls="expenses-nav">
+            <i class="bi bi-cash-stack"></i>
+            <span>المصروفات</span>
+            <i class="bi bi-chevron-down toggle-icon"></i>
+        </button>
+        <div class="collapse {{ $expensesActive ? 'show' : '' }} nav-children" id="expenses-nav">
+            @canany(['expenses.create', 'accounting.post'])
+                <a href="{{ route('accounting.expenses.create') }}" class="nav-link sub-link {{ request()->routeIs('accounting.expenses.create') ? 'active' : '' }}" data-erp-nav>
+                    <i class="bi bi-plus-circle"></i><span>تسجيل مصروف</span>
+                </a>
+            @endcanany
+            @canany(['expenses.view', 'accounting.view'])
+                <a href="{{ route('accounting.expenses') }}" class="nav-link sub-link {{ request()->routeIs('accounting.expenses', 'accounting.expenses.show') ? 'active' : '' }}" data-erp-nav>
+                    <i class="bi bi-list-ul"></i><span>سجل المصروفات</span>
+                </a>
+            @endcanany
+        </div>
+    </div>
+@endcanany
+
 @canany(['accounting.view', 'accounting.reports'])
-    @php($accountingActive = request()->routeIs('accounting.*'))
+    @php($accountingActive = request()->routeIs('accounting.*') && ! request()->routeIs('accounting.expenses*'))
     <div class="nav-module">
         <button class="nav-link nav-toggle {{ $accountingActive ? 'active' : '' }}" type="button" data-bs-toggle="collapse" data-bs-target="#accounting-nav" aria-expanded="{{ $accountingActive ? 'true' : 'false' }}" aria-controls="accounting-nav">
             <i class="bi bi-calculator"></i>
@@ -148,7 +172,6 @@
         <div class="collapse {{ $accountingActive ? 'show' : '' }} nav-children" id="accounting-nav">
             @foreach ([
                 ['accounting.journals', 'bi-journal-text', 'القيود اليومية'],
-                ['accounting.expenses', 'bi-cash-stack', 'المصروفات'],
                 ['accounting.cash-bank', 'bi-bank', 'الخزينة والبنوك'],
                 ['accounting.customer-balances', 'bi-people', 'حسابات العملاء'],
                 ['accounting.supplier-balances', 'bi-truck', 'حسابات الموردين'],

@@ -6,6 +6,7 @@ use App\Enums\WorkAssignmentStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class WorkAssignment extends Model
 {
@@ -51,5 +52,10 @@ class WorkAssignment extends Model
     public function completer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'completed_by');
+    }
+
+    public function productionWage(): HasOne
+    {
+        return $this->hasOne(ProductionWorkerWage::class);
     }
 }

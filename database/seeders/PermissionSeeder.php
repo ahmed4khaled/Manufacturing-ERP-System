@@ -90,6 +90,12 @@ class PermissionSeeder extends Seeder
             // Accounting
             'accounting.view', 'accounting.create', 'accounting.update', 'accounting.post',
             'accounting.reverse', 'accounting.close_period', 'accounting.manage_accounts', 'accounting.reports',
+
+            // Quick operating expenses
+            'expenses.view', 'expenses.create', 'expenses.update', 'expenses.reverse',
+
+            // Production worker wages
+            'wages.view', 'wages.create', 'wages.update', 'wages.pay', 'wages.reverse',
         ];
 
         foreach ($permissions as $permission) {

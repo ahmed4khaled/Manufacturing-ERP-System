@@ -77,6 +77,11 @@ class ProductionOrder extends Model
         return $this->hasMany(ProductionOrderActivity::class)->latest();
     }
 
+    public function workerWages(): HasMany
+    {
+        return $this->hasMany(ProductionWorkerWage::class);
+    }
+
     public function scopeSearch(Builder $query, ?string $search): Builder
     {
         return blank($search) ? $query : $query->where(fn (Builder $q) => $q->where('order_number', 'like', "%{$search}%")->orWhere('product_name', 'like', "%{$search}%")->orWhere('sku', 'like', "%{$search}%"));
