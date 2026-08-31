@@ -59,6 +59,8 @@
                                 الحالة
                             </th>
 
+                            <th>الاستلام</th>
+
                             <th class="text-end">
                                 الإجمالي
                             </th>
@@ -87,6 +89,18 @@
 
                                     {{ $invoice->invoice_number }}
 
+                                </td>
+
+                                <td>
+                                    @if ($invoice->goodsReceipt)
+                                        <a href="{{ route('goods-receipts.show', $invoice->goodsReceipt) }}" class="badge bg-success text-decoration-none">
+                                            {{ $invoice->goodsReceipt->receipt_number }}
+                                        </a>
+                                    @elseif ($invoice->items->isNotEmpty())
+                                        <span class="badge bg-warning text-dark">في الانتظار</span>
+                                    @else
+                                        <span class="text-muted">—</span>
+                                    @endif
                                 </td>
 
 
@@ -215,7 +229,7 @@
                             <tr>
 
                                 <td
-                                    colspan="8"
+                                    colspan="9"
                                     class="text-center text-muted py-5"
                                 >
                                     لا توجد فواتير موردين حتى الآن.

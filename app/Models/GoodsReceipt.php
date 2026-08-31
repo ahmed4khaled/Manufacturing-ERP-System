@@ -11,7 +11,7 @@ class GoodsReceipt extends Model
 {
     use SoftDeletes;
 
-    protected $fillable = ['receipt_number', 'purchase_order_id', 'supplier_id', 'received_at', 'received_by', 'status', 'notes'];
+    protected $fillable = ['receipt_number', 'purchase_order_id', 'supplier_invoice_id', 'supplier_id', 'received_at', 'received_by', 'status', 'notes'];
 
     protected $casts = ['received_at' => 'datetime'];
 
@@ -23,6 +23,11 @@ class GoodsReceipt extends Model
     public function supplier(): BelongsTo
     {
         return $this->belongsTo(Supplier::class)->withTrashed();
+    }
+
+    public function supplierInvoice(): BelongsTo
+    {
+        return $this->belongsTo(SupplierInvoice::class)->withTrashed();
     }
 
     public function items(): HasMany

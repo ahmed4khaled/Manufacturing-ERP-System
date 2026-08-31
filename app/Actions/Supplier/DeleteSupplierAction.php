@@ -14,7 +14,7 @@ class DeleteSupplierAction
             $supplier = Supplier::query()->lockForUpdate()->findOrFail($supplier->id);
 
             $invoiceTotal = (string) $supplier->invoices()->withTrashed()->sum('total');
-            $paymentTotal = (string) $supplier->payments()->withTrashed()->sum('amount');
+            $paymentTotal = (string) $supplier->payments()->withTrashed()->where('status', 'confirmed')->sum('amount');
             $returnSummary = $supplier->returns()
                 ->withTrashed()
                 ->where('status', 'confirmed')

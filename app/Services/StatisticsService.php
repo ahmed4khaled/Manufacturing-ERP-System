@@ -594,7 +594,7 @@ class StatisticsService
             ->where('gr.status', 'confirmed')->whereBetween('gr.received_at', [$filters['from'], $filters['to']])
             ->when($filters['supplier_id'], fn ($q, $id) => $q->where('gr.supplier_id', $id))
             ->when($filters['material_id'], fn ($q, $id) => $q->where('gri.material_id', $id));
-        $payments = DB::table('supplier_payments as sp')->whereBetween('sp.payment_date', [$filters['date_from'], $filters['date_to']])
+        $payments = DB::table('supplier_payments as sp')->where('sp.status', 'confirmed')->whereNull('sp.deleted_at')->whereBetween('sp.payment_date', [$filters['date_from'], $filters['date_to']])
             ->when($filters['supplier_id'], fn ($q, $id) => $q->where('sp.supplier_id', $id));
         $returns = DB::table('purchase_returns as pr')->join('purchase_return_items as pri', 'pri.purchase_return_id', '=', 'pr.id')
             ->where('pr.status', 'confirmed')->whereBetween('pr.return_date', [$filters['date_from'], $filters['date_to']])

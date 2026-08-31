@@ -28,6 +28,7 @@ use App\Http\Controllers\SalesInvoiceController;
 use App\Http\Controllers\SalesReturnController;
 use App\Http\Controllers\SizeController;
 use App\Http\Controllers\StatisticsController;
+use App\Http\Controllers\SupplierPaymentController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WorkAssignmentController;
 use App\Http\Controllers\WorkerController;
@@ -176,9 +177,16 @@ Route::middleware(['auth', 'verified', 'active'])->group(function () {
     Route::post('supplier-invoices', [ProcurementController::class, 'storeInvoice'])->name('supplier-invoices.store');
     Route::get('supplier-invoices', [ProcurementController::class, 'invoices'])->name('supplier-invoices.index');
     Route::get('supplier-invoices/create', [ProcurementController::class, 'createInvoice'])->name('supplier-invoices.create');
-    Route::post('supplier-payments', [ProcurementController::class, 'storePayment'])->name('supplier-payments.store');
-    Route::get('supplier-payments', [ProcurementController::class, 'payments'])->name('supplier-payments.index');
-    Route::get('supplier-payments/create', [ProcurementController::class, 'createPayment'])->name('supplier-payments.create');
+    Route::post('supplier-invoices/{supplierInvoice}/receive', [ProcurementController::class, 'receiveSupplierInvoice'])->name('supplier-invoices.receive');
+    Route::post('supplier-payments', [SupplierPaymentController::class, 'store'])->name('supplier-payments.store');
+    Route::get('supplier-payments', [SupplierPaymentController::class, 'index'])->name('supplier-payments.index');
+    Route::get('supplier-payments/create', [SupplierPaymentController::class, 'create'])->name('supplier-payments.create');
+    Route::get('supplier-payments/supplier/{supplier}/invoices', [SupplierPaymentController::class, 'supplierInvoices'])->name('supplier-payments.supplier-invoices');
+    Route::get('supplier-payments/{supplierPayment}/edit', [SupplierPaymentController::class, 'edit'])->name('supplier-payments.edit');
+    Route::put('supplier-payments/{supplierPayment}', [SupplierPaymentController::class, 'update'])->name('supplier-payments.update');
+    Route::delete('supplier-payments/{supplierPayment}', [SupplierPaymentController::class, 'destroy'])->name('supplier-payments.destroy');
+    Route::post('supplier-payments/{supplierPayment}/confirm', [SupplierPaymentController::class, 'confirm'])->name('supplier-payments.confirm');
+    Route::post('supplier-payments/{supplierPayment}/cancel', [SupplierPaymentController::class, 'cancel'])->name('supplier-payments.cancel');
     Route::post('purchase-returns', [ProcurementController::class, 'storeReturn'])->name('purchase-returns.store');
     Route::post('purchase-returns/{purchaseReturn}/confirm', [ProcurementController::class, 'confirmReturn'])->name('purchase-returns.confirm');
     Route::get('purchase-returns', [ProcurementController::class, 'returns'])->name('purchase-returns.index');
@@ -218,12 +226,12 @@ Route::middleware(['auth', 'verified', 'active'])->group(function () {
     )->name('supplier-invoices.show');
     Route::get(
         '/supplier-payments/{supplierPayment}',
-        [ProcurementController::class, 'showSupplierPayment']
+        [SupplierPaymentController::class, 'show']
     )->name('supplier-payments.show-payment');
 
     Route::get(
         '/supplier-payments/{supplierPayment}/print',
-        [ProcurementController::class, 'printSupplierPayment']
+        [SupplierPaymentController::class, 'print']
     )->name('supplier-payments.print-payment');
     Route::post('payment-receipts/{payment_receipt}/confirm', [PaymentReceiptController::class, 'confirm'])
         ->name('payment-receipts.confirm');

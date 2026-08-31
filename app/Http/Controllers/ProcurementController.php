@@ -6,8 +6,10 @@ use App\Actions\Procurement\ApprovePurchaseOrderAction;
 use App\Actions\Procurement\ConfirmGoodsReceiptAction;
 use App\Actions\Procurement\ConfirmPurchaseReturnAction;
 use App\Actions\Procurement\CreateGoodsReceiptAction;
+use App\Actions\Procurement\CreateInvoiceGoodsReceiptAction;
 use App\Actions\Procurement\CreatePurchaseOrderAction;
 use App\Actions\Procurement\CreatePurchaseReturnAction;
+use App\Actions\Procurement\CreateSupplierInvoiceAction;
 use App\Actions\Supplier\DeleteSupplierAction;
 use App\Http\Requests\Procurement\ApprovePurchaseOrderRequest;
 use App\Http\Requests\Procurement\StoreGoodsReceiptRequest;
@@ -77,7 +79,9 @@ class ProcurementController extends Controller
             'supplier',
             'purchaseOrder',
             'goodsReceipt',
-            'payments',
+            'items.material',
+            'payments.allocations',
+            'paymentAllocations.payment.allocations',
         ]);
 
         return $printer->render(
@@ -91,7 +95,11 @@ class ProcurementController extends Controller
     ): View {
         $supplierInvoice->load([
             'supplier',
-            'payments',
+            'payments.allocations',
+            'paymentAllocations.payment.allocations',
+            'purchaseOrder',
+            'goodsReceipt.items.material',
+            'items.material',
         ]);
 
         return view(
@@ -129,8 +137,12 @@ class ProcurementController extends Controller
 
     public function showSupplier(Supplier $supplier): View
     {
-        $supplier->load(['contacts', 'purchaseOrders' => fn ($q) => $q->latest('order_date')->limit(10), 'goodsReceipts' => fn ($q) => $q->latest('received_at')->limit(10), 'invoices' => fn ($q) => $q->latest('invoice_date')->limit(10), 'payments' => fn ($q) => $q->latest('payment_date')->limit(10), 'returns' => fn ($q) => $q->latest('return_date')->limit(10)]);
-        $summary = ['purchases' => $supplier->purchaseOrders->sum('total'), 'invoiced' => $supplier->invoices->sum('total'), 'paid' => $supplier->payments->sum('amount')];
+        $supplier->load(['contacts', 'purchaseOrders' => fn ($q) => $q->latest('order_date')->limit(10), 'goodsReceipts' => fn ($q) => $q->latest('received_at')->limit(10), 'invoices' => fn ($q) => $q->latest('invoice_date')->limit(10), 'payments' => fn ($q) => $q->where('status', 'confirmed')->latest('payment_date')->limit(10), 'returns' => fn ($q) => $q->latest('return_date')->limit(10)]);
+        $summary = [
+            'purchases' => $supplier->purchaseOrders()->sum('total'),
+            'invoiced' => $supplier->invoices()->sum('total'),
+            'paid' => $supplier->payments()->where('status', 'confirmed')->sum('amount'),
+        ];
         $summary['outstanding'] = $summary['invoiced'] - $summary['paid'];
 
         return view('suppliers.show', compact('supplier', 'summary'));
@@ -204,7 +216,7 @@ class ProcurementController extends Controller
 
     public function goodsReceipts(): View
     {
-        $receipts = GoodsReceipt::query()->with(['supplier', 'purchaseOrder'])->latest('received_at')->paginate(15);
+        $receipts = GoodsReceipt::query()->with(['supplier', 'purchaseOrder', 'supplierInvoice'])->latest('received_at')->paginate(15);
 
         return view('procurement.goods-receipts.index', compact('receipts'));
     }
@@ -218,7 +230,7 @@ class ProcurementController extends Controller
 
     public function invoices(): View
     {
-        $invoices = SupplierInvoice::query()->with('supplier')->latest('invoice_date')->paginate(15);
+        $invoices = SupplierInvoice::query()->with(['supplier', 'goodsReceipt', 'items'])->latest('invoice_date')->paginate(15);
 
         return view('procurement.invoices.index', compact('invoices'));
     }
@@ -241,7 +253,13 @@ class ProcurementController extends Controller
                 'items.material',
             ])
             ->where('status', 'confirmed')
+            ->whereNotIn('id', SupplierInvoice::query()->whereNotNull('goods_receipt_id')->select('goods_receipt_id'))
             ->latest('received_at')
+            ->get();
+
+        $materials = Material::query()
+            ->where('status', 'active')
+            ->orderBy('name')
             ->get();
 
         /*
@@ -274,7 +292,8 @@ class ProcurementController extends Controller
                 'suppliers',
                 'orders',
                 'receipts',
-                'advancePayments'
+                'advancePayments',
+                'materials'
             )
         );
     }
@@ -430,7 +449,7 @@ class ProcurementController extends Controller
 
     public function showGoodsReceipt(GoodsReceipt $goodsReceipt): View
     {
-        $goodsReceipt->load(['supplier', 'purchaseOrder', 'items.material']);
+        $goodsReceipt->load(['supplier', 'purchaseOrder', 'supplierInvoice', 'items.material']);
 
         return view('procurement.goods-receipts.show', compact('goodsReceipt'));
     }
@@ -453,275 +472,23 @@ class ProcurementController extends Controller
 
     public function storeInvoice(
         StoreSupplierInvoiceRequest $request,
-        DocumentPostingService $accounting,
+        CreateSupplierInvoiceAction $action,
     ): RedirectResponse {
+        $invoice = $action->handle($request->validated());
+        $message = $invoice->goodsReceipt
+            ? "تم إنشاء الفاتورة {$invoice->invoice_number} وإذن الاستلام {$invoice->goodsReceipt->receipt_number} وترحيل الخامات للمخزون."
+            : "تم إنشاء الفاتورة {$invoice->invoice_number}.";
 
-        $data = $request->validated();
+        return redirect()->route('supplier-invoices.show', $invoice)->with('success', $message);
+    }
 
-        $receipt = null;
+    public function receiveSupplierInvoice(
+        SupplierInvoice $supplierInvoice,
+        CreateInvoiceGoodsReceiptAction $action,
+    ): RedirectResponse {
+        $receipt = $action->handle($supplierInvoice);
 
-        /*
-    |--------------------------------------------------------------------------
-    | Validate Purchase Order
-    |--------------------------------------------------------------------------
-    */
-
-        $po = null;
-
-        if (! empty($data['purchase_order_id'])) {
-
-            $po = PurchaseOrder::query()
-                ->findOrFail($data['purchase_order_id']);
-
-            if ((int) $po->supplier_id !== (int) $data['supplier_id']) {
-                abort(
-                    422,
-                    'يجب أن يطابق مورد أمر الشراء مورد الفاتورة.'
-                );
-            }
-        }
-
-        /*
-    |--------------------------------------------------------------------------
-    | Validate Goods Receipt
-    |--------------------------------------------------------------------------
-    */
-
-        if (! empty($data['goods_receipt_id'])) {
-
-            $receipt = GoodsReceipt::query()
-                ->with('items')
-                ->where('id', $data['goods_receipt_id'])
-                ->where('status', 'confirmed')
-                ->firstOrFail();
-
-            /*
-        | Receipt supplier must match invoice supplier
-        */
-
-            if ((int) $receipt->supplier_id !== (int) $data['supplier_id']) {
-                abort(
-                    422,
-                    'يجب أن يطابق مورد إذن الاستلام مورد الفاتورة.'
-                );
-            }
-
-            /*
-        | If PO is selected, it must be the PO of this receipt
-        */
-
-            if (
-                ! empty($data['purchase_order_id']) &&
-                (int) $receipt->purchase_order_id !==
-                (int) $data['purchase_order_id']
-            ) {
-                abort(
-                    422,
-                    'يجب أن يطابق أمر الشراء إذن الاستلام المحدد.'
-                );
-            }
-
-            /*
-        |--------------------------------------------------------------------------
-        | Calculate Subtotal From ACCEPTED Quantity Only
-        |--------------------------------------------------------------------------
-        */
-
-            $subtotal = '0';
-
-            foreach ($receipt->items as $item) {
-
-                $acceptedQuantity = (string) $item->accepted_quantity;
-                $unitCost = (string) $item->unit_cost;
-
-                $lineTotal = bcmul(
-                    $acceptedQuantity,
-                    $unitCost,
-                    2
-                );
-
-                $subtotal = bcadd(
-                    $subtotal,
-                    $lineTotal,
-                    2
-                );
-            }
-
-            /*
-        | Never trust subtotal coming from the form
-        */
-
-            $data['subtotal'] = $subtotal;
-        }
-
-        /*
-    |--------------------------------------------------------------------------
-    | Subtotal
-    |--------------------------------------------------------------------------
-    */
-
-        $subtotal = (string) ($data['subtotal'] ?? '0');
-
-        /*
-    |--------------------------------------------------------------------------
-    | Discount & Tax
-    |--------------------------------------------------------------------------
-    */
-
-        $discount = (string) ($data['discount'] ?? '0');
-        $tax = (string) ($data['tax'] ?? '0');
-
-        /*
-    |--------------------------------------------------------------------------
-    | Validate Discount
-    |--------------------------------------------------------------------------
-    */
-
-        if (bccomp($discount, '0', 2) < 0) {
-            abort(
-                422,
-                'لا يمكن أن يكون الخصم سالبًا.'
-            );
-        }
-
-        if (bccomp($discount, $subtotal, 2) > 0) {
-            abort(
-                422,
-                'لا يمكن أن يتجاوز الخصم الإجمالي الفرعي للفاتورة.'
-            );
-        }
-
-        /*
-    |--------------------------------------------------------------------------
-    | Validate Tax
-    |--------------------------------------------------------------------------
-    */
-
-        if (bccomp($tax, '0', 2) < 0) {
-            abort(
-                422,
-                'لا يمكن أن تكون الضريبة سالبة.'
-            );
-        }
-
-        /*
-    |--------------------------------------------------------------------------
-    | Calculate Total
-    |--------------------------------------------------------------------------
-    */
-
-        $afterDiscount = bcsub(
-            $subtotal,
-            $discount,
-            2
-        );
-
-        $total = bcadd(
-            $afterDiscount,
-            $tax,
-            2
-        );
-
-        /*
-    |--------------------------------------------------------------------------
-    | Final Total Validation
-    |--------------------------------------------------------------------------
-    */
-
-        if (bccomp($total, '0', 2) < 0) {
-            abort(
-                422,
-                'لا يمكن أن يكون إجمالي الفاتورة سالبًا.'
-            );
-        }
-
-        /*
-    |--------------------------------------------------------------------------
-    | Calculate Advance Payments
-    |--------------------------------------------------------------------------
-    */
-
-        $advancePaid = '0';
-
-        if ($po) {
-
-            $advancePaid = (string) SupplierPayment::query()
-                ->where('purchase_order_id', $po->id)
-                ->where('supplier_id', $po->supplier_id)
-                ->where('payment_type', 'advance')
-                ->sum('amount');
-        }
-
-        /*
-    |--------------------------------------------------------------------------
-    | Calculate Remaining Amount
-    |--------------------------------------------------------------------------
-    */
-
-        if (bccomp($advancePaid, $total, 2) > 0) {
-
-            abort(
-                422,
-                'لا يمكن أن تتجاوز الدفعات المقدمة إجمالي الفاتورة.'
-            );
-        }
-
-        $remainingAmount = bcsub(
-            $total,
-            $advancePaid,
-            2
-        );
-
-        /*
-    |--------------------------------------------------------------------------
-    | Determine Invoice Status
-    |--------------------------------------------------------------------------
-    */
-
-        $status = match (true) {
-
-            bccomp($remainingAmount, '0', 2) === 0 => 'paid',
-
-            bccomp($advancePaid, '0', 2) > 0 => 'partially_paid',
-
-            default => 'unpaid',
-        };
-
-        /*
-    |--------------------------------------------------------------------------
-    | Create Supplier Invoice
-    |--------------------------------------------------------------------------
-    */
-
-        $invoice = DB::transaction(function () use ($data, $subtotal, $discount, $tax, $total, $remainingAmount, $status, $accounting) {
-            $invoice = SupplierInvoice::create([
-
-                ...$data,
-
-                'invoice_number' => app(CodeGeneratorService::class)
-                    ->next('PINV'),
-
-                'subtotal' => $subtotal,
-
-                'discount' => $discount,
-
-                'tax' => $tax,
-
-                'total' => $total,
-
-                'remaining_amount' => $remainingAmount,
-
-                'status' => $status,
-            ]);
-            $accounting->supplierInvoice($invoice);
-
-            return $invoice;
-        });
-
-        return back()->with(
-            'success',
-            "تم إنشاء الفاتورة {$invoice->invoice_number}."
-        );
+        return back()->with('success', "تم إنشاء إذن الاستلام {$receipt->receipt_number} وترحيل الخامات للمخزون.");
     }
 
     public function storePayment(
@@ -975,6 +742,7 @@ class ProcurementController extends Controller
             ->get();
 
         $payments = $supplier->payments()
+            ->where('status', 'confirmed')
             ->orderBy('payment_date')
             ->orderBy('id')
             ->get();

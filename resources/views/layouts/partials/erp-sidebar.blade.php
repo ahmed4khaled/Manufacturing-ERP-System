@@ -19,12 +19,12 @@
             'icon' => 'bi-cart-check',
             'patterns' => ['purchase-orders.*', 'goods-receipts.*', 'supplier-invoices.*', 'supplier-payments.*', 'purchase-returns.*', 'suppliers.*'],
             'items' => [
-                ['purchase-orders.index', ['purchase-orders.*'], 'bi-file-earmark-text', 'أوامر الشراء'],
-                ['goods-receipts.index', ['goods-receipts.*'], 'bi-box-arrow-in-down', 'أذون استلام الخامات'],
+                ['suppliers.index', ['suppliers.*'], 'bi-truck', 'الموردون'],
                 ['supplier-invoices.index', ['supplier-invoices.*'], 'bi-receipt', 'فواتير الموردين'],
                 ['supplier-payments.index', ['supplier-payments.*'], 'bi-cash-stack', 'مدفوعات الموردين'],
                 ['purchase-returns.index', ['purchase-returns.*'], 'bi-arrow-return-left', 'مرتجعات المشتريات'],
-                ['suppliers.index', ['suppliers.*'], 'bi-truck', 'الموردون'],
+                ['purchase-orders.index', ['purchase-orders.*'], 'bi-file-earmark-text', 'أوامر الشراء'],
+                ['goods-receipts.index', ['goods-receipts.*'], 'bi-box-arrow-in-down', 'الاستلامات'],
             ],
         ],
         [

@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Procurement;
 
+use App\Enums\PaymentMethod;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreSupplierPaymentRequest extends FormRequest
 {
@@ -14,25 +16,31 @@ class StoreSupplierPaymentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'payment_type' => [
-                'required',
-                'in:invoice,advance',
-            ],
+            'payment_type' => ['required', Rule::in(['invoice', 'advance'])],
 
             'supplier_id' => [
                 'required',
-                'exists:suppliers,id',
+                Rule::exists('suppliers', 'id')->whereNull('deleted_at'),
             ],
 
             'purchase_order_id' => [
                 'nullable',
-                'exists:purchase_orders,id',
+                Rule::exists('purchase_orders', 'id')->whereNull('deleted_at'),
             ],
 
             'supplier_invoice_id' => [
                 'nullable',
-                'exists:supplier_invoices,id',
+                Rule::exists('supplier_invoices', 'id')->whereNull('deleted_at'),
             ],
+
+            'allocations' => ['required_if:payment_type,invoice', 'array', 'min:1'],
+            'allocations.*.supplier_invoice_id' => [
+                'required',
+                'integer',
+                'distinct',
+                Rule::exists('supplier_invoices', 'id')->whereNull('deleted_at'),
+            ],
+            'allocations.*.amount' => ['required', 'numeric', 'gt:0'],
 
             'payment_date' => [
                 'required',
@@ -47,7 +55,7 @@ class StoreSupplierPaymentRequest extends FormRequest
 
             'payment_method' => [
                 'required',
-                'in:cash,bank_transfer,cheque',
+                Rule::enum(PaymentMethod::class),
             ],
 
             'reference' => [
@@ -65,35 +73,9 @@ class StoreSupplierPaymentRequest extends FormRequest
 
     public function withValidator($validator): void
     {
-        $validator->after(function ($validator) {
-
-            $type = $this->input('payment_type');
-
-            if ($type === 'advance') {
-
-                if (!$this->filled('purchase_order_id')) {
-                    $validator->errors()->add(
-                        'purchase_order_id',
-                        'Purchase order is required for an advance payment.'
-                    );
-                }
-
-                if ($this->filled('supplier_invoice_id')) {
-                    $validator->errors()->add(
-                        'supplier_invoice_id',
-                        'Advance payments cannot be linked to an invoice.'
-                    );
-                }
-            }
-
-            if ($type === 'invoice') {
-
-                if (!$this->filled('supplier_invoice_id')) {
-                    $validator->errors()->add(
-                        'supplier_invoice_id',
-                        'Supplier invoice is required for an invoice payment.'
-                    );
-                }
+        $validator->after(function ($validator): void {
+            if ($this->input('payment_type') === 'advance' && ($this->filled('supplier_invoice_id') || $this->filled('allocations'))) {
+                $validator->errors()->add('allocations', 'الدفعة المقدمة لا تُوزع على فواتير المورد.');
             }
         });
     }

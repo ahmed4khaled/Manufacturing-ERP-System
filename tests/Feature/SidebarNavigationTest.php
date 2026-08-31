@@ -25,7 +25,11 @@ it('renders the sidebar once in business priority order with ajax navigation', f
         ->and(substr_count($html, 'id="accounting-nav"'))->toBe(1)
         ->and(strpos($html, 'التشغيل اليومي'))->toBeLessThan(strpos($html, 'المخزون والبيانات'))
         ->and(strpos($html, 'المخزون والبيانات'))->toBeLessThan(strpos($html, 'المالية والرقابة'))
-        ->and(strpos($html, 'المالية والرقابة'))->toBeLessThan(strpos($html, 'إدارة النظام'));
+        ->and(strpos($html, 'المالية والرقابة'))->toBeLessThan(strpos($html, 'إدارة النظام'))
+        ->and(strpos($html, 'href="'.route('suppliers.index').'"'))->toBeLessThan(strpos($html, 'href="'.route('supplier-invoices.index').'"'))
+        ->and(strpos($html, 'href="'.route('supplier-invoices.index').'"'))->toBeLessThan(strpos($html, 'href="'.route('supplier-payments.index').'"'))
+        ->and(strpos($html, 'href="'.route('supplier-payments.index').'"'))->toBeLessThan(strpos($html, 'href="'.route('purchase-returns.index').'"'))
+        ->and(strpos($html, 'href="'.route('purchase-returns.index').'"'))->toBeLessThan(strpos($html, 'href="'.route('purchase-orders.index').'"'));
 
     $response
         ->assertSee('id="erpSidebarNav"', false)
