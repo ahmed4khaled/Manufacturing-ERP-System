@@ -17,6 +17,7 @@ class AccountingSeeder extends Seeder
         'accounting.reverse', 'accounting.close_period', 'accounting.manage_accounts', 'accounting.reports',
         'expenses.view', 'expenses.create', 'expenses.update', 'expenses.reverse',
         'wages.view', 'wages.create', 'wages.update', 'wages.pay', 'wages.reverse',
+        'cutover.view', 'cutover.create', 'cutover.import', 'cutover.post', 'cutover.reverse', 'cutover.reconcile',
     ];
 
     public function run(): void
@@ -43,6 +44,7 @@ class AccountingSeeder extends Seeder
             ['3200', 'جاري الشركاء', 'equity', '3000', true, 'partner_current'],
             ['3300', 'مسحوبات الشركاء', 'equity', '3000', true, 'partner_withdrawals'],
             ['3400', 'أرباح محتجزة', 'equity', '3000', true, 'retained_earnings'],
+            ['3500', 'فروق الأرصدة الافتتاحية', 'equity', '3000', true, 'opening_balance_clearing'],
             ['4000', 'الإيرادات', 'revenue', null, false, null],
             ['4100', 'مبيعات المنتجات', 'revenue', '4000', true, 'sales_revenue'],
             ['4200', 'مردودات المبيعات', 'revenue', '4000', true, 'sales_returns'],
@@ -86,6 +88,11 @@ class AccountingSeeder extends Seeder
         ];
         foreach ($wagePermissionsByRole as $roleName => $permissions) {
             Role::query()->where('name', $roleName)->where('guard_name', 'web')->first()?->givePermissionTo($permissions);
+        }
+
+        $cutoverPermissions = ['cutover.view', 'cutover.create', 'cutover.import', 'cutover.post', 'cutover.reverse', 'cutover.reconcile'];
+        foreach (['Admin', 'Accountant'] as $roleName) {
+            Role::query()->where('name', $roleName)->where('guard_name', 'web')->first()?->givePermissionTo($cutoverPermissions);
         }
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();

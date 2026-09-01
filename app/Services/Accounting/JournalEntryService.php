@@ -8,13 +8,17 @@ use App\Models\FiscalPeriod;
 use App\Models\FiscalYear;
 use App\Models\JournalEntry;
 use App\Services\CodeGeneratorService;
+use App\Services\Cutover\CutoverDateGuard;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class JournalEntryService
 {
-    public function __construct(private readonly CodeGeneratorService $codes) {}
+    public function __construct(
+        private readonly CodeGeneratorService $codes,
+        private readonly CutoverDateGuard $cutoverGuard,
+    ) {}
 
     public function account(string $mapping): Account
     {
@@ -36,6 +40,7 @@ class JournalEntryService
             }
 
             $this->validateLines($lines);
+            $this->cutoverGuard->assertAllowed((string) $header['entry_date'], $header['reference_type'] ?? null);
             $period = $this->openPeriodFor((string) $header['entry_date'], (bool) ($header['allow_closed_period'] ?? false));
 
             try {
@@ -65,6 +70,7 @@ class JournalEntryService
                     throw ValidationException::withMessages(['account' => "الحساب {$account->code} غير صالح للترحيل المباشر."]);
                 }
                 $entry->lines()->create([
+                    'cutover_opening_balance_id' => $line['cutover_opening_balance_id'] ?? null,
                     'account_id' => $account->id,
                     'debit' => $line['debit'] ?? 0,
                     'credit' => $line['credit'] ?? 0,
@@ -142,6 +148,7 @@ class JournalEntryService
     {
         $period = FiscalPeriod::query()->with('fiscalYear')
             ->whereDate('start_date', '<=', $date)->whereDate('end_date', '>=', $date)
+            ->orderByRaw('DATEDIFF(end_date, start_date) ASC')
             ->lockForUpdate()->first();
         if ($period && ((! $allowClosed && $period->status !== 'open') || $period->fiscalYear->status !== 'open')) {
             throw ValidationException::withMessages(['entry_date' => 'الفترة المالية لهذا التاريخ مغلقة.']);

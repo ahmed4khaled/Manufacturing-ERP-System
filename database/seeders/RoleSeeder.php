@@ -88,6 +88,12 @@ class RoleSeeder extends Seeder
                 'wages.view',
                 'wages.pay',
                 'wages.reverse',
+                'cutover.view',
+                'cutover.create',
+                'cutover.import',
+                'cutover.post',
+                'cutover.reverse',
+                'cutover.reconcile',
             ],
             'Manufacturing' => [
                 'workers.view', 'manufacturing_operations.view', 'boms.view',

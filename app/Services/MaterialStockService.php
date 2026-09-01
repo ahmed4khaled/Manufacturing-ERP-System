@@ -4,18 +4,26 @@ namespace App\Services;
 
 use App\Enums\MaterialStockMovementType;
 use App\Enums\StockMovementDirection;
+use App\Models\CutoverBatch;
+use App\Models\CutoverOpeningBalance;
 use App\Models\GoodsReceipt;
 use App\Models\Material;
+use App\Models\MaterialCostAllocation;
+use App\Models\MaterialCostLayer;
 use App\Models\MaterialStockMovement;
 use App\Models\ProductionMaterialTransaction;
 use App\Models\PurchaseReturn;
+use App\Services\Cutover\CutoverDateGuard;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
 class MaterialStockService
 {
-    public function __construct(private readonly InventoryCostingService $costing) {}
+    public function __construct(
+        private readonly InventoryCostingService $costing,
+        private readonly CutoverDateGuard $cutoverGuard,
+    ) {}
 
     public function getCurrentStock(Material $material): string
     {
@@ -117,11 +125,65 @@ class MaterialStockService
 
     public function createOpeningStock(array $data): MaterialStockMovement
     {
+        $this->cutoverGuard->assertLegacyOpeningAllowed();
+
         $movement = $this->createMovement($data + [
             'movement_type' => MaterialStockMovementType::OPENING,
             'direction' => StockMovementDirection::IN,
         ]);
         $this->costing->createUnvaluedMaterialLayer($movement);
+
+        return $movement;
+    }
+
+    public function createCutoverOpening(CutoverOpeningBalance $line): array
+    {
+        $movement = $this->createMovement([
+            'material_id' => $line->material_id,
+            'movement_type' => MaterialStockMovementType::OPENING,
+            'direction' => StockMovementDirection::IN,
+            'quantity' => $line->quantity,
+            'reference_type' => CutoverBatch::class,
+            'reference_id' => $line->cutover_batch_id,
+            'reference_number' => $line->layer_reference,
+            'movement_date' => $line->batch->cutover_date,
+            'notes' => $line->description ?: 'Cutover opening material layer',
+            'user_id' => auth()->id(),
+        ]);
+        $layer = $this->costing->createOpeningMaterialLayer($movement, $line->unit_cost);
+
+        return compact('movement', 'layer');
+    }
+
+    public function reverseCutoverOpening(CutoverOpeningBalance $line, string $date): MaterialStockMovement
+    {
+        $layer = MaterialCostLayer::query()->lockForUpdate()->findOrFail($line->material_cost_layer_id);
+        if ($layer->allocations()->exists() || bccomp((string) $layer->remaining_quantity, (string) $layer->original_quantity, 3) !== 0) {
+            throw ValidationException::withMessages(['cutover' => "لا يمكن عكس {$line->layer_reference} بعد استهلاك طبقة FIFO."]);
+        }
+        $movement = $this->createMovement([
+            'material_id' => $line->material_id,
+            'movement_type' => MaterialStockMovementType::ADJUSTMENT_OUT,
+            'direction' => StockMovementDirection::OUT,
+            'quantity' => $line->quantity,
+            'reference_type' => CutoverBatch::class,
+            'reference_id' => $line->cutover_batch_id,
+            'reference_number' => 'REV-'.$line->layer_reference,
+            'movement_date' => $date,
+            'notes' => 'عكس طبقة Cutover '.$line->layer_reference,
+            'user_id' => auth()->id(),
+        ]);
+        MaterialCostAllocation::query()->create([
+            'material_cost_layer_id' => $layer->id,
+            'material_stock_movement_id' => $movement->id,
+            'reference_type' => CutoverBatch::class,
+            'reference_id' => $line->cutover_batch_id,
+            'direction' => 'out',
+            'quantity' => $line->quantity,
+            'unit_cost' => $layer->unit_cost,
+            'total_cost' => $layer->total_original_cost,
+        ]);
+        $layer->update(['remaining_quantity' => 0]);
 
         return $movement;
     }
@@ -314,6 +376,7 @@ class MaterialStockService
 
     private function createMovement(array $data): MaterialStockMovement
     {
+        $this->cutoverGuard->assertAllowed((string) $data['movement_date'], $data['reference_type'] ?? null);
         $material = Material::query()
             ->lockForUpdate()
             ->findOrFail($data['material_id']);

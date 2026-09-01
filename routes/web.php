@@ -7,6 +7,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ColorController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\CustomerLedgerController;
+use App\Http\Controllers\CutoverController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\ManufacturingOperationController;
 use App\Http\Controllers\MaterialController;
@@ -46,6 +47,20 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified', 'active'])->name('dashboard');
 
 Route::middleware(['auth', 'verified', 'active'])->group(function () {
+    Route::prefix('cutover')->name('cutover.')->group(function () {
+        Route::get('/', [CutoverController::class, 'index'])->middleware('permission:cutover.view')->name('index');
+        Route::post('/', [CutoverController::class, 'store'])->middleware('permission:cutover.create')->name('store');
+        Route::get('templates/{type}', [CutoverController::class, 'template'])->middleware('permission:cutover.import')->name('templates');
+        Route::get('{cutoverBatch}', [CutoverController::class, 'show'])->middleware('permission:cutover.view')->name('show');
+        Route::post('{cutoverBatch}/balances', [CutoverController::class, 'storeBalance'])->middleware('permission:cutover.create')->name('balances.store');
+        Route::delete('{cutoverBatch}/balances/{openingBalance}', [CutoverController::class, 'destroyBalance'])->middleware('permission:cutover.create')->name('balances.destroy');
+        Route::get('{cutoverBatch}/import', [CutoverController::class, 'importForm'])->middleware('permission:cutover.import')->name('import');
+        Route::post('{cutoverBatch}/import/preview', [CutoverController::class, 'previewImport'])->middleware('permission:cutover.import')->name('import.preview');
+        Route::post('{cutoverBatch}/import/commit', [CutoverController::class, 'commitImport'])->middleware('permission:cutover.import')->name('import.commit');
+        Route::post('{cutoverBatch}/post', [CutoverController::class, 'post'])->middleware('permission:cutover.post')->name('post');
+        Route::post('{cutoverBatch}/reverse', [CutoverController::class, 'reverse'])->middleware('permission:cutover.reverse')->name('reverse');
+        Route::get('{cutoverBatch}/reconciliation', [CutoverController::class, 'reconciliation'])->middleware('permission:cutover.reconcile')->name('reconciliation');
+    });
     Route::prefix('accounting')->name('accounting.')->group(function () {
         Route::get('accounts', [AccountingController::class, 'accounts'])->middleware('permission:accounting.view')->name('accounts');
         Route::post('accounts', [AccountingController::class, 'storeAccount'])->middleware('permission:accounting.manage_accounts')->name('accounts.store');

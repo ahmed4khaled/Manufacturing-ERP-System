@@ -38,6 +38,7 @@ class PermissionGroups
         'permissions' => 'الصلاحيات',
         'expenses' => 'المصروفات السريعة',
         'wages' => 'أجور العاملين',
+        'cutover' => 'الأرصدة الافتتاحية والانتقال للتشغيل',
     ];
 
     /**

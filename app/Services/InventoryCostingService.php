@@ -57,6 +57,25 @@ class InventoryCostingService
         );
     }
 
+    public function createOpeningMaterialLayer(MaterialStockMovement $movement, ?string $unitCost): MaterialCostLayer
+    {
+        if ($unitCost === null) {
+            return $this->createUnvaluedMaterialLayer($movement);
+        }
+
+        return MaterialCostLayer::query()->firstOrCreate(
+            ['material_stock_movement_id' => $movement->id],
+            [
+                'material_id' => $movement->material_id,
+                'layer_date' => $movement->movement_date,
+                'original_quantity' => $movement->quantity,
+                'remaining_quantity' => $movement->quantity,
+                'unit_cost' => $unitCost,
+                'total_original_cost' => bcmul((string) $movement->quantity, $unitCost, 2),
+            ],
+        );
+    }
+
     public function consumeMaterialIssue(ProductionMaterialTransaction $transaction, MaterialStockMovement $movement): ?string
     {
         $this->ensureLegacyMaterialCoverage($transaction->material_id, (string) $transaction->quantity);
@@ -176,6 +195,26 @@ class InventoryCostingService
         );
     }
 
+    public function createOpeningProductLayer(StockMovement $movement, ?string $unitCost): ProductCostLayer
+    {
+        if ($unitCost === null) {
+            return $this->createUnvaluedProductLayer($movement);
+        }
+
+        return ProductCostLayer::query()->firstOrCreate(
+            ['stock_movement_id' => $movement->id],
+            [
+                'product_variant_id' => $movement->product_variant_id,
+                'layer_date' => $movement->movement_date,
+                'original_quantity' => $movement->quantity,
+                'remaining_quantity' => $movement->quantity,
+                'unit_cost' => $unitCost,
+                'total_original_cost' => bcmul((string) $movement->quantity, $unitCost, 2),
+                'is_final' => true,
+            ],
+        );
+    }
+
     public function currentProductionMaterialCost(ProductionOrder $order): ?string
     {
         $transactions = ProductionMaterialTransaction::query()
@@ -210,7 +249,11 @@ class InventoryCostingService
         $returns = (string) $transactions->where('type', ProductionMaterialTransactionType::RETURN)->sum('actual_cost');
         $actualMaterial = $hasUnvalued ? null : bcsub($issues, $returns, 2);
         $actualOperations = bcmul((string) $order->operations_unit_cost, (string) $order->planned_quantity, 2);
-        $total = $actualMaterial === null ? null : bcadd(bcadd($actualMaterial, $actualOperations, 2), (string) $order->manufacturing_overhead_cost, 2);
+        $total = $actualMaterial === null ? null : bcadd(
+            bcadd(bcadd($actualMaterial, $actualOperations, 2), (string) $order->manufacturing_overhead_cost, 2),
+            (string) $order->opening_wip_cost,
+            2,
+        );
         $unit = $total === null ? null : bcdiv($total, $goodOutput, 4);
         $variance = $total === null ? null : bcsub($total, (string) $order->estimated_total_cost, 2);
 

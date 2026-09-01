@@ -13,6 +13,7 @@ class WorkerWagePaymentAllocationService
     {
         $wages = ProductionWorkerWage::query()
             ->where('worker_id', $payment->worker_id)
+            ->whereNull('reversed_at')
             ->where('remaining_amount', '>', 0)
             ->orderBy('earned_at')
             ->orderBy('id')

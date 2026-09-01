@@ -14,6 +14,7 @@ use App\Models\ProductCostLayer;
 use App\Models\Supplier;
 use App\Services\Accounting\AccountingReportService;
 use App\Services\Accounting\JournalEntryService;
+use App\Services\Accounting\MonthlyFiscalPeriodService;
 use App\Services\Accounting\PeriodClosingService;
 use App\Services\Accounting\QuickExpenseAccountService;
 use App\Services\CustomerLedgerService;
@@ -201,12 +202,12 @@ class AccountingController extends Controller
         return view('accounting.periods', ['years' => FiscalYear::query()->with('periods')->latest('start_date')->get()]);
     }
 
-    public function storeYear(Request $request): RedirectResponse
+    public function storeYear(Request $request, MonthlyFiscalPeriodService $periods): RedirectResponse
     {
         $data = $request->validate(['name' => ['required', 'unique:fiscal_years,name'], 'start_date' => ['required', 'date'], 'end_date' => ['required', 'date', 'after_or_equal:start_date']]);
-        DB::transaction(function () use ($data): void {
+        DB::transaction(function () use ($data, $periods): void {
             $year = FiscalYear::query()->create($data);
-            $year->periods()->create(['name' => $data['name'], 'start_date' => $data['start_date'], 'end_date' => $data['end_date']]);
+            $periods->ensure($year);
         });
 
         return back()->with('success', 'تم إنشاء السنة والفترة المالية.');

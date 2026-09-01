@@ -5,6 +5,7 @@
         <a class="btn btn-outline-primary btn-sm" href="{{ route('accounting.journals') }}">القيود</a>
         <a class="btn btn-outline-primary btn-sm" href="{{ route('accounting.ledger') }}">الأستاذ</a>
         <a class="btn btn-outline-primary btn-sm" href="{{ route('accounting.trial-balance') }}">ميزان المراجعة</a>
+        @can('cutover.view')<a class="btn btn-outline-primary btn-sm" href="{{ route('cutover.index') }}">Cutover</a>@endcan
     </div>
 </div>
 @if(session('success'))<div class="alert alert-success">{{ session('success') }}</div>@endif

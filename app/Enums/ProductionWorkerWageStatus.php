@@ -7,6 +7,7 @@ enum ProductionWorkerWageStatus: string
     case UNPAID = 'unpaid';
     case PARTIALLY_PAID = 'partially_paid';
     case PAID = 'paid';
+    case REVERSED = 'reversed';
 
     public function label(): string
     {
@@ -14,6 +15,7 @@ enum ProductionWorkerWageStatus: string
             self::UNPAID => 'غير مدفوع',
             self::PARTIALLY_PAID => 'مدفوع جزئيًا',
             self::PAID => 'مدفوع',
+            self::REVERSED => 'معكوس',
         };
     }
 }

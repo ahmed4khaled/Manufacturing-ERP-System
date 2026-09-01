@@ -161,8 +161,8 @@
     </div>
 @endcanany
 
-@canany(['accounting.view', 'accounting.reports'])
-    @php($accountingActive = request()->routeIs('accounting.*') && ! request()->routeIs('accounting.expenses*'))
+@canany(['accounting.view', 'accounting.reports', 'cutover.view'])
+    @php($accountingActive = (request()->routeIs('accounting.*') && ! request()->routeIs('accounting.expenses*')) || request()->routeIs('cutover.*'))
     <div class="nav-module">
         <button class="nav-link nav-toggle {{ $accountingActive ? 'active' : '' }}" type="button" data-bs-toggle="collapse" data-bs-target="#accounting-nav" aria-expanded="{{ $accountingActive ? 'true' : 'false' }}" aria-controls="accounting-nav">
             <i class="bi bi-calculator"></i>
@@ -170,6 +170,9 @@
             <i class="bi bi-chevron-down toggle-icon"></i>
         </button>
         <div class="collapse {{ $accountingActive ? 'show' : '' }} nav-children" id="accounting-nav">
+            @can('cutover.view')
+                <a href="{{ route('cutover.index') }}" class="nav-link sub-link {{ request()->routeIs('cutover.*') ? 'active' : '' }}" data-erp-nav><i class="bi bi-box-arrow-in-right"></i><span>الأرصدة الافتتاحية</span></a>
+            @endcan
             @foreach ([
                 ['accounting.journals', 'bi-journal-text', 'القيود اليومية'],
                 ['accounting.cash-bank', 'bi-bank', 'الخزينة والبنوك'],

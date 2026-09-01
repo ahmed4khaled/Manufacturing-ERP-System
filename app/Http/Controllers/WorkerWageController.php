@@ -24,6 +24,7 @@ class WorkerWageController extends Controller
     {
         $filters = $request->validated();
         $query = ProductionWorkerWage::query()
+            ->whereNull('reversed_at')
             ->with(['worker', 'productionOrder', 'operation'])
             ->when($filters['worker_id'] ?? null, fn (Builder $query, $id) => $query->where('worker_id', $id))
             ->when($filters['production_order_id'] ?? null, fn (Builder $query, $id) => $query->where('production_order_id', $id))
@@ -60,6 +61,7 @@ class WorkerWageController extends Controller
     {
         $worker->loadCount('productionWages');
         $wages = $worker->productionWages()
+            ->whereNull('reversed_at')
             ->with(['productionOrder', 'operation', 'workAssignment'])
             ->oldest('earned_at')->oldest('id')
             ->paginate(30, ['*'], 'wages_page');
@@ -72,9 +74,9 @@ class WorkerWageController extends Controller
             'worker' => $worker,
             'wages' => $wages,
             'payments' => $payments,
-            'outstanding' => $worker->productionWages()->sum('remaining_amount'),
-            'grossTotal' => $worker->productionWages()->sum('gross_amount'),
-            'paidTotal' => $worker->productionWages()->sum('paid_amount'),
+            'outstanding' => $worker->productionWages()->whereNull('reversed_at')->sum('remaining_amount'),
+            'grossTotal' => $worker->productionWages()->whereNull('reversed_at')->sum('gross_amount'),
+            'paidTotal' => $worker->productionWages()->whereNull('reversed_at')->sum('paid_amount'),
             'paymentAccounts' => $accounts->paymentAccounts(),
             'submissionToken' => (string) Str::uuid(),
         ]);

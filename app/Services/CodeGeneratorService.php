@@ -8,7 +8,7 @@ class CodeGeneratorService
 {
     public function generate(string $prefix, int $sequence): string
     {
-        $displayPrefix = in_array($prefix, ['MO', 'BOM', 'WRK', 'WP'], true)
+        $displayPrefix = in_array($prefix, ['MO', 'BOM', 'WRK', 'WP', 'CUT'], true)
             ? $prefix.'-'
             : $prefix;
 
@@ -79,6 +79,10 @@ class CodeGeneratorService
                 'WP' => [
                     'table' => 'worker_wage_payments',
                     'column' => 'payment_number',
+                ],
+                'CUT' => [
+                    'table' => 'cutover_batches',
+                    'column' => 'batch_number',
                 ],
             ];
 

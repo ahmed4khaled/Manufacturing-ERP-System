@@ -12,6 +12,7 @@ class ProductionWorkerWage extends Model
 {
     protected $fillable = [
         'worker_id',
+        'cutover_opening_balance_id',
         'production_order_id',
         'work_assignment_id',
         'production_order_operation_id',
@@ -22,6 +23,7 @@ class ProductionWorkerWage extends Model
         'remaining_amount',
         'status',
         'earned_at',
+        'reversed_at',
     ];
 
     protected function casts(): array
@@ -34,13 +36,14 @@ class ProductionWorkerWage extends Model
             'remaining_amount' => 'decimal:2',
             'status' => ProductionWorkerWageStatus::class,
             'earned_at' => 'date',
+            'reversed_at' => 'datetime',
         ];
     }
 
     protected static function booted(): void
     {
         static::updating(function (self $wage): void {
-            $allowed = ['paid_amount', 'remaining_amount', 'status', 'updated_at'];
+            $allowed = ['paid_amount', 'remaining_amount', 'status', 'reversed_at', 'updated_at'];
 
             if (array_diff(array_keys($wage->getDirty()), $allowed)) {
                 throw ValidationException::withMessages([
@@ -76,5 +79,10 @@ class ProductionWorkerWage extends Model
     public function allocations(): HasMany
     {
         return $this->hasMany(WorkerWagePaymentAllocation::class);
+    }
+
+    public function cutoverOpeningBalance(): BelongsTo
+    {
+        return $this->belongsTo(CutoverOpeningBalance::class);
     }
 }

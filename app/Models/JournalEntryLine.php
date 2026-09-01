@@ -8,7 +8,7 @@ use Illuminate\Validation\ValidationException;
 
 class JournalEntryLine extends Model
 {
-    protected $fillable = ['journal_entry_id', 'account_id', 'debit', 'credit', 'description', 'customer_id', 'supplier_id', 'partner_id', 'worker_id'];
+    protected $fillable = ['journal_entry_id', 'cutover_opening_balance_id', 'account_id', 'debit', 'credit', 'description', 'customer_id', 'supplier_id', 'partner_id', 'worker_id'];
 
     protected function casts(): array
     {
@@ -39,6 +39,11 @@ class JournalEntryLine extends Model
     public function journalEntry(): BelongsTo
     {
         return $this->belongsTo(JournalEntry::class);
+    }
+
+    public function cutoverOpeningBalance(): BelongsTo
+    {
+        return $this->belongsTo(CutoverOpeningBalance::class);
     }
 
     public function account(): BelongsTo

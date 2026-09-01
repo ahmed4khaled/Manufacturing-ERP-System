@@ -137,7 +137,7 @@ class DocumentPostingService
             $lines[] = $this->line('raw_material_inventory', 0, $material);
         }
         if (bccomp($operationCost, '0', 2) > 0) {
-            $wages = $order->workerWages()->get();
+            $wages = $order->workerWages()->whereNull('cutover_opening_balance_id')->whereNull('reversed_at')->get();
             if ($wages->isNotEmpty()) {
                 $wageTotal = $wages->reduce(
                     fn (string $sum, $wage) => bcadd($sum, (string) $wage->gross_amount, 2),

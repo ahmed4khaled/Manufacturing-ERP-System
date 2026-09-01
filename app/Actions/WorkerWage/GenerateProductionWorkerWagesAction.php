@@ -59,6 +59,8 @@ class GenerateProductionWorkerWagesAction
 
             $wages = ProductionWorkerWage::query()
                 ->where('production_order_id', $order->id)
+                ->whereNull('cutover_opening_balance_id')
+                ->whereNull('reversed_at')
                 ->with(['worker', 'operation'])
                 ->orderBy('id')
                 ->get();
